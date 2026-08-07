@@ -1,8 +1,7 @@
 import Link from "next/link";
-import { headers } from "next/headers";
 import { notFound } from "next/navigation";
-import QRCode from "qrcode";
 import { getTicketState } from "@/lib/store";
+import { ticketQrSvg, ticketUrl } from "@/lib/ticketUrl";
 import { money } from "@/lib/format";
 import PrintButton from "@/components/PrintButton";
 
@@ -20,17 +19,8 @@ export default async function QrPage({ params }: Props) {
   const state = await getTicketState(code);
   if (!state) notFound();
 
-  const headerList = await headers();
-  const host = headerList.get("x-forwarded-host") ?? headerList.get("host") ?? "localhost:3000";
-  const proto = headerList.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
-  const url = `${proto}://${host}/t/${code}`;
-
-  const svg = await QRCode.toString(url, {
-    type: "svg",
-    margin: 0,
-    errorCorrectionLevel: "M",
-    color: { dark: "#14100d", light: "#00000000" },
-  });
+  const url = await ticketUrl(code);
+  const svg = await ticketQrSvg(url);
 
   const { ticket, items } = state;
   const itemsTotal = items.reduce((a, i) => a + i.totalCents, 0);

@@ -50,6 +50,20 @@ export function Stat({
   );
 }
 
+/** El panel que sube desde abajo: el gesto de toda la app en el móvil. */
+export function Sheet({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70" onClick={onClose}>
+      <div
+        className="rise max-h-[88vh] w-full max-w-md overflow-y-auto rounded-t-3xl border-t border-line bg-paper-2 p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
+        onClick={(event) => event.stopPropagation()}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export function Progress({ value }: { value: number }) {
   const pct = Math.max(0, Math.min(100, value * 100));
   return (

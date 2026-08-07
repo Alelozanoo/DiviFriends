@@ -2,22 +2,32 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { computeSettlement } from "@/lib/settle";
+import { computeSettlement, totalAfterRemoving } from "@/lib/settle";
 import { useStoredParticipant } from "@/lib/useStoredParticipant";
 import { useTicketSync } from "@/lib/useTicketSync";
 import { money, parseMoney } from "@/lib/format";
-import type { TicketState } from "@/lib/types";
+import type { Participant, TicketState } from "@/lib/types";
 import AccountsPanel from "./AccountsPanel";
 import ItemBubble from "./ItemBubble";
-import SplitSheet from "./SplitSheet";
-import { Avatar, Progress } from "./ui";
+import ItemSheet from "./ItemSheet";
+import TableSheet from "./TableSheet";
+import { Avatar, Progress, Sheet } from "./ui";
 
-export default function SplitApp({ initial }: { initial: TicketState }) {
+export default function SplitApp({
+  initial,
+  shareUrl,
+  qrSvg,
+}: {
+  initial: TicketState;
+  shareUrl: string;
+  qrSvg: string;
+}) {
   const code = initial.ticket.id;
   const [tab, setTab] = useState<"comanda" | "cuentas">("comanda");
   const [error, setError] = useState<string | null>(null);
-  const [splitting, setSplitting] = useState<string | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [sharing, setSharing] = useState(false);
   // null = decide la app (abierto si no te has unido); true/false = lo has decidido tú.
   const [joinOverride, setJoinOverride] = useState<boolean | null>(null);
 
@@ -68,17 +78,27 @@ export default function SplitApp({ initial }: { initial: TicketState }) {
     }
   }
 
-  /** Un toque: te lo quedas o lo sueltas. Se pinta antes de salir la petición. */
-  function claim(itemId: string, shares: number, splitInto?: number) {
-    if (!meId) {
+  /** Apunta a alguien a la mesa sin hacerse pasar por él: la ficha no es tuya. */
+  async function addPerson(name: string) {
+    await send("/participants", { method: "POST", body: JSON.stringify({ name }) });
+  }
+
+  /**
+   * Un toque: se lo queda o lo suelta. Se pinta antes de salir la petición.
+   * Sin `forId` es lo tuyo; con él marcas lo que ha tomado otro, que es como
+   * funciona la mesa en la que sólo uno tiene la app abierta.
+   */
+  function claim(itemId: string, shares: number, splitInto?: number, forId?: string) {
+    const target = forId ?? meId;
+    if (!target) {
       setJoinOverride(true);
       return;
     }
     navigator.vibrate?.(8);
-    const token = beginClaim(itemId, meId, shares, splitInto);
+    const token = beginClaim(itemId, target, shares, splitInto);
     void send("/claims", {
       method: "POST",
-      body: JSON.stringify({ itemId, participantId: meId, shares, splitInto }),
+      body: JSON.stringify({ itemId, participantId: target, shares, splitInto }),
     }).then((confirmed) => settleClaim(token, confirmed ?? undefined));
   }
 
@@ -99,7 +119,7 @@ export default function SplitApp({ initial }: { initial: TicketState }) {
   const myBalance = settlement.byParticipant.find((b) => b.participantId === meId) ?? null;
   const progress =
     settlement.grandTotalCents > 0 ? settlement.assignedCents / settlement.grandTotalCents : 0;
-  const splittingItem = state.items.find((i) => i.id === splitting) ?? null;
+  const editingItem = state.items.find((i) => i.id === editing) ?? null;
   const left = settlement.unassignedCents;
 
   return (
@@ -123,8 +143,14 @@ export default function SplitApp({ initial }: { initial: TicketState }) {
               {code}
             </p>
           </div>
-          <div className="flex shrink-0 -space-x-1.5">
-            {state.participants.slice(0, 5).map((person) => (
+          {/* Quién está en la mesa y, en el mismo gesto, cómo meter a los demás. */}
+          <button
+            type="button"
+            onClick={() => setSharing(true)}
+            aria-label="Invitar a la mesa: QR y enlace"
+            className="flex shrink-0 items-center -space-x-1.5 rounded-full py-0.5 active:scale-95 transition-transform"
+          >
+            {state.participants.slice(0, 4).map((person) => (
               <Avatar
                 key={person.id}
                 name={person.name}
@@ -133,7 +159,10 @@ export default function SplitApp({ initial }: { initial: TicketState }) {
                 dimmed={person.id !== meId}
               />
             ))}
-          </div>
+            <span className="grid h-[26px] w-[26px] place-items-center rounded-full border-2 border-dashed border-line bg-paper text-sm font-bold leading-none text-ink-faint">
+              +
+            </span>
+          </button>
         </div>
         <Progress value={progress} />
       </header>
@@ -165,7 +194,7 @@ export default function SplitApp({ initial }: { initial: TicketState }) {
                   currency={state.ticket.currency}
                   onToggle={() => toggle(item.id)}
                   onSetShares={(shares) => claim(item.id, shares)}
-                  onOpenSplit={() => setSplitting(item.id)}
+                  onOpenOptions={() => setEditing(item.id)}
                 />
               ))}
 
@@ -235,17 +264,47 @@ export default function SplitApp({ initial }: { initial: TicketState }) {
         </div>
       </div>
 
-      {splittingItem && (
-        <SplitSheet
-          item={splittingItem}
-          breakdown={settlement.byItem[splittingItem.id]}
+      {editingItem && (
+        <ItemSheet
+          item={editingItem}
+          breakdown={settlement.byItem[editingItem.id]}
+          participants={state.participants}
           currency={state.ticket.currency}
-          onClose={() => setSplitting(null)}
+          ticketTotalCents={state.ticket.totalCents}
+          totalAfterCents={totalAfterRemoving(
+            state.ticket.totalCents,
+            state.items,
+            editingItem.id,
+          )}
+          onClose={() => setEditing(null)}
+          // Aquí la hoja se queda abierta: se marca a varios de una sentada.
+          onSetShares={(participantId, shares) =>
+            claim(editingItem.id, shares, undefined, participantId)
+          }
           onPick={(into) => {
-            setSplitting(null);
+            setEditing(null);
             // Al elegir «entre N» te apuntas de una: es lo que quiere el 99 %.
-            claim(splittingItem.id, 1, into);
+            claim(editingItem.id, 1, into);
           }}
+          onRemove={() => {
+            setEditing(null);
+            void send(`/items/${editingItem.id}`, { method: "DELETE" });
+          }}
+        />
+      )}
+
+      {sharing && (
+        <TableSheet
+          code={code}
+          url={shareUrl}
+          qrSvg={qrSvg}
+          participants={state.participants}
+          meId={meId}
+          onAdd={addPerson}
+          onRemove={(participantId) =>
+            void send(`/participants/${participantId}`, { method: "DELETE" })
+          }
+          onClose={() => setSharing(false)}
         />
       )}
 
@@ -260,11 +319,7 @@ export default function SplitApp({ initial }: { initial: TicketState }) {
       )}
 
       {showJoin && (
-        <JoinSheet
-          existing={state.participants.map((p) => p.name)}
-          onJoin={join}
-          onClose={() => setJoinOverride(false)}
-        />
+        <JoinSheet people={state.participants} onJoin={join} onClose={() => setJoinOverride(false)} />
       )}
     </div>
   );
@@ -272,25 +327,19 @@ export default function SplitApp({ initial }: { initial: TicketState }) {
 
 /* -------------------------------------------------------------------------- */
 
-function Sheet({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70" onClick={onClose}>
-      <div
-        className="rise w-full max-w-md rounded-t-3xl border-t border-line bg-paper-2 p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
-        onClick={(event) => event.stopPropagation()}
-      >
-        {children}
-      </div>
-    </div>
-  );
-}
-
+/**
+ * Lo primero que ve quien entra por el QR o por el enlace.
+ *
+ * Arriba el nombre a mano, y debajo los que ya están apuntados: cuando alguien
+ * de la mesa te ha metido antes de que llegaras, sólo tienes que tocarte a ti
+ * mismo y heredas todo lo que ya te habían marcado.
+ */
 function JoinSheet({
-  existing,
+  people,
   onJoin,
   onClose,
 }: {
-  existing: string[];
+  people: Participant[];
   onJoin: (name: string) => Promise<void>;
   onClose: () => void;
 }) {
@@ -299,7 +348,7 @@ function JoinSheet({
 
   return (
     <Sheet onClose={onClose}>
-      <h2 className="text-xl font-bold tracking-tight">¿Cómo te llamas?</h2>
+      <h2 className="text-xl font-bold tracking-tight">¿Quién eres?</h2>
       <p className="mt-1 text-sm text-ink-soft">Para que la mesa sepa qué platos son tuyos.</p>
 
       <form
@@ -329,18 +378,19 @@ function JoinSheet({
         </button>
       </form>
 
-      {existing.length > 0 && (
-        <div className="mt-4">
-          <p className="stamp text-ink-faint">Ya en la mesa · toca si eres tú</p>
+      {people.length > 0 && (
+        <div className="mt-5">
+          <p className="stamp text-ink-faint">O toca tu nombre si ya te han apuntado</p>
           <div className="mt-2 flex flex-wrap gap-2">
-            {existing.map((existingName) => (
+            {people.map((person) => (
               <button
-                key={existingName}
+                key={person.id}
                 type="button"
-                onClick={() => void onJoin(existingName)}
-                className="rounded-lg border border-line px-3 py-1.5 text-sm text-ink-soft active:bg-paper-3"
+                onClick={() => void onJoin(person.name)}
+                className="flex items-center gap-2 rounded-xl border-2 border-line py-2 pl-2 pr-3 transition-colors hover:border-amber active:bg-paper-3"
               >
-                {existingName}
+                <Avatar name={person.name} color={person.color} size={22} />
+                <span className="max-w-32 truncate text-sm font-semibold">{person.name}</span>
               </button>
             ))}
           </div>

@@ -12,7 +12,7 @@ interface Props {
   currency: string;
   onToggle: () => void;
   onSetShares: (shares: number) => void;
-  onOpenSplit: () => void;
+  onOpenOptions: () => void;
 }
 
 /**
@@ -31,7 +31,7 @@ export default function ItemBubble({
   currency,
   onToggle,
   onSetShares,
-  onOpenSplit,
+  onOpenOptions,
 }: Props) {
   const mine = breakdown.shares.find((s) => s.participantId === meId);
   const others = breakdown.shares.filter((s) => s.participantId !== meId);
@@ -135,13 +135,14 @@ export default function ItemBubble({
           )}
         </span>
 
+        {/* Repartir entre varios y quitar la línea viven los dos aquí dentro. */}
         <button
           type="button"
-          onClick={onOpenSplit}
-          aria-label={`Compartir ${item.name} entre varios`}
-          className="shrink-0 rounded-lg px-1.5 py-1 text-sm font-bold text-ink-faint transition-colors hover:bg-paper-3 hover:text-mint active:bg-paper-3"
+          onClick={onOpenOptions}
+          aria-label={`Opciones de ${item.name}: repartir o quitar`}
+          className="shrink-0 rounded-lg px-1.5 py-1 text-base font-bold leading-none text-ink-faint transition-colors hover:bg-paper-3 hover:text-mint active:bg-paper-3"
         >
-          ÷
+          ⋯
         </button>
       </div>
     </div>

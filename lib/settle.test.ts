@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 // Extensiones explícitas: así corre con el stripping de tipos nativo de Node,
 // sin runner ni dependencias de test.
-import { computeSettlement, splitCents } from "./settle.ts";
+import { computeSettlement, splitCents, totalAfterRemoving } from "./settle.ts";
 import type { Claim, Item, Participant, TicketState } from "./types.ts";
 
 function item(over: Partial<Item> & Pick<Item, "id" | "totalCents">): Item {
@@ -204,6 +204,52 @@ test("detecta que se ha cobrado de más", () => {
     2000,
   );
   assert.equal(computeSettlement(s).overpaidCents, 500);
+});
+
+test("quitar una línea se lleva su dinero, no lo reparte entre todos", () => {
+  // Sin bajar el total, esos 12 € reaparecerían como «extras» prorrateados: la
+  // línea desaparecería de la pantalla y todos seguirían pagándola.
+  const items = [
+    item({ id: "vino", totalCents: 1200 }),
+    item({ id: "paella", totalCents: 2000 }),
+  ];
+  assert.equal(totalAfterRemoving(3200, items, "vino"), 2000);
+
+  const after = computeSettlement(
+    state(
+      items.filter((i) => i.id !== "vino"),
+      [person("a")],
+      [{ itemId: "paella", participantId: "a", shares: 1 }],
+      totalAfterRemoving(3200, items, "vino"),
+    ),
+  );
+  assert.equal(after.byParticipant[0].owesCents, 2000);
+  assert.equal(after.extrasCents, 0);
+  assert.equal(after.complete, true);
+});
+
+test("quitar una línea respeta el servicio del ticket", () => {
+  // Ticket de 88 € con 80 € de platos: los 8 € de servicio siguen ahí después.
+  const items = [item({ id: "i1", totalCents: 5000 }), item({ id: "i2", totalCents: 3000 })];
+  assert.equal(totalAfterRemoving(8800, items, "i2"), 5800);
+});
+
+test("quitar algo añadido a mano no arrastra el total impreso", () => {
+  // Ticket de 72,14 al que alguien añadió una caña de 2,50 que ya venía dentro:
+  // al quitarla el total tiene que quedarse donde estaba, no bajar a 69,64.
+  const items = [
+    item({ id: "ticket", totalCents: 7214 }),
+    item({ id: "añadida", totalCents: 250 }),
+  ];
+  assert.equal(totalAfterRemoving(7214, items, "añadida"), 7214);
+});
+
+test("quitar la última línea deja el ticket a cero y no en negativo", () => {
+  const items = [item({ id: "solo", totalCents: 900 })];
+  assert.equal(totalAfterRemoving(900, items, "solo"), 0);
+  assert.equal(totalAfterRemoving(500, items, "solo"), 0);
+  // Una línea que ya no existe no toca nada.
+  assert.equal(totalAfterRemoving(900, items, "fantasma"), 900);
 });
 
 test("las transferencias saldan exactamente todos los balances", () => {

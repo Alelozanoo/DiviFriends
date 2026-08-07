@@ -36,6 +36,26 @@ export function splitCents(total: number, weights: number[]): number[] {
 }
 
 /**
+ * Con qué total se queda el ticket al borrar una línea.
+ *
+ * Baja lo que costaba, porque si no su importe se colaría en los «extras» y
+ * acabaría repartido entre todos sin decirlo: borrar dejaría de significar
+ * nada. Pero nunca por debajo de lo que suman las líneas que quedan, y eso
+ * cubre el caso contrario: una línea añadida a mano —o inventada por la
+ * lectura de la foto— se quita sin arrastrar consigo el total impreso.
+ */
+export function totalAfterRemoving(
+  totalCents: number,
+  items: { id: string; totalCents: number }[],
+  itemId: string,
+): number {
+  const removed = items.find((i) => i.id === itemId);
+  if (!removed) return totalCents;
+  const restCents = items.reduce((a, i) => (i.id === itemId ? a : a + i.totalCents), 0);
+  return Math.max(0, restCents, totalCents - removed.totalCents);
+}
+
+/**
  * Un solo camino para todos los casos: la línea se parte en `splitInto` partes
  * y cada uno paga las que se ha quedado. Las que nadie coge se quedan sin
  * asignar, que es justo lo que la pantalla necesita cantar.

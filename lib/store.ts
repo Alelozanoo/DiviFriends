@@ -1,6 +1,7 @@
 import { firestore, TICKETS } from "./firebaseAdmin";
 import { docToState, LIMITS, type ItemDoc, type TicketDoc } from "./ticketDoc";
 import { colorFor, id, ticketCode } from "./format";
+import { totalAfterRemoving } from "./settle";
 import type { TicketState } from "./types";
 
 export class StoreError extends Error {
@@ -277,9 +278,13 @@ function sharesOn(doc: TicketDoc, itemId: string, exceptParticipant?: string): n
 
 export function removeItem(code: string, itemId: string): Promise<TicketState> {
   return mutate(code, (doc) => {
-    const before = doc.items.length;
+    if (!doc.items.some((i) => i.id === itemId)) {
+      throw new StoreError("Ese plato no está en esta comanda.", 404);
+    }
+    // El total baja con la línea. Si no, su importe reaparecería como «extras»
+    // repartidos entre todos y borrar no serviría de nada.
+    doc.totalCents = totalAfterRemoving(doc.totalCents, doc.items, itemId);
     doc.items = doc.items.filter((i) => i.id !== itemId);
-    if (doc.items.length === before) throw new StoreError("Ese plato no está en esta comanda.", 404);
     doc.claims = doc.claims.filter((c) => c.itemId !== itemId);
   });
 }
