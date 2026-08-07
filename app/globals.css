@@ -1,26 +1,151 @@
 @import "tailwindcss";
 
+/*
+  Lenguaje visual: un ticket de papel térmico visto de noche.
+  Fondo café oscuro, tipografía condensada, cifras monoespaciadas y
+  filetes discontinuos como los de una impresora de comandas.
+*/
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --ink: #f4ece0;
+  --ink-soft: #b3a695;
+  --ink-faint: #776a5c;
+  --paper: #14100d;
+  --paper-2: #1c1714;
+  --paper-3: #262019;
+  --line: #362d25;
+  --amber: #e8b04b;
+  --amber-deep: #b8842a;
+  --mint: #5ec5c0;
+  --clay: #e0705f;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-paper-3: var(--paper-3);
+  --color-line: var(--line);
+  --color-amber: var(--amber);
+  --color-amber-deep: var(--amber-deep);
+  --color-mint: var(--mint);
+  --color-clay: var(--clay);
+  --font-sans: var(--font-display);
+  --font-mono: var(--font-figure);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--paper);
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  overscroll-behavior-y: none;
+}
+
+/* Las cifras nunca deben bailar al actualizarse en vivo. */
+.tnum {
+  font-family: var(--font-figure), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Micro-etiquetas de ticket: MESA 12 · SUBTOTAL · IVA */
+.stamp {
+  font-family: var(--font-figure), ui-monospace, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.6875rem;
+  line-height: 1;
+}
+
+/* Filete discontinuo de impresora térmica. */
+.rule {
+  height: 1px;
+  background-image: linear-gradient(90deg, var(--line) 0 6px, transparent 6px 12px);
+  background-size: 12px 1px;
+}
+
+/* Borde superior/inferior dentado, como papel arrancado. */
+.torn-top,
+.torn-bottom {
+  --tooth: 10px;
+  background-color: inherit;
+}
+.torn-top {
+  -webkit-mask-image: radial-gradient(var(--tooth) var(--tooth) at 50% 0, transparent 99%, #000 100%);
+  mask-image: radial-gradient(var(--tooth) var(--tooth) at 50% 0, transparent 99%, #000 100%);
+  -webkit-mask-size: calc(var(--tooth) * 2) 100%;
+  mask-size: calc(var(--tooth) * 2) 100%;
+  -webkit-mask-repeat: repeat-x;
+  mask-repeat: repeat-x;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rise {
+  animation: rise 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--amber) 55%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 10px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+.ping-once {
+  animation: pulse-ring 0.6s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise,
+  .ping-once {
+    animation: none;
+  }
+}
+
+input,
+button,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+::selection {
+  background: var(--amber);
+  color: var(--paper);
+}
+
+@media print {
+  body {
+    background: #fff;
+    color: #000;
+  }
+  .no-print {
+    display: none !important;
+  }
 }

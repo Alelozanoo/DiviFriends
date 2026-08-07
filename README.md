@@ -1,36 +1,130 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DiviFriends
 
-## Getting Started
+Repartir la cuenta de un bar sin calculadora ni discusiones. El cliente escanea
+el QR impreso en el ticket, ve la comanda de su mesa en el móvil, marca lo que se
+ha comido y la app dice al momento cuánto le debe a quien pagó.
 
-First, run the development server:
+## Cómo se usa
+
+**Como comensal:** subes una foto del ticket en la portada (o entras con el código
+de 6 caracteres). Escribes tu nombre y tocas los platos que son tuyos. Las líneas
+totalmente repartidas se van plegando en «Ya repartido». En la pestaña *Cuentas*
+aparece lo que le debe cada uno al pagador.
+
+**Como bar:** creas la comanda en `/nueva` (a mano o desde la foto) e imprimes
+`/t/CÓDIGO/qr`, que es el ticket con el QR listo para papel de 80 mm.
+
+## Arrancar
 
 ```bash
+npm install
+cp .env.example .env.local     # rellena las claves (ver abajo)
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+La lectura de tickets usa **Claude Opus 5** con visión y salida estructurada.
+Sin `ANTHROPIC_API_KEY` todo lo demás sigue funcionando: la app avisa y te manda
+a escribir la comanda a mano.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Comando | Qué hace |
+| --- | --- |
+| `npm run dev` | Servidor de desarrollo |
+| `npm run build` | Compilación de producción |
+| `npm test` | Tests del reparto (`node --test`, sin dependencias extra) |
+| `npm run lint` | ESLint |
+| `firebase deploy --only firestore:rules` | Publica las reglas de seguridad |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Firestore
 
-## Learn More
+Los datos viven en Firestore, un documento por comanda en `tickets/{CÓDIGO}`.
 
-To learn more about Next.js, take a look at the following resources:
+**Por qué un solo documento y no subcolecciones:** una mesa tiene decenas de
+líneas, no miles, así que el documento se queda muy por debajo del límite de
+1 MiB. A cambio se gana lo que aquí importa: un único `onSnapshot` sincroniza
+toda la pantalla, y cada cambio es una transacción sobre un solo documento —
+o sea atómica de verdad, así que dos personas tocando el mismo plato a la vez
+no se pisan.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Quién escribe:** sólo el servidor, con el Admin SDK, desde las rutas de
+`app/api`. El navegador únicamente *lee* en directo. Eso mantiene la validación
+(no reclamar más unidades de las que hay, un único pagador, los topes de tamaño)
+donde nadie puede saltársela desde la consola del móvil. Las reglas de
+[`firestore.rules`](firestore.rules) lo hacen cumplir: leer una comanda concreta
+sí, listar la colección no, escribir no.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Si no pones la configuración `NEXT_PUBLIC_FIREBASE_*`, la app sigue funcionando
+con sondeo cada 3 s en vez de tiempo real.
 
-## Deploy on Vercel
+### Montarlo desde cero
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+firebase projects:create mi-divifriends
+firebase firestore:databases:create "(default)" --project mi-divifriends --location eur3
+firebase apps:create WEB "DiviFriends Web" --project mi-divifriends
+firebase apps:sdkconfig WEB <appId>          # → las NEXT_PUBLIC_FIREBASE_*
+firebase deploy --only firestore:rules --project mi-divifriends
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+En local, el Admin SDK usa las credenciales de `firebase login`. Al desplegar,
+pon el JSON de una cuenta de servicio en `FIREBASE_SERVICE_ACCOUNT`.
+
+## Cómo reparte
+
+Todo el dinero se mueve en **céntimos enteros**; nunca hay floats en juego.
+
+- **Por unidades** (por defecto): de un `3 × Caña` cada uno coge las suyas. Lo que
+  nadie reclama se queda «sin asignar» y la app lo canta.
+- **Compartido**: la línea se parte a partes iguales entre quienes se apuntan.
+  Un plato de 10 € entre tres son 3,34 / 3,33 / 3,33 — nunca 9,99.
+- **Servicio, impuestos y descuentos**: la diferencia entre el total impreso y la
+  suma de las líneas se reparte en proporción a lo que ha consumido cada uno.
+- **Propina**: se añade sobre el total y se reparte igual.
+- **Liquidación**: quien más debe le paga a quien más adelantó, con el mínimo
+  número de transferencias.
+
+El reparto de céntimos usa el método del resto mayor, así que la suma de las
+partes es **siempre** exactamente el total. `lib/settle.ts` es una función pura
+sin dependencias: corre igual en el servidor y en el navegador, y es lo que
+permite que la pantalla reaccione al instante mientras el servidor confirma.
+
+## Estructura
+
+```
+app/
+  page.tsx                     portada, con el subidor de tickets en el hero
+  nueva/                       alta manual de comanda (flujo del bar)
+  t/[code]/                    la webapp de reparto
+  t/[code]/qr/                 ticket imprimible con el QR
+  api/tickets/...              API REST; toda mutación devuelve el estado entero
+components/                    UI
+lib/
+  settle.ts                    la matemática del reparto (+ settle.test.ts)
+  ocr.ts                       lectura del ticket con Claude
+  store.ts                     operaciones sobre Firestore, todas transaccionales
+  ticketDoc.ts                 forma del documento, compartida servidor/navegador
+  firebaseAdmin.ts             Admin SDK (escrituras)
+  firebaseClient.ts            SDK del navegador (sólo lectura en directo)
+  useTicketSync.ts             onSnapshot + superposición optimista
+firestore.rules                quién puede leer y escribir
+```
+
+## Detalles de implementación
+
+- **Sincronía entre móviles**: un `onSnapshot` sobre el documento de la comanda.
+  Lo que marcas se pinta al instante y **se mantiene superpuesto** hasta que el
+  servidor confirma, así una actualización de otro móvil no borra tu pulsación a
+  media transición. Sin configuración pública de Firebase cae a sondeo de 3 s.
+- **Identidad**: quién eres se guarda en `localStorage` por comanda. Sin cuentas
+  ni registro. Si te borran de la mesa, la app se da cuenta y te lo pregunta otra vez.
+- **Fotos**: el navegador reescala a 2000 px y reescribe a JPEG antes de subir, lo
+  que además convierte el HEIC del iPhone.
+
+## Lo que falta para producción
+
+- Los códigos de comanda no caducan ni se limpian; conviene una función
+  programada que borre los documentos con más de X días.
+- Cualquiera con el código puede editar la comanda. Suficiente para una mesa,
+  insuficiente si se expone a internet abierto.
+- Sin App Check, la clave pública del navegador permite leer cualquier comanda a
+  quien adivine un código de 6 caracteres. Es el mismo riesgo que dejarse el
+  ticket en la mesa, pero conviene saberlo.

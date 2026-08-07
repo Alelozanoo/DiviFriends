@@ -1,0 +1,26 @@
+rules_version = '2';
+
+// El navegador SOLO lee. Todas las escrituras van por la API de Next, que usa
+// el Admin SDK y se salta estas reglas: así la validación (no reclamar más
+// unidades de las que hay, un único pagador, los topes de tamaño) vive en un
+// sitio donde nadie puede saltársela desde la consola del móvil.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /tickets/{code} {
+      // Quien tiene el código de la comanda puede verla; es lo mismo que
+      // asume el QR impreso en el ticket. No hay datos personales más allá
+      // del nombre de pila que cada uno escribe.
+      allow get: if true;
+
+      // Listar la colección expondría todas las comandas del sistema.
+      allow list: if false;
+
+      allow create, update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

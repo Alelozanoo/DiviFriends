@@ -1,0 +1,45 @@
+# Configuración del backend de Firebase App Hosting.
+# Se lee en cada despliegue; los cambios viajan con el commit.
+
+runConfig:
+  # Una comanda se reparte en minutos y luego la mesa se va: no tiene sentido
+  # pagar instancias en caliente. El arranque en frío es asumible aquí.
+  minInstances: 0
+  maxInstances: 3
+  concurrency: 80
+  cpu: 1
+  memoryMiB: 512
+
+env:
+  # --- Configuración pública de Firebase -----------------------------------
+  # Acaba en el bundle del navegador a propósito: sólo permite *leer* comandas,
+  # y firestore.rules prohíbe escribir desde el cliente. No es un secreto.
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: AIzaSyCyPf42j4BKn82uCGPT2R2AasbdXb-m0oA
+    availability: [BUILD, RUNTIME]
+
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: divifriends-2964.firebaseapp.com
+    availability: [BUILD, RUNTIME]
+
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: divifriends-2964
+    availability: [BUILD, RUNTIME]
+
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: 1:42731396217:web:14373e26ee2dceddab08a8
+    availability: [BUILD, RUNTIME]
+
+  # Para el Admin SDK. Las credenciales no hacen falta: App Hosting ejecuta el
+  # backend con una cuenta de servicio que ya tiene acceso a Firestore, y
+  # applicationDefault() la coge sola.
+  - variable: FIREBASE_PROJECT_ID
+    value: divifriends-2964
+    availability: [RUNTIME]
+
+  # --- Secretos -------------------------------------------------------------
+  # Vive en Secret Manager, nunca en el repo. Sólo en RUNTIME: la clave no debe
+  # quedar incrustada en el bundle compilado.
+  - variable: ANTHROPIC_API_KEY
+    secret: anthropic-api-key
+    availability: [RUNTIME]
