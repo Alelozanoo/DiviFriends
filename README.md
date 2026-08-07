@@ -149,3 +149,21 @@ firestore.rules                quién puede leer y escribir
 - Sin App Check, la clave pública del navegador permite leer cualquier comanda a
   quien adivine un código de 6 caracteres. Es el mismo riesgo que dejarse el
   ticket en la mesa, pero conviene saberlo.
+
+### Estado del despliegue
+
+- Proyecto Firebase: `divifriends-2964` (facturación Blaze activa)
+- Firestore en `eur3` con las reglas publicadas
+- Secreto `anthropic-api-key` creado en Secret Manager
+- Repo: https://github.com/Alelozanoo/DiviFriends
+
+Falta crear el backend de App Hosting, que requiere autorizar GitHub desde el
+navegador (una sola vez):
+
+```bash
+firebase apphosting:backends:create --project divifriends-2964
+# región: europe-west4 · repo: Alelozanoo/DiviFriends · rama: main · nombre: divifriends
+
+firebase apphosting:secrets:grantaccess anthropic-api-key \
+  --project divifriends-2964 --backend divifriends
+```
