@@ -36,7 +36,10 @@ const PHASE_COPY: Record<string, string> = {
 
 export default function TicketUploader() {
   const router = useRouter();
-  const inputRef = useRef<HTMLInputElement>(null);
+  // Dos entradas separadas: `capture` abre la cámara directamente, y sin él el
+  // sistema enseña el carrete. Con una sola no se puede tener ambas cosas.
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -88,15 +91,10 @@ export default function TicketUploader() {
           dragging ? "border-amber bg-amber/5" : "border-line"
         }`}
       >
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => inputRef.current?.click()}
-          className="group flex w-full flex-col items-center gap-4 rounded-2xl bg-paper-2 px-6 py-10 text-center transition-colors hover:bg-paper-3 disabled:cursor-wait sm:py-14"
-        >
+        <div className="flex w-full flex-col items-center gap-4 rounded-2xl bg-paper-2 px-6 py-8 text-center sm:py-10">
           <span
-            className={`grid h-16 w-16 place-items-center rounded-2xl bg-amber text-paper transition-transform ${
-              busy ? "animate-pulse" : "group-hover:-rotate-6 group-hover:scale-105"
+            className={`grid h-16 w-16 place-items-center rounded-2xl bg-amber text-paper ${
+              busy ? "animate-pulse" : ""
             }`}
             aria-hidden
           >
@@ -110,15 +108,45 @@ export default function TicketUploader() {
           <span className="max-w-sm text-sm text-ink-soft">
             {busy
               ? "Tardo unos segundos en reconocer cada línea."
-              : "Hazle una foto al papel. Reconozco los platos, los precios y el total."}
+              : "Reconozco los platos, los precios y el total."}
           </span>
-        </button>
+
+          <div className="mt-1 flex w-full max-w-xs flex-col gap-2 sm:flex-row">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => cameraRef.current?.click()}
+              className="flex-1 rounded-xl bg-amber px-4 py-3 font-semibold text-paper transition-colors hover:bg-ink disabled:cursor-wait disabled:opacity-60"
+            >
+              Hacer foto
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => galleryRef.current?.click()}
+              className="flex-1 rounded-xl border border-line px-4 py-3 font-semibold text-ink-soft transition-colors hover:border-amber hover:text-amber disabled:cursor-wait disabled:opacity-60"
+            >
+              De la galería
+            </button>
+          </div>
+        </div>
 
         <input
-          ref={inputRef}
+          ref={cameraRef}
           type="file"
           accept="image/*"
           capture="environment"
+          className="sr-only"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            event.target.value = "";
+            if (file) void upload(file);
+          }}
+        />
+        <input
+          ref={galleryRef}
+          type="file"
+          accept="image/*"
           className="sr-only"
           onChange={(event) => {
             const file = event.target.files?.[0];

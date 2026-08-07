@@ -164,6 +164,7 @@ export default function SplitApp({ initial }: { initial: TicketState }) {
                   meId={meId}
                   currency={state.ticket.currency}
                   onToggle={() => toggle(item.id)}
+                  onSetShares={(shares) => claim(item.id, shares)}
                   onOpenSplit={() => setSplitting(item.id)}
                 />
               ))}

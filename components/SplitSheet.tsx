@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { money } from "@/lib/format";
+import { LIMITS } from "@/lib/ticketDoc";
 import type { Item, ItemBreakdown } from "@/lib/types";
 
 /**
@@ -21,8 +23,12 @@ export default function SplitSheet({
   onPick: (into: number) => void;
   onClose: () => void;
 }) {
+  const [custom, setCustom] = useState("");
   const taken = breakdown.shares.length;
-  const options = [2, 3, 4, 5, 6, 8];
+  const options = [2, 3, 4, 5, 6, 7];
+
+  const typed = Number.parseInt(custom, 10);
+  const customValid = Number.isFinite(typed) && typed >= Math.max(2, taken) && typed <= LIMITS.splitInto;
 
   return (
     <div
@@ -62,6 +68,31 @@ export default function SplitSheet({
             );
           })}
         </div>
+
+        {/* Mesas grandes: el menú rápido se queda corto a partir de 7. */}
+        <form
+          className="mt-3 flex gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (customValid) onPick(typed);
+          }}
+        >
+          <input
+            value={custom}
+            onChange={(event) => setCustom(event.target.value.replace(/\D/g, "").slice(0, 2))}
+            inputMode="numeric"
+            placeholder="otro número"
+            aria-label="Entre cuántas personas se reparte"
+            className="tnum min-w-0 flex-1 rounded-xl border border-line bg-paper px-4 py-2.5 text-center focus:border-mint focus:outline-none"
+          />
+          <button
+            type="submit"
+            disabled={!customValid}
+            className="shrink-0 rounded-xl bg-mint px-4 py-2.5 text-sm font-bold text-paper disabled:opacity-30"
+          >
+            {customValid ? money(Math.round(item.totalCents / typed), currency) : "Repartir"}
+          </button>
+        </form>
 
         <button
           type="button"

@@ -11,14 +11,17 @@ interface Props {
   meId: string | null;
   currency: string;
   onToggle: () => void;
+  onSetShares: (shares: number) => void;
   onOpenSplit: () => void;
 }
 
 /**
- * Cada línea de la comanda es una burbuja que se toca entera. Sin steppers ni
- * conmutadores: tocas si te lo has comido, vuelves a tocar si te has colado.
- * Lo que necesitas saber antes de tocar —cuánto te va a costar— es lo más
- * grande de la burbuja.
+ * Cada línea de la comanda es una burbuja que se toca entera: tocas si te lo
+ * has comido, vuelves a tocar si te has colado. Lo que necesitas saber antes
+ * de tocar —cuánto te va a costar— es lo más grande de la burbuja.
+ *
+ * El contador de partes sólo aparece cuando ya es tuya y hay más de una: así
+ * la burbuja está limpia mientras decides, y detallada cuando ajustas.
  */
 export default function ItemBubble({
   item,
@@ -27,6 +30,7 @@ export default function ItemBubble({
   meId,
   currency,
   onToggle,
+  onSetShares,
   onOpenSplit,
 }: Props) {
   const mine = breakdown.shares.find((s) => s.participantId === meId);
@@ -36,6 +40,9 @@ export default function ItemBubble({
   const isMine = Boolean(mine);
   const full = breakdown.freeShares === 0;
   const sharedNow = breakdown.shares.length > 1 || item.splitInto > item.qty;
+  // De un «4 × Caña» puedes haberte bebido dos: con una línea de varias partes
+  // ya cogida, el contador deja ajustar cuántas son tuyas sin salir de aquí.
+  const canStep = isMine && item.splitInto > 1;
 
   return (
     <div
@@ -91,18 +98,40 @@ export default function ItemBubble({
         </span>
       </button>
 
-      {/* quién lo lleva + partir en N */}
+      {/* cuántas son tuyas · quién más lo lleva · partir en N */}
       <div className="flex items-center gap-1 px-3 pb-2.5">
-        <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
-          {mine && <Avatar name="tú" color={byId.get(meId!)?.color ?? "#e8b04b"} size={22} />}
-          {others.slice(0, 3).map((share) => {
+        {canStep ? (
+          <span className="flex shrink-0 items-center rounded-lg bg-paper-3">
+            <Step
+              label={`Quitar una parte de ${item.name}`}
+              onClick={() => onSetShares(mine!.shares - 1)}
+            >
+              −
+            </Step>
+            <span className="tnum w-5 text-center text-sm font-bold">{mine!.shares}</span>
+            <Step
+              label={`Añadir una parte de ${item.name}`}
+              disabled={breakdown.freeShares === 0}
+              onClick={() => onSetShares(mine!.shares + 1)}
+            >
+              +
+            </Step>
+          </span>
+        ) : (
+          mine && <Avatar name="tú" color={byId.get(meId!)?.color ?? "#e8b04b"} size={22} />
+        )}
+
+        <span className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
+          {others.slice(0, canStep ? 2 : 3).map((share) => {
             const person = byId.get(share.participantId);
             return person ? (
-              <Avatar key={share.participantId} name={person.name} color={person.color} size={22} />
+              <Avatar key={share.participantId} name={person.name} color={person.color} size={20} />
             ) : null;
           })}
-          {others.length > 3 && (
-            <span className="tnum text-[0.7rem] text-ink-faint">+{others.length - 3}</span>
+          {others.length > (canStep ? 2 : 3) && (
+            <span className="tnum text-[0.7rem] text-ink-faint">
+              +{others.length - (canStep ? 2 : 3)}
+            </span>
           )}
         </span>
 
@@ -110,11 +139,35 @@ export default function ItemBubble({
           type="button"
           onClick={onOpenSplit}
           aria-label={`Compartir ${item.name} entre varios`}
-          className="shrink-0 rounded-lg px-2 py-1 text-sm font-bold text-ink-faint transition-colors hover:bg-paper-3 hover:text-mint active:bg-paper-3"
+          className="shrink-0 rounded-lg px-1.5 py-1 text-sm font-bold text-ink-faint transition-colors hover:bg-paper-3 hover:text-mint active:bg-paper-3"
         >
           ÷
         </button>
       </div>
     </div>
+  );
+}
+
+function Step({
+  children,
+  label,
+  disabled,
+  onClick,
+}: {
+  children: React.ReactNode;
+  label: string;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      disabled={disabled}
+      onClick={onClick}
+      className="grid h-7 w-6 place-items-center text-base font-bold transition-colors hover:text-amber disabled:opacity-25"
+    >
+      {children}
+    </button>
   );
 }
