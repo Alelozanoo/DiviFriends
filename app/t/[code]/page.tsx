@@ -11,10 +11,11 @@ type Props = { params: Promise<{ code: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { code } = await params;
   const state = await getTicketState(code.toUpperCase());
+  // La marca la pone la plantilla del layout.
   return {
     title: state?.ticket.place
       ? `${state.ticket.place} · repartir la cuenta`
-      : "Repartir la cuenta · DiviFriends",
+      : "Repartir la cuenta",
   };
 }
 

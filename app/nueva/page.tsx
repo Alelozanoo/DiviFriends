@@ -2,8 +2,9 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import ManualTicketForm from "@/components/ManualTicketForm";
 
+// La marca la pone la plantilla del layout.
 export const metadata: Metadata = {
-  title: "Nueva comanda · DiviFriends",
+  title: "Nueva comanda",
 };
 
 type Props = { searchParams: Promise<{ demo?: string }> };

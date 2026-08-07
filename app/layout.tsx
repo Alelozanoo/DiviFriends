@@ -16,7 +16,12 @@ const figure = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "DiviFriends · reparte la cuenta escaneando el ticket",
+  title: {
+    default: "DiviFriends Reparte la cuenta escaneando el ticket",
+    // Lo que ponga cada página, y detrás la marca. Sin esto la pestaña de la
+    // comanda decía sólo el nombre del bar y no se sabía de qué app era.
+    template: "%s · DiviFriends",
+  },
   description:
     "Escanea el QR del ticket, marca lo que has comido y sabe al instante cuánto le debes a quien pagó.",
 };
