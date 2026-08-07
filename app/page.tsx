@@ -34,9 +34,9 @@ export default function Home() {
 
         <div className="mx-auto flex max-w-6xl flex-col gap-14 px-5 pb-20 pt-8 lg:flex-row lg:items-center lg:gap-16 lg:pt-16">
           <div className="flex-1">
-            <Link href="/" className="inline-flex items-center gap-2 lg:gap-3">
-              <Logo size={56} priority className="h-9 w-9 lg:h-14 lg:w-14" />
-              <span className="text-lg font-bold tracking-tight lg:text-2xl">DiviFriends</span>
+            <Link href="/" className="inline-flex items-center gap-2.5 lg:gap-4">
+              <Logo size={128} priority className="h-11 w-11 lg:h-20 lg:w-20" />
+              <span className="text-xl font-bold tracking-tight lg:text-3xl">DiviFriends</span>
             </Link>
 
             <h1 className="mt-9 text-[2.6rem] font-bold leading-[1.02] tracking-[-0.03em] sm:text-6xl">

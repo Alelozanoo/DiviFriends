@@ -129,7 +129,7 @@ export default function SplitApp({
       <header className="sticky top-0 z-20 border-b border-line bg-paper/95 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center gap-2 px-3 py-2.5">
           <Link href="/" aria-label="DiviFriends" className="shrink-0">
-            <Logo size={30} />
+            <Logo size={64} className="h-8 w-8" />
           </Link>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-bold leading-tight">
