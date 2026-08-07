@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Logo from "@/components/Logo";
 import TicketUploader from "@/components/TicketUploader";
 import JoinByCode from "@/components/JoinByCode";
 
@@ -34,9 +35,7 @@ export default function Home() {
         <div className="mx-auto flex max-w-6xl flex-col gap-14 px-5 pb-20 pt-8 lg:flex-row lg:items-center lg:gap-16 lg:pt-16">
           <div className="flex-1">
             <Link href="/" className="inline-flex items-center gap-2">
-              <span className="grid h-8 w-8 place-items-center rounded-lg bg-amber text-paper">
-                <SplitGlyph />
-              </span>
+              <Logo size={34} priority />
               <span className="text-lg font-bold tracking-tight">DiviFriends</span>
             </Link>
 
@@ -136,14 +135,6 @@ function Metric({ value, label }: { value: string; label: string }) {
       <dt className="tnum text-2xl font-bold text-ink">{value}</dt>
       <dd className="stamp mt-1 text-ink-faint">{label}</dd>
     </div>
-  );
-}
-
-function SplitGlyph() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M2 8h12M6 3.5 2.5 8 6 12.5M10 3.5 13.5 8 10 12.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
   );
 }
 

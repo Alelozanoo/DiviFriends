@@ -10,6 +10,7 @@ import type { Participant, TicketState } from "@/lib/types";
 import AccountsPanel from "./AccountsPanel";
 import ItemBubble from "./ItemBubble";
 import ItemSheet from "./ItemSheet";
+import Logo from "./Logo";
 import TableSheet from "./TableSheet";
 import { Avatar, Progress, Sheet } from "./ui";
 
@@ -128,11 +129,7 @@ export default function SplitApp({
       <header className="sticky top-0 z-20 border-b border-line bg-paper/95 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center gap-2 px-3 py-2.5">
           <Link href="/" aria-label="DiviFriends" className="shrink-0">
-            <span className="grid h-7 w-7 place-items-center rounded-lg bg-amber text-paper">
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M2 8h12M6 3.5 2.5 8 6 12.5M10 3.5 13.5 8 10 12.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </span>
+            <Logo size={30} />
           </Link>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-bold leading-tight">
