@@ -65,8 +65,29 @@ firebase apps:sdkconfig WEB <appId>          # → las NEXT_PUBLIC_FIREBASE_*
 firebase deploy --only firestore:rules --project mi-divifriends
 ```
 
-En local, el Admin SDK usa las credenciales de `firebase login`. Al desplegar,
-pon el JSON de una cuenta de servicio en `FIREBASE_SERVICE_ACCOUNT`.
+En local, el Admin SDK usa las credenciales de `firebase login`. En App Hosting
+no hace falta configurar nada: el backend corre con una cuenta de servicio que
+ya tiene acceso a Firestore y `applicationDefault()` la coge sola.
+
+## Desplegar (Firebase App Hosting)
+
+La configuración del backend vive en [`apphosting.yaml`](apphosting.yaml) y viaja
+con el commit. La clave de Anthropic **no** está ahí: vive en Secret Manager
+(`anthropic-api-key`) y se inyecta sólo en tiempo de ejecución.
+
+```bash
+# 1. Sube el repo a GitHub
+git remote add origin git@github.com:<usuario>/divifriends.git
+git push -u origin main
+
+# 2. Crea el backend (abre el navegador para autorizar GitHub la primera vez)
+firebase apphosting:backends:create --project divifriends-2964 --location europe-west4
+
+# 3. Da acceso al secreto a la cuenta de servicio del backend
+firebase apphosting:secrets:grantaccess anthropic-api-key --project divifriends-2964 --backend <nombre>
+```
+
+A partir de ahí, cada push a la rama conectada despliega solo.
 
 ## Cómo reparte
 
