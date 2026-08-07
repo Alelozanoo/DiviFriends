@@ -11,6 +11,7 @@ import AccountsPanel from "./AccountsPanel";
 import ItemBubble from "./ItemBubble";
 import ItemSheet from "./ItemSheet";
 import Logo from "./Logo";
+import TicketSheet from "./TicketSheet";
 import TableSheet from "./TableSheet";
 import { Avatar, Progress, Sheet } from "./ui";
 
@@ -29,6 +30,7 @@ export default function SplitApp({
   const [editing, setEditing] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [viewing, setViewing] = useState(false);
   // null = decide la app (abierto si no te has unido); true/false = lo has decidido tú.
   const [joinOverride, setJoinOverride] = useState<boolean | null>(null);
 
@@ -173,11 +175,28 @@ export default function SplitApp({
 
         {tab === "comanda" ? (
           <div className="pb-36">
-            <p className="stamp mb-2.5 px-1 text-ink-faint">
-              {left > 0
-                ? `Toca lo que has comido · faltan ${money(left, state.ticket.currency)}`
-                : "Todo repartido"}
-            </p>
+            <div className="mb-2.5 flex items-center justify-between gap-2 px-1">
+              {/*
+                Las dos cosas juntas no caben en 390 px. La instrucción sólo
+                sirve la primera vez, así que en cuanto estás dentro deja sitio
+                a lo único que cambia: cuánto queda por repartir.
+              */}
+              <p className="stamp min-w-0 truncate text-ink-faint">
+                {left <= 0
+                  ? "Todo repartido"
+                  : meId
+                    ? `Faltan ${money(left, state.ticket.currency)}`
+                    : "Toca lo que has comido"}
+              </p>
+              {/* A mitad de reparto siempre sale «¿qué ponía el ticket?». */}
+              <button
+                type="button"
+                onClick={() => setViewing(true)}
+                className="stamp shrink-0 rounded-lg border border-line px-2 py-1 text-ink-faint transition-colors hover:border-amber hover:text-amber active:bg-paper-2"
+              >
+                Ver ticket
+              </button>
+            </div>
 
             {/* dos columnas de burbujas */}
             <div className="grid grid-cols-2 gap-2.5">
@@ -289,6 +308,8 @@ export default function SplitApp({
           }}
         />
       )}
+
+      {viewing && <TicketSheet state={state} onClose={() => setViewing(false)} />}
 
       {sharing && (
         <TableSheet

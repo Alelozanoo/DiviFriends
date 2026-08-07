@@ -27,15 +27,11 @@ export interface Item {
    *   paella entre 4   -> splitInto 4, tu parte vale 1/4 desde el primer toque,
    *                       sin esperar a que los otros tres se apunten
    *
-   * Crece solo cuando alguien toca algo que ya no tiene partes libres: así
-   * dos personas sobre el mismo plato lo comparten sin tener que decirlo.
+   * Sólo cambia cuando alguien lo pide con el ÷. Antes crecía solo para hacer
+   * hueco a quien tocaba una línea llena, y eso cobraba de más sin avisar.
    */
   splitInto: number;
-  /**
-   * true cuando el reparto lo pidió una persona («entre 4»), false cuando
-   * creció solo porque alguien más tocó la línea. La diferencia importa al
-   * soltar: lo automático se deshace solo, lo que pediste tú se respeta.
-   */
+  /** true cuando el reparto lo pidió una persona con el ÷ («entre 4»). */
   manualSplit: boolean;
   position: number;
 }
