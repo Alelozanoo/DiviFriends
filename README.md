@@ -7,9 +7,10 @@ ha comido y la app dice al momento cuánto le debe a quien pagó.
 ## Cómo se usa
 
 **Como comensal:** subes una foto del ticket en la portada (o entras con el código
-de 6 caracteres). Escribes tu nombre y tocas los platos que son tuyos. Las líneas
-totalmente repartidas se van plegando en «Ya repartido». En la pestaña *Cuentas*
-aparece lo que le debe cada uno al pagador.
+de 6 caracteres). Escribes tu nombre y tocas las burbujas de lo que te has comido;
+lo que aún tiene sitio se marca en verde. Si algo va a medias, el «÷» te deja
+decir entre cuántos, y tu parte queda fijada al momento. Abajo siempre ves lo
+tuyo, y en *Cuentas* quién le debe cuánto al que pagó.
 
 **Como bar:** creas la comanda en `/nueva` (a mano o desde la foto) e imprimes
 `/t/CÓDIGO/qr`, que es el ticket con el QR listo para papel de 80 mm.
