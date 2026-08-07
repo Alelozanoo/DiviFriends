@@ -93,10 +93,20 @@ A partir de ahí, cada push a la rama conectada despliega solo.
 
 Todo el dinero se mueve en **céntimos enteros**; nunca hay floats en juego.
 
-- **Por unidades** (por defecto): de un `3 × Caña` cada uno coge las suyas. Lo que
-  nadie reclama se queda «sin asignar» y la app lo canta.
-- **Compartido**: la línea se parte a partes iguales entre quienes se apuntan.
-  Un plato de 10 € entre tres son 3,34 / 3,33 / 3,33 — nunca 9,99.
+Cada línea tiene un único número, `splitInto`: en cuántas partes se reparte.
+Con eso solo se describen todos los casos, sin modos ni conmutadores.
+
+- **3 cañas** → `splitInto` 3, cada uno toca la suya. Lo que nadie coge queda
+  «sin asignar» y la app lo canta.
+- **Una paella** → `splitInto` 1, se la queda quien la pida.
+- **«Entre 4»** → `splitInto` 4: tu parte vale 1/4 **desde el primer toque**,
+  sin esperar a que los otros tres se apunten. Ellos van entrando después.
+- **Auto-compartir** → si tocas algo que ya no tiene partes libres, la línea se
+  parte en una más en vez de rechazarte. Dos personas sobre la misma paella la
+  comparten al 50 % sin pulsar ningún botón de «compartir».
+- Al soltar, lo que creció solo se encoge solo; un «entre 4» pedido a mano se
+  respeta aunque la gente entre y salga.
+- El reparto siempre cuadra: 10 € entre tres son 3,34 / 3,33 / 3,33, nunca 9,99.
 - **Servicio, impuestos y descuentos**: la diferencia entre el total impreso y la
   suma de las líneas se reparte en proporción a lo que ha consumido cada uno.
 - **Propina**: se añade sobre el total y se reparte igual.
@@ -120,12 +130,16 @@ app/
 components/                    UI
 lib/
   settle.ts                    la matemática del reparto (+ settle.test.ts)
+  claimRules.ts                qué pasa al tocar una línea (+ claim.test.ts);
+                               réplica exacta de setClaim() en el navegador
   ocr.ts                       lectura del ticket con Claude
   store.ts                     operaciones sobre Firestore, todas transaccionales
   ticketDoc.ts                 forma del documento, compartida servidor/navegador
   firebaseAdmin.ts             Admin SDK (escrituras)
   firebaseClient.ts            SDK del navegador (sólo lectura en directo)
   useTicketSync.ts             onSnapshot + superposición optimista
+components/ItemBubble.tsx      la burbuja que se toca
+components/SplitSheet.tsx      el «÷ entre cuántos va»
 firestore.rules                quién puede leer y escribir
 ```
 

@@ -35,60 +35,36 @@ export function splitCents(total: number, weights: number[]): number[] {
   return out.map((v) => v * sign);
 }
 
+/**
+ * Un solo camino para todos los casos: la línea se parte en `splitInto` partes
+ * y cada uno paga las que se ha quedado. Las que nadie coge se quedan sin
+ * asignar, que es justo lo que la pantalla necesita cantar.
+ */
 function breakdownForItem(item: Item, claims: Claim[]): ItemBreakdown {
-  const mine = claims.filter((c) => c.itemId === item.id && c.units > 0);
+  const mine = claims.filter((c) => c.itemId === item.id && c.shares > 0);
+  const splitInto = Math.max(1, item.splitInto);
 
-  if (item.splitMode === "shared") {
-    // Compartido: se parte a partes iguales entre quienes se apuntan.
-    if (mine.length === 0) {
-      return {
-        itemId: item.id,
-        claimedUnits: 0,
-        freeUnits: item.qty,
-        unassignedCents: item.totalCents,
-        shares: [],
-        settled: false,
-      };
-    }
-    const cents = splitCents(
-      item.totalCents,
-      mine.map(() => 1),
-    );
-    return {
-      itemId: item.id,
-      claimedUnits: item.qty,
-      freeUnits: 0,
-      unassignedCents: 0,
-      shares: mine.map((c, i) => ({
-        participantId: c.participantId,
-        units: item.qty / mine.length,
-        cents: cents[i],
-      })),
-      settled: true,
-    };
-  }
-
-  // Por unidades: cada uno se lleva las que se comió; el resto queda libre.
-  const claimedUnits = Math.min(
-    item.qty,
-    mine.reduce((a, c) => a + c.units, 0),
+  const takenShares = Math.min(
+    splitInto,
+    mine.reduce((a, c) => a + c.shares, 0),
   );
-  const freeUnits = Math.max(0, item.qty - claimedUnits);
-  const weights = [...mine.map((c) => c.units), freeUnits];
+  const freeShares = Math.max(0, splitInto - takenShares);
+
+  const weights = [...mine.map((c) => c.shares), freeShares];
   const cents = splitCents(item.totalCents, weights);
-  const unassignedCents = cents[cents.length - 1];
 
   return {
     itemId: item.id,
-    claimedUnits,
-    freeUnits,
-    unassignedCents,
+    takenShares,
+    freeShares,
+    unassignedCents: cents[cents.length - 1],
+    perShareCents: Math.round(item.totalCents / splitInto),
     shares: mine.map((c, i) => ({
       participantId: c.participantId,
-      units: c.units,
+      shares: c.shares,
       cents: cents[i],
     })),
-    settled: freeUnits <= 0,
+    settled: freeShares === 0,
   };
 }
 

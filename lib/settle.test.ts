@@ -11,7 +11,8 @@ function item(over: Partial<Item> & Pick<Item, "id" | "totalCents">): Item {
     name: over.id,
     qty: 1,
     unitCents: over.totalCents,
-    splitMode: "units",
+    splitInto: over.qty ?? 1,
+    manualSplit: false,
     position: 0,
     ...over,
   };
@@ -57,7 +58,7 @@ test("un plato de una unidad va entero a quien lo reclama", () => {
   const s = state(
     [item({ id: "i1", totalCents: 1200 })],
     [person("a"), person("b")],
-    [{ itemId: "i1", participantId: "a", units: 1 }],
+    [{ itemId: "i1", participantId: "a", shares: 1 }],
     1200,
   );
   const out = computeSettlement(s);
@@ -69,12 +70,12 @@ test("un plato de una unidad va entero a quien lo reclama", () => {
 
 test("un plato compartido se parte a partes iguales aunque no sea divisible", () => {
   const s = state(
-    [item({ id: "i1", totalCents: 1000, splitMode: "shared" })],
+    [item({ id: "i1", totalCents: 1000, splitInto: 3 })],
     [person("a"), person("b"), person("c")],
     [
-      { itemId: "i1", participantId: "a", units: 1 },
-      { itemId: "i1", participantId: "b", units: 1 },
-      { itemId: "i1", participantId: "c", units: 1 },
+      { itemId: "i1", participantId: "a", shares: 1 },
+      { itemId: "i1", participantId: "b", shares: 1 },
+      { itemId: "i1", participantId: "c", shares: 1 },
     ],
     1000,
   );
@@ -89,13 +90,55 @@ test("las unidades sin reclamar se quedan sin asignar", () => {
   const s = state(
     [item({ id: "i1", totalCents: 900, qty: 3, unitCents: 300 })],
     [person("a")],
-    [{ itemId: "i1", participantId: "a", units: 1 }],
+    [{ itemId: "i1", participantId: "a", shares: 1 }],
     900,
   );
   const out = computeSettlement(s);
   assert.equal(out.byParticipant[0].owesCents, 300);
   assert.equal(out.unassignedCents, 600);
   assert.equal(out.complete, false);
+});
+
+test("«compartir entre 4» fija tu parte sin esperar a que se apunte nadie", () => {
+  // Lo que antes obligaba a esperar: ahora tocas, dices «entre 4» y ya sabes
+  // que pagas 5 € de los 20, aunque los otros tres tarden en apuntarse.
+  const s = state(
+    [item({ id: "paella", totalCents: 2000, splitInto: 4 })],
+    [person("a"), person("b")],
+    [{ itemId: "paella", participantId: "a", shares: 1 }],
+    2000,
+  );
+  const out = computeSettlement(s);
+  assert.equal(out.byParticipant[0].owesCents, 500);
+  assert.equal(out.byItem.paella.freeShares, 3);
+  assert.equal(out.byItem.paella.perShareCents, 500);
+  assert.equal(out.unassignedCents, 1500);
+  assert.equal(out.complete, false);
+
+  // Y cuando el segundo se apunta, su parte es la misma: nadie recalcula nada.
+  const withB = computeSettlement({
+    ...s,
+    claims: [...s.claims, { itemId: "paella", participantId: "b", shares: 1 }],
+  });
+  assert.equal(withB.byParticipant[0].owesCents, 500);
+  assert.equal(withB.byParticipant[1].owesCents, 500);
+  assert.equal(withB.unassignedCents, 1000);
+});
+
+test("varias partes de la misma línea suman para el mismo comensal", () => {
+  const s = state(
+    [item({ id: "cañas", totalCents: 750, qty: 3, unitCents: 250 })],
+    [person("a"), person("b")],
+    [
+      { itemId: "cañas", participantId: "a", shares: 2 },
+      { itemId: "cañas", participantId: "b", shares: 1 },
+    ],
+    750,
+  );
+  const out = computeSettlement(s);
+  assert.equal(out.byParticipant[0].owesCents, 500);
+  assert.equal(out.byParticipant[1].owesCents, 250);
+  assert.equal(out.complete, true);
 });
 
 test("el servicio del ticket se reparte en proporción a lo consumido", () => {
@@ -107,8 +150,8 @@ test("el servicio del ticket se reparte en proporción a lo consumido", () => {
     ],
     [person("a"), person("b")],
     [
-      { itemId: "i1", participantId: "a", units: 1 },
-      { itemId: "i2", participantId: "b", units: 1 },
+      { itemId: "i1", participantId: "a", shares: 1 },
+      { itemId: "i2", participantId: "b", shares: 1 },
     ],
     11000,
   );
@@ -123,7 +166,7 @@ test("la propina se suma al total y se reparte igual", () => {
   const s = state(
     [item({ id: "i1", totalCents: 1000 })],
     [person("a")],
-    [{ itemId: "i1", participantId: "a", units: 1 }],
+    [{ itemId: "i1", participantId: "a", shares: 1 }],
     1000,
     200,
   );
@@ -137,8 +180,8 @@ test("quien pagó de más queda con saldo a favor y recibe las transferencias", 
     [item({ id: "i1", totalCents: 3000 }), item({ id: "i2", totalCents: 1000 })],
     [person("pagador", { isPayer: true, paidCents: 4000 }), person("otro")],
     [
-      { itemId: "i1", participantId: "pagador", units: 1 },
-      { itemId: "i2", participantId: "otro", units: 1 },
+      { itemId: "i1", participantId: "pagador", shares: 1 },
+      { itemId: "i2", participantId: "otro", shares: 1 },
     ],
     4000,
   );
@@ -157,7 +200,7 @@ test("detecta que se ha cobrado de más", () => {
   const s = state(
     [item({ id: "i1", totalCents: 2000 })],
     [person("a", { paidCents: 2500 })],
-    [{ itemId: "i1", participantId: "a", units: 1 }],
+    [{ itemId: "i1", participantId: "a", shares: 1 }],
     2000,
   );
   assert.equal(computeSettlement(s).overpaidCents, 500);
@@ -168,15 +211,15 @@ test("las transferencias saldan exactamente todos los balances", () => {
     [
       item({ id: "i1", totalCents: 1733 }),
       item({ id: "i2", totalCents: 999 }),
-      item({ id: "i3", totalCents: 2101, splitMode: "shared" }),
+      item({ id: "i3", totalCents: 2101, splitInto: 3 }),
     ],
     [person("a", { paidCents: 4833 }), person("b"), person("c")],
     [
-      { itemId: "i1", participantId: "a", units: 1 },
-      { itemId: "i2", participantId: "b", units: 1 },
-      { itemId: "i3", participantId: "a", units: 1 },
-      { itemId: "i3", participantId: "b", units: 1 },
-      { itemId: "i3", participantId: "c", units: 1 },
+      { itemId: "i1", participantId: "a", shares: 1 },
+      { itemId: "i2", participantId: "b", shares: 1 },
+      { itemId: "i3", participantId: "a", shares: 1 },
+      { itemId: "i3", participantId: "b", shares: 1 },
+      { itemId: "i3", participantId: "c", shares: 1 },
     ],
     4833,
   );

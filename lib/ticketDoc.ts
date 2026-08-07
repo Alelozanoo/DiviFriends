@@ -1,4 +1,4 @@
-import type { Claim, Item, Participant, SplitMode, TicketState } from "./types";
+import type { Claim, Item, Participant, TicketState } from "./types";
 
 /**
  * Una comanda entera vive en un solo documento de Firestore (`tickets/{CODE}`).
@@ -22,7 +22,7 @@ export interface TicketDoc {
   updatedAt: string;
   items: ItemDoc[];
   participants: ParticipantDoc[];
-  claims: Claim[];
+  claims: ClaimDoc[];
 }
 
 export interface ItemDoc {
@@ -31,8 +31,19 @@ export interface ItemDoc {
   qty: number;
   unitCents: number;
   totalCents: number;
-  splitMode: SplitMode;
+  splitInto: number;
+  manualSplit?: boolean;
   position: number;
+  /** @deprecated Comandas anteriores al modelo de partes. */
+  splitMode?: "units" | "shared";
+}
+
+export interface ClaimDoc {
+  itemId: string;
+  participantId: string;
+  shares?: number;
+  /** @deprecated Se llamaba así antes de hablar de partes. */
+  units?: number;
 }
 
 export interface ParticipantDoc {
@@ -44,17 +55,42 @@ export interface ParticipantDoc {
 }
 
 /** Topes para que el documento no pueda crecer sin control. */
-export const LIMITS = { items: 200, participants: 25 } as const;
+export const LIMITS = { items: 200, participants: 25, splitInto: 50 } as const;
 
 export function docToState(code: string, doc: TicketDoc): TicketState {
+  const rawClaims = doc.claims ?? [];
+
   const items: Item[] = [...(doc.items ?? [])]
     .sort((a, b) => a.position - b.position)
-    .map((item) => ({ ...item, ticketId: code }));
+    .map((raw) => ({
+      id: raw.id,
+      ticketId: code,
+      name: raw.name,
+      qty: raw.qty,
+      unitCents: raw.unitCents,
+      totalCents: raw.totalCents,
+      splitInto: resolveSplitInto(raw, rawClaims),
+      manualSplit: raw.manualSplit === true,
+      position: raw.position,
+    }));
 
   const participants: Participant[] = (doc.participants ?? []).map((person) => ({
     ...person,
     ticketId: code,
   }));
+
+  const claims: Claim[] = rawClaims
+    .map((raw) => ({
+      itemId: raw.itemId,
+      participantId: raw.participantId,
+      shares: Math.max(1, Math.round(raw.shares ?? raw.units ?? 1)),
+    }))
+    // Un claim huérfano (plato o comensal ya borrado) descuadraría el reparto.
+    .filter(
+      (claim) =>
+        items.some((i) => i.id === claim.itemId) &&
+        participants.some((p) => p.id === claim.participantId),
+    );
 
   return {
     ticket: {
@@ -68,13 +104,25 @@ export function docToState(code: string, doc: TicketDoc): TicketState {
     },
     items,
     participants,
-    // Un claim huérfano (plato o comensal ya borrado) descuadraría el reparto.
-    claims: (doc.claims ?? []).filter(
-      (claim) =>
-        items.some((i) => i.id === claim.itemId) &&
-        participants.some((p) => p.id === claim.participantId),
-    ),
+    claims,
   };
+}
+
+/**
+ * Comandas creadas con el modelo viejo (`splitMode`) siguen abiertas en móviles
+ * ahora mismo, así que se traducen al vuelo en vez de migrar la base de datos:
+ * «por unidades» era repartir entre las unidades impresas, y «compartido» era
+ * repartir entre quienes se hubieran apuntado.
+ */
+function resolveSplitInto(item: ItemDoc, claims: ClaimDoc[]): number {
+  if (typeof item.splitInto === "number" && item.splitInto >= 1) {
+    return Math.round(item.splitInto);
+  }
+  if (item.splitMode === "shared") {
+    const takers = claims.filter((c) => c.itemId === item.id).length;
+    return Math.max(1, takers);
+  }
+  return Math.max(1, Math.round(item.qty || 1));
 }
 
 export function isTicketDoc(value: unknown): value is TicketDoc {

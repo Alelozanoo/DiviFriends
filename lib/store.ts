@@ -1,7 +1,7 @@
 import { firestore, TICKETS } from "./firebaseAdmin";
-import { docToState, LIMITS, type TicketDoc } from "./ticketDoc";
+import { docToState, LIMITS, type ItemDoc, type TicketDoc } from "./ticketDoc";
 import { colorFor, id, ticketCode } from "./format";
-import type { SplitMode, TicketState } from "./types";
+import type { TicketState } from "./types";
 
 export class StoreError extends Error {
   constructor(
@@ -65,7 +65,9 @@ export async function createTicket(input: NewTicket): Promise<string> {
       qty: item.qty,
       unitCents: item.unitCents,
       totalCents: item.totalCents,
-      splitMode: "units" as SplitMode,
+      // Por defecto se reparte en tantas partes como unidades trae el ticket.
+      splitInto: Math.max(1, Math.round(item.qty || 1)),
+      manualSplit: false,
       position: index,
     })),
     participants: [],
@@ -197,7 +199,8 @@ export function addItem(
       qty,
       unitCents,
       totalCents: Math.round(unitCents * qty),
-      splitMode: "units",
+      splitInto: qty,
+      manualSplit: false,
       position,
     });
   });
@@ -206,7 +209,13 @@ export function addItem(
 export function patchItem(
   code: string,
   itemId: string,
-  patch: { name?: string; qty?: number; unitCents?: number; totalCents?: number; splitMode?: SplitMode },
+  patch: {
+    name?: string;
+    qty?: number;
+    unitCents?: number;
+    totalCents?: number;
+    splitInto?: number;
+  },
 ): Promise<TicketState> {
   return mutate(code, (doc) => {
     const item = doc.items.find((i) => i.id === itemId);
@@ -220,10 +229,8 @@ export function patchItem(
     if (patch.qty !== undefined) {
       item.qty = Math.max(1, patch.qty);
       item.totalCents = Math.round(item.unitCents * item.qty);
-      // Si la cantidad baja, nadie puede seguir reclamando más de lo que hay.
-      for (const claim of doc.claims) {
-        if (claim.itemId === itemId && claim.units > item.qty) claim.units = item.qty;
-      }
+      item.splitInto = item.qty;
+      clampShares(doc, item);
     }
 
     if (patch.unitCents !== undefined) {
@@ -236,12 +243,36 @@ export function patchItem(
       item.unitCents = Math.round(item.totalCents / Math.max(1, item.qty));
     }
 
-    if (patch.splitMode) {
-      item.splitMode = patch.splitMode;
-      // Al pasar a compartido todos cuentan igual; al volver a unidades, una cada uno.
-      for (const claim of doc.claims) if (claim.itemId === itemId) claim.units = 1;
+    if (patch.splitInto !== undefined) {
+      applySplitInto(doc, item, patch.splitInto);
     }
   });
+}
+
+/** Nadie puede tener más partes de las que la línea tiene en total. */
+function clampShares(doc: TicketDoc, item: ItemDoc): void {
+  for (const claim of doc.claims) {
+    const shares = claim.shares ?? claim.units ?? 1;
+    if (claim.itemId === item.id && shares > item.splitInto) {
+      claim.shares = item.splitInto;
+      delete claim.units;
+    }
+  }
+}
+
+function applySplitInto(doc: TicketDoc, item: ItemDoc, requested: number): void {
+  const taken = sharesOn(doc, item.id);
+  // No se puede partir en menos trozos de los que ya hay repartidos: si tres
+  // personas se apuntaron, «entre 2» dejaría a alguien fuera sin avisar.
+  item.splitInto = Math.min(LIMITS.splitInto, Math.max(1, Math.round(requested), taken));
+  // Volver a las unidades del ticket es dejar de compartir a propósito.
+  item.manualSplit = item.splitInto !== Math.max(1, Math.round(item.qty || 1));
+}
+
+function sharesOn(doc: TicketDoc, itemId: string, exceptParticipant?: string): number {
+  return doc.claims
+    .filter((c) => c.itemId === itemId && c.participantId !== exceptParticipant)
+    .reduce((a, c) => a + (c.shares ?? c.units ?? 1), 0);
 }
 
 export function removeItem(code: string, itemId: string): Promise<TicketState> {
@@ -256,14 +287,22 @@ export function removeItem(code: string, itemId: string): Promise<TicketState> {
 /* ------------------------------------------------------------------ claims */
 
 /**
- * Fija cuántas unidades de un plato se lleva un comensal.
- * `units <= 0` le quita el plato. En modo compartido sólo cuenta estar o no estar.
+ * Fija cuántas partes de una línea se lleva un comensal. `shares <= 0` se la quita.
+ *
+ * Si pide más partes de las que quedan libres, la línea se parte en más trozos
+ * en vez de rechazar la petición: es el «si alguien más toca lo tuyo, se
+ * comparte solo». Tocar una paella que ya tiene dueño la deja al 50 %, sin que
+ * nadie tenga que pulsar ningún botón de compartir.
+ *
+ * `splitInto` opcional viene del «compartir entre N», y se aplica antes de
+ * repartir para que la parte del que pulsa quede fijada al momento.
  */
 export function setClaim(
   code: string,
   itemId: string,
   participantId: string,
-  units: number,
+  shares: number,
+  splitInto?: number,
 ): Promise<TicketState> {
   return mutate(code, (doc) => {
     const item = doc.items.find((i) => i.id === itemId);
@@ -272,27 +311,39 @@ export function setClaim(
       throw new StoreError("Ese comensal no está en esta comanda.", 404);
     }
 
-    const others = doc.claims.filter((c) => c.itemId === itemId && c.participantId !== participantId);
-
-    if (units <= 0) {
+    if (shares <= 0) {
       doc.claims = doc.claims.filter(
         (c) => !(c.itemId === itemId && c.participantId === participantId),
       );
+      // Lo que creció solo, se encoge solo: si dos compartían un vino por
+      // auto-compartir y uno se echa atrás, el otro vuelve a pagarlo entero en
+      // vez de dejar media botella sin dueño. Un «entre 4» pedido a mano se
+      // respeta: quien lo dijo sigue queriendo pagar su cuarta parte.
+      if (!item.manualSplit) {
+        item.splitInto = Math.max(1, Math.round(item.qty || 1), sharesOn(doc, itemId));
+      }
       return;
     }
 
-    let granted = units;
-    if (item.splitMode === "shared") {
-      granted = 1;
-    } else {
-      // Nadie puede llevarse más unidades de las que quedan libres.
-      const room = item.qty - others.reduce((a, c) => a + c.units, 0);
-      if (room <= 0) throw new StoreError("Ya no quedan unidades libres de este plato.", 409);
-      granted = Math.min(units, room);
+    if (splitInto !== undefined) applySplitInto(doc, item, splitInto);
+
+    const wanted = Math.max(1, Math.round(shares));
+    const byOthers = sharesOn(doc, itemId, participantId);
+
+    const free = Math.max(0, (item.splitInto ?? item.qty) - byOthers);
+    if (wanted > free) {
+      // Auto-compartir: crecen los trozos, no se rechaza a nadie.
+      item.splitInto = Math.min(LIMITS.splitInto, byOthers + wanted);
     }
+    const granted = Math.min(wanted, item.splitInto - byOthers);
+    if (granted <= 0) throw new StoreError("Esta línea ya no admite más gente.", 409);
 
     const mine = doc.claims.find((c) => c.itemId === itemId && c.participantId === participantId);
-    if (mine) mine.units = granted;
-    else doc.claims.push({ itemId, participantId, units: granted });
+    if (mine) {
+      mine.shares = granted;
+      delete mine.units;
+    } else {
+      doc.claims.push({ itemId, participantId, shares: granted });
+    }
   });
 }

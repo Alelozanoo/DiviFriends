@@ -1,6 +1,5 @@
 import { patchItem, removeItem } from "@/lib/store";
 import { fail, ok } from "@/lib/api";
-import type { SplitMode } from "@/lib/types";
 
 export const runtime = "nodejs";
 
@@ -13,7 +12,7 @@ export async function PATCH(request: Request, { params }: Ctx) {
     qty?: number;
     unitCents?: number;
     totalCents?: number;
-    splitMode?: SplitMode;
+    splitInto?: number;
   };
 
   try {

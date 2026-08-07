@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { clientFirestore } from "./firebaseClient";
 import { docToState, isTicketDoc } from "./ticketDoc";
+import { applyClaim } from "./claimRules";
 import type { TicketState } from "./types";
 
 /** Sólo se usa cuando no hay configuración pública de Firebase. */
@@ -13,7 +14,8 @@ interface PendingClaim {
   token: number;
   itemId: string;
   participantId: string;
-  units: number;
+  shares: number;
+  splitInto?: number;
 }
 
 /**
@@ -84,9 +86,14 @@ export function useTicketSync(code: string, initial: TicketState) {
   const state = useMemo(() => overlay(server, pending), [server, pending]);
 
   /** Pinta el cambio ya y devuelve el testigo con el que confirmarlo o revertirlo. */
-  function beginClaim(itemId: string, participantId: string, units: number): number {
+  function beginClaim(
+    itemId: string,
+    participantId: string,
+    shares: number,
+    splitInto?: number,
+  ): number {
     const token = nextToken.current++;
-    setPending((prev) => [...prev, { token, itemId, participantId, units }]);
+    setPending((prev) => [...prev, { token, itemId, participantId, shares, splitInto }]);
     return token;
   }
 
@@ -113,31 +120,8 @@ function pick(state: TicketState): TicketState {
 function overlay(server: TicketState, pending: PendingClaim[]): TicketState {
   if (pending.length === 0) return server;
   return pending.reduce(
-    (state, entry) => applyClaim(state, entry.itemId, entry.participantId, entry.units),
+    (state, entry) =>
+      applyClaim(state, entry.itemId, entry.participantId, entry.shares, entry.splitInto),
     server,
   );
-}
-
-/** Réplica local de la regla del servidor: nadie coge más unidades de las libres. */
-export function applyClaim(
-  state: TicketState,
-  itemId: string,
-  participantId: string,
-  units: number,
-): TicketState {
-  const item = state.items.find((i) => i.id === itemId);
-  if (!item) return state;
-
-  const rest = state.claims.filter(
-    (c) => !(c.itemId === itemId && c.participantId === participantId),
-  );
-  if (units <= 0) return { ...state, claims: rest };
-
-  const taken = rest
-    .filter((c) => c.itemId === itemId)
-    .reduce((total, c) => total + c.units, 0);
-  const capped = item.splitMode === "shared" ? 1 : Math.min(units, Math.max(0, item.qty - taken));
-  if (capped <= 0) return state;
-
-  return { ...state, claims: [...rest, { itemId, participantId, units: capped }] };
 }
