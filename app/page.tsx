@@ -34,9 +34,9 @@ export default function Home() {
 
         <div className="mx-auto flex max-w-6xl flex-col gap-14 px-5 pb-20 pt-8 lg:flex-row lg:items-center lg:gap-16 lg:pt-16">
           <div className="flex-1">
-            <Link href="/" className="inline-flex items-center gap-2">
-              <Logo size={34} priority />
-              <span className="text-lg font-bold tracking-tight">DiviFriends</span>
+            <Link href="/" className="inline-flex items-center gap-2 lg:gap-3">
+              <Logo size={56} priority className="h-9 w-9 lg:h-14 lg:w-14" />
+              <span className="text-lg font-bold tracking-tight lg:text-2xl">DiviFriends</span>
             </Link>
 
             <h1 className="mt-9 text-[2.6rem] font-bold leading-[1.02] tracking-[-0.03em] sm:text-6xl">
@@ -50,7 +50,12 @@ export default function Home() {
               calculadoras, sin «yo solo tomé la caña», sin nadie poniendo de más.
             </p>
 
-            <dl className="mt-9 flex flex-wrap gap-x-10 gap-y-4">
+            {/*
+              En el móvil esto va justo encima de subir la foto y lo empuja
+              fuera de la pantalla, así que sólo sale donde cabe al lado: en
+              escritorio las dos columnas están una junto a otra y no estorba.
+            */}
+            <dl className="mt-9 hidden flex-wrap gap-x-10 gap-y-4 lg:flex">
               <Metric value="0" label="apps que instalar" />
               <Metric value="1" label="foto o un QR" />
               <Metric value="0,00 €" label="de descuadre" />

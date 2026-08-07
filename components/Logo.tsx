@@ -6,7 +6,17 @@ import Image from "next/image";
  * par de kilobytes. El SVG original está en public/logo.svg, pero son 208 KB
  * de ilustración trazada: a este tamaño no se distingue y no compensa.
  */
-export default function Logo({ size = 32, priority = false }: { size?: number; priority?: boolean }) {
+export default function Logo({
+  size = 32,
+  priority = false,
+  className = "",
+}: {
+  /** Tamaño que se pide al optimizador: el mayor al que se vaya a pintar. */
+  size?: number;
+  priority?: boolean;
+  /** Para escalarlo por CSS, p. ej. más grande a partir de una anchura. */
+  className?: string;
+}) {
   return (
     <Image
       src="/icono-512.png"
@@ -14,7 +24,7 @@ export default function Logo({ size = 32, priority = false }: { size?: number; p
       width={size}
       height={size}
       priority={priority}
-      className="rounded-lg"
+      className={`rounded-lg ${className}`}
     />
   );
 }
