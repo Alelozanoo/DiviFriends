@@ -124,6 +124,8 @@ export async function parseTicketImage(
     throw new OcrError(`La lectura del ticket falló: ${message}`, "api_error");
   }
 
+  logCost(response.usage);
+
   if (response.stop_reason === "refusal") {
     throw new OcrError("No se ha podido procesar esta imagen.", "refused");
   }
@@ -162,4 +164,24 @@ function normalize(parsed: ParsedTicket): ParsedTicket {
     items,
     total,
   };
+}
+
+/**
+ * Cada ticket leído cuesta dinero, así que conviene verlo en los logs desde el
+ * primer día: es la única variable que crece con los usuarios.
+ * Tarifas de Claude Opus 5 en dólares por millón de tokens.
+ */
+const PRICE = { input: 5, output: 25, cacheRead: 0.5 } as const;
+
+function logCost(usage: Anthropic.Usage): void {
+  const inputTokens = usage.input_tokens + (usage.cache_creation_input_tokens ?? 0);
+  const dollars =
+    (inputTokens * PRICE.input +
+      usage.output_tokens * PRICE.output +
+      (usage.cache_read_input_tokens ?? 0) * PRICE.cacheRead) /
+    1_000_000;
+
+  console.info(
+    `[ocr] entrada ${inputTokens} · salida ${usage.output_tokens} · ≈ ${(dollars * 100).toFixed(2)} ¢`,
+  );
 }
