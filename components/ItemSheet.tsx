@@ -66,18 +66,22 @@ export default function ItemSheet({
               // El contador sólo aparece cuando la línea tiene partes que
               // repartir: en un plato único sobra y sólo estorba.
               const canStep = Boolean(share) && item.splitInto > 1;
+              // Sin partes libres no se puede meter a nadie más: primero se
+              // sube el número de abajo, y entonces hay sitio.
+              const locked = !share && breakdown.freeShares === 0;
               return (
                 <span
                   key={person.id}
                   className={`flex items-center rounded-xl border-2 transition-colors ${
-                    share ? "border-amber bg-amber/12" : "border-line"
+                    share ? "border-amber bg-amber/12" : locked ? "border-line/50" : "border-line"
                   }`}
                 >
                   <button
                     type="button"
                     aria-pressed={Boolean(share)}
+                    disabled={locked}
                     onClick={() => onSetShares(person.id, share ? 0 : 1)}
-                    className="flex items-center gap-1.5 py-1.5 pl-2 pr-2.5"
+                    className="flex items-center gap-1.5 py-1.5 pl-2 pr-2.5 disabled:opacity-40"
                   >
                     <Avatar name={person.name} color={person.color} size={20} />
                     <span className="max-w-28 truncate text-sm font-semibold">{person.name}</span>

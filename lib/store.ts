@@ -294,13 +294,12 @@ export function removeItem(code: string, itemId: string): Promise<TicketState> {
 /**
  * Fija cuántas partes de una línea se lleva un comensal. `shares <= 0` se la quita.
  *
- * Si pide más partes de las que quedan libres, la línea se parte en más trozos
- * en vez de rechazar la petición: es el «si alguien más toca lo tuyo, se
- * comparte solo». Tocar una paella que ya tiene dueño la deja al 50 %, sin que
- * nadie tenga que pulsar ningún botón de compartir.
- *
- * `splitInto` opcional viene del «compartir entre N», y se aplica antes de
- * repartir para que la parte del que pulsa quede fijada al momento.
+ * Nunca da más partes de las que quedan libres. Antes la línea crecía sola para
+ * hacer sitio a quien la tocaba, y eso cobraba de más sin avisar: en una línea
+ * de 9 cervezas partida entre 2, un toque de más pasaba de 9 € a 18 €. Ahora
+ * compartir algo que ya tiene dueño se pide a propósito con `splitInto`, que
+ * viene del «entre N» y se aplica antes de repartir para que la parte del que
+ * pulsa quede fijada al momento.
  */
 export function setClaim(
   code: string,
@@ -335,13 +334,12 @@ export function setClaim(
     const wanted = Math.max(1, Math.round(shares));
     const byOthers = sharesOn(doc, itemId, participantId);
 
-    const free = Math.max(0, (item.splitInto ?? item.qty) - byOthers);
-    if (wanted > free) {
-      // Auto-compartir: crecen los trozos, no se rechaza a nadie.
-      item.splitInto = Math.min(LIMITS.splitInto, byOthers + wanted);
+    // Se da lo que quede, ni una parte más: pedir cuatro cuando sólo hay dos
+    // libres te deja con dos, no parte la línea en más trozos.
+    const granted = Math.min(wanted, (item.splitInto ?? item.qty) - byOthers);
+    if (granted <= 0) {
+      throw new StoreError("Esta línea ya está completa. Repártela con ÷ si quieres entrar.", 409);
     }
-    const granted = Math.min(wanted, item.splitInto - byOthers);
-    if (granted <= 0) throw new StoreError("Esta línea ya no admite más gente.", 409);
 
     const mine = doc.claims.find((c) => c.itemId === itemId && c.participantId === participantId);
     if (mine) {

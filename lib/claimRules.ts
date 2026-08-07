@@ -1,10 +1,9 @@
 import type { TicketState } from "./types";
 
 /**
- * Réplica local de la regla del servidor, incluido el auto-compartir: si pides
- * más partes de las que quedan, la línea se parte en más trozos. Tiene que
- * coincidir con `setClaim` en store.ts o la pantalla mentiría durante el
- * medio segundo que tarda en confirmar el servidor.
+ * Réplica local de la regla del servidor: nunca se dan más partes de las que
+ * quedan libres. Tiene que coincidir con `setClaim` en store.ts o la pantalla
+ * mentiría durante el medio segundo que tarda en confirmar el servidor.
  */
 export function applyClaim(
   state: TicketState,
@@ -46,8 +45,7 @@ export function applyClaim(
 
   const wanted = Math.max(1, Math.round(shares));
   const manual = splitInto === undefined ? item.manualSplit : splitInto !== naturalSplit;
-  let into = Math.max(1, Math.round(splitInto ?? item.splitInto), byOthers);
-  if (wanted > into - byOthers) into = byOthers + wanted;
+  const into = Math.max(1, Math.round(splitInto ?? item.splitInto), byOthers);
 
   const granted = Math.min(wanted, into - byOthers);
   if (granted <= 0) return state;

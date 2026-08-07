@@ -20,8 +20,9 @@ interface Props {
  * has comido, vuelves a tocar si te has colado. Lo que necesitas saber antes
  * de tocar —cuánto te va a costar— es lo más grande de la burbuja.
  *
- * El contador de partes sólo aparece cuando ya es tuya y hay más de una: así
- * la burbuja está limpia mientras decides, y detallada cuando ajustas.
+ * Si ya no queda sitio, la burbuja no se deja tocar. Antes crecía sola para
+ * hacerte hueco y eso acababa cobrándote de más sin que lo pidieras; ahora
+ * compartir algo que ya tiene dueño se pide a propósito, con el ÷.
  */
 export default function ItemBubble({
   item,
@@ -40,9 +41,12 @@ export default function ItemBubble({
   const isMine = Boolean(mine);
   const full = breakdown.freeShares === 0;
   const sharedNow = breakdown.shares.length > 1 || item.splitInto > item.qty;
-  // De un «4 × Caña» puedes haberte bebido dos: con una línea de varias partes
-  // ya cogida, el contador deja ajustar cuántas son tuyas sin salir de aquí.
-  const canStep = isMine && item.splitInto > 1;
+  // Sin sitio y sin parte tuya no hay nada que tocar: para colarte está el ÷.
+  const locked = full && !isMine;
+  // De un «4 × Caña» puedes haberte bebido dos, y el contador ajusta cuántas.
+  // Sólo cuando cada parte es una unidad de verdad: en un «entre 2» una parte
+  // es media línea y el + te duplicaría lo que pagas de un toque.
+  const canStep = isMine && item.qty > 1 && item.splitInto === item.qty;
 
   return (
     <div
@@ -57,8 +61,9 @@ export default function ItemBubble({
       <button
         type="button"
         onClick={onToggle}
+        disabled={locked}
         aria-pressed={isMine}
-        className="flex flex-1 flex-col gap-1.5 p-3 pb-2 text-left active:scale-[0.97] transition-transform"
+        className="flex flex-1 flex-col gap-1.5 p-3 pb-2 text-left transition-transform active:scale-[0.97] disabled:active:scale-100"
       >
         {/* cuántos hay de esto */}
         <span className="flex items-start justify-between gap-1.5">
@@ -76,11 +81,22 @@ export default function ItemBubble({
           )}
         </span>
 
-        {/* lo que te cuesta tu parte: la cifra que se mira antes de tocar */}
-        <span
-          className={`tnum text-xl font-bold leading-none ${isMine ? "text-amber" : "text-ink"}`}
-        >
-          {money(mine ? mine.cents : breakdown.perShareCents, currency)}
+        {/*
+          Lo que te cuesta tu parte: la cifra que se mira antes de tocar. Al
+          lado, lo que vale la línea entera cuando no es lo mismo, que es lo
+          que deja ver de un vistazo que estás pagando un trozo y no el todo.
+        */}
+        <span className="flex flex-wrap items-baseline gap-x-1.5">
+          <span
+            className={`tnum text-xl font-bold leading-none ${isMine ? "text-amber" : "text-ink"}`}
+          >
+            {money(mine ? mine.cents : breakdown.perShareCents, currency)}
+          </span>
+          {item.splitInto > 1 && (
+            <span className="tnum text-[0.68rem] leading-none text-ink-faint">
+              de {money(item.totalCents, currency)}
+            </span>
+          )}
         </span>
 
         {/*
@@ -139,10 +155,10 @@ export default function ItemBubble({
         <button
           type="button"
           onClick={onOpenOptions}
-          aria-label={`Opciones de ${item.name}: repartir o quitar`}
-          className="shrink-0 rounded-lg px-1.5 py-1 text-base font-bold leading-none text-ink-faint transition-colors hover:bg-paper-3 hover:text-mint active:bg-paper-3"
+          aria-label={`Repartir o quitar ${item.name}`}
+          className="shrink-0 rounded-lg px-1.5 py-1 text-sm font-bold text-ink-faint transition-colors hover:bg-paper-3 hover:text-mint active:bg-paper-3"
         >
-          ⋯
+          ÷
         </button>
       </div>
     </div>
