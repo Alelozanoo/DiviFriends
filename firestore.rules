@@ -19,6 +19,13 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    // Contadores de los topes de uso. La regla general de abajo ya los cierra;
+    // se deja explícito porque leerlos diría a quien ataca cuánto cupo queda, y
+    // escribirlos sería quitarse el tope de encima.
+    match /limits/{key} {
+      allow read, write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

@@ -15,6 +15,14 @@ export function ok(state: TicketState, headers?: Record<string, string>) {
   );
 }
 
+/** Tope de uso alcanzado. `Retry-After` es estándar: dice cuándo volver. */
+export function tooMany(message: string, retryAfterSeconds: number) {
+  return NextResponse.json(
+    { error: message },
+    { status: 429, headers: { "retry-after": String(Math.max(1, retryAfterSeconds)) } },
+  );
+}
+
 /**
  * Traduce los fallos previstos de la capa de datos a HTTP. Cualquier otra cosa
  * se propaga: un error inesperado debe verse en los logs, no convertirse en un

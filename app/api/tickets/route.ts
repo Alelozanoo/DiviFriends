@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { createTicket } from "@/lib/store";
 import { OcrError, parseTicketImage, type ParsedTicket } from "@/lib/ocr";
 import { parseMoney } from "@/lib/format";
-import { bad, fail } from "@/lib/api";
+import { callerKey, consume, TOPES } from "@/lib/rateLimit";
+import { bad, fail, tooMany } from "@/lib/api";
 
 export const runtime = "nodejs";
 
@@ -35,6 +36,29 @@ export async function POST(request: Request) {
   }
 
   let parsed: ParsedTicket;
+
+  // El tope se comprueba antes de tocar nada: leer una foto cuesta dinero de
+  // verdad, y este endpoint no pide credenciales a nadie.
+  const caller = callerKey(request);
+  const quotas = body.image
+    ? [
+        { key: caller, ...TOPES.lecturaDeTicket.porIp },
+        { key: "global_lecturas", ...TOPES.lecturaDeTicket.global },
+      ]
+    : [{ key: `manual_${caller}`, ...TOPES.comandaManual.porIp }];
+
+  try {
+    const gate = await consume(quotas);
+    if (!gate.ok) {
+      console.warn(`[limite] rechazada ${caller} · vuelve en ${gate.retryAfterSeconds}s`);
+      return tooMany(
+        "Se han creado demasiadas comandas seguidas. Prueba de nuevo en un rato.",
+        gate.retryAfterSeconds,
+      );
+    }
+  } catch (error) {
+    return fail(error);
+  }
 
   if (body.image) {
     const mediaType = (body.mediaType ?? "image/jpeg") as Accepted;
