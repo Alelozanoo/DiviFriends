@@ -50,11 +50,28 @@ export default function ItemSheet({
 
   return (
     <Sheet onClose={onClose}>
-      <h2 className="text-lg font-bold tracking-tight">{item.name}</h2>
-      <p className="mt-1 text-sm text-ink-soft">
-        {money(item.totalCents, currency)}
-        {item.qty > 1 && ` · ${item.qty} unidades`}
-      </p>
+      {/*
+        La ✕ va arriba y pegada: la hoja es más alta que la pantalla en cuanto
+        hay unos cuantos comensales, así que un cierre al final del todo obliga
+        a bajar para salir. Tocar fuera sigue funcionando, pero no se ve.
+      */}
+      <div className="sticky -top-5 z-10 -mx-5 -mt-5 flex items-start justify-between gap-3 bg-paper-2/95 px-5 pb-3 pt-5 backdrop-blur">
+        <div className="min-w-0">
+          <h2 className="truncate text-lg font-bold tracking-tight">{item.name}</h2>
+          <p className="mt-0.5 text-sm text-ink-soft">
+            {money(item.totalCents, currency)}
+            {item.qty > 1 && ` · ${item.qty} unidades`}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Cerrar"
+          className="-mr-1.5 shrink-0 rounded-lg px-2.5 py-1.5 text-lg leading-none text-ink-faint transition-colors hover:bg-paper-3 hover:text-ink active:bg-paper-3"
+        >
+          ✕
+        </button>
+      </div>
 
       {/* ------------------------------------------------- quién lo ha tomado */}
       {participants.length > 0 && (
@@ -219,12 +236,17 @@ export default function ItemSheet({
         </button>
       )}
 
+      {/*
+        «Listo», no «Cancelar»: cada toque de aquí arriba se guarda al momento,
+        así que no hay nada que deshacer al salir. El botón anterior prometía
+        una marcha atrás que no existía.
+      */}
       <button
         type="button"
         onClick={onClose}
-        className="mt-2 w-full rounded-xl py-2 text-sm text-ink-faint"
+        className="mt-3 w-full rounded-xl bg-amber py-3 text-sm font-bold text-paper transition-transform active:scale-[0.98]"
       >
-        Cancelar
+        Listo
       </button>
     </Sheet>
   );

@@ -43,10 +43,12 @@ export default function ItemBubble({
   const sharedNow = breakdown.shares.length > 1 || item.splitInto > item.qty;
   // Sin sitio y sin parte tuya no hay nada que tocar: para colarte está el ÷.
   const locked = full && !isMine;
-  // De un «4 × Caña» puedes haberte bebido dos, y el contador ajusta cuántas.
+  // De un «9 × Caña» puedes haberte bebido tres, y el + las va sumando.
+  //
   // Sólo cuando cada parte es una unidad de verdad: en un «entre 2» una parte
-  // es media línea y el + te duplicaría lo que pagas de un toque.
-  const canStep = isMine && item.qty > 1 && item.splitInto === item.qty;
+  // es media línea y el + te duplicaría lo que pagas de un toque. Ése fue el
+  // fallo de las nueve cervezas y por eso la condición sigue aquí.
+  const canStep = item.qty > 1 && item.splitInto === item.qty;
 
   return (
     <div
@@ -114,51 +116,63 @@ export default function ItemBubble({
         </span>
       </button>
 
-      {/* cuántas son tuyas · quién más lo lleva · partir en N */}
-      <div className="flex items-center gap-1 px-3 pb-2.5">
-        {canStep ? (
-          <span className="flex shrink-0 items-center rounded-lg bg-paper-3">
+      {/* quién lo lleva */}
+      <div className="flex min-h-[26px] items-center gap-1 px-3 pb-2">
+        {mine && <Avatar name="tú" color={byId.get(meId!)?.color ?? "#e8b04b"} size={22} />}
+        {others.slice(0, 3).map((share) => {
+          const person = byId.get(share.participantId);
+          return person ? (
+            <Avatar key={share.participantId} name={person.name} color={person.color} size={20} />
+          ) : null;
+        })}
+        {others.length > 3 && (
+          <span className="tnum text-[0.7rem] text-ink-faint">+{others.length - 3}</span>
+        )}
+      </div>
+
+      {/*
+        Una sola fila de mandos, pegada abajo del todo.
+
+        A la izquierda se suman unidades sin abrir nada: de nueve cañas te vas
+        marcando las tuyas a toques. A la derecha, repartir o quitar la línea.
+        El ÷ se queda porque es el gesto de la app, pero ahora lleva la palabra
+        al lado: como icono suelto en una esquina no lo entendía nadie.
+      */}
+      <div className="flex items-stretch border-t border-line/60">
+        {canStep && (
+          <span className="flex shrink-0 items-center border-r border-line/60">
+            {isMine && (
+              <>
+                <Step
+                  label={`Quitar una unidad de ${item.name}`}
+                  onClick={() => onSetShares(mine!.shares - 1)}
+                >
+                  −
+                </Step>
+                <span className="tnum w-4 text-center text-sm font-bold">{mine!.shares}</span>
+              </>
+            )}
             <Step
-              label={`Quitar una parte de ${item.name}`}
-              onClick={() => onSetShares(mine!.shares - 1)}
-            >
-              −
-            </Step>
-            <span className="tnum w-5 text-center text-sm font-bold">{mine!.shares}</span>
-            <Step
-              label={`Añadir una parte de ${item.name}`}
-              disabled={breakdown.freeShares === 0}
-              onClick={() => onSetShares(mine!.shares + 1)}
+              label={`Añadir una unidad de ${item.name}`}
+              disabled={full}
+              highlight={!isMine}
+              onClick={() => onSetShares((mine?.shares ?? 0) + 1)}
             >
               +
             </Step>
           </span>
-        ) : (
-          mine && <Avatar name="tú" color={byId.get(meId!)?.color ?? "#e8b04b"} size={22} />
         )}
 
-        <span className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
-          {others.slice(0, canStep ? 2 : 3).map((share) => {
-            const person = byId.get(share.participantId);
-            return person ? (
-              <Avatar key={share.participantId} name={person.name} color={person.color} size={20} />
-            ) : null;
-          })}
-          {others.length > (canStep ? 2 : 3) && (
-            <span className="tnum text-[0.7rem] text-ink-faint">
-              +{others.length - (canStep ? 2 : 3)}
-            </span>
-          )}
-        </span>
-
-        {/* Repartir entre varios y quitar la línea viven los dos aquí dentro. */}
         <button
           type="button"
           onClick={onOpenOptions}
-          aria-label={`Repartir o quitar ${item.name}`}
-          className="shrink-0 rounded-lg px-1.5 py-1 text-sm font-bold text-ink-faint transition-colors hover:bg-paper-3 hover:text-mint active:bg-paper-3"
+          aria-label={`Dividir o quitar ${item.name}`}
+          className="flex flex-1 items-center justify-center gap-1.5 py-2 text-[0.72rem] font-bold uppercase tracking-wider text-ink-faint transition-colors hover:text-mint active:bg-paper-3"
         >
-          ÷
+          <span aria-hidden className="text-sm leading-none">
+            ÷
+          </span>
+          Dividir
         </button>
       </div>
     </div>
@@ -169,11 +183,14 @@ function Step({
   children,
   label,
   disabled,
+  highlight,
   onClick,
 }: {
   children: React.ReactNode;
   label: string;
   disabled?: boolean;
+  /** El primer + de una línea que aún no es tuya: es la invitación a empezar. */
+  highlight?: boolean;
   onClick: () => void;
 }) {
   return (
@@ -182,7 +199,9 @@ function Step({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="grid h-7 w-6 place-items-center text-base font-bold transition-colors hover:text-amber disabled:opacity-25"
+      className={`grid h-full w-9 place-items-center text-lg font-bold transition-colors active:bg-paper-3 disabled:opacity-25 ${
+        highlight ? "text-amber" : "text-ink-soft hover:text-amber"
+      }`}
     >
       {children}
     </button>
