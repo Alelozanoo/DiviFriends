@@ -32,7 +32,6 @@ function base(items: Item[]): TicketState {
       tableLabel: null,
       currency: "EUR",
       totalCents: items.reduce((a, i) => a + i.totalCents, 0),
-      tipCents: 0,
       createdAt: "",
     },
     items,
@@ -42,7 +41,7 @@ function base(items: Item[]): TicketState {
       name: id,
       color: "#fff",
       isPayer: false,
-      paidCents: 0,
+      settled: false,
     })),
     claims: [],
   };

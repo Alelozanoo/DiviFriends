@@ -20,7 +20,6 @@ export async function GET(_request: Request, { params }: Ctx) {
 export async function PATCH(request: Request, { params }: Ctx) {
   const { code } = await params;
   const body = (await request.json()) as {
-    tipCents?: number;
     totalCents?: number;
     place?: string;
     tableLabel?: string;

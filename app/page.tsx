@@ -16,8 +16,8 @@ const STEPS = [
   },
   {
     n: "03",
-    title: "Sale quién debe a quién",
-    body: "Se reparten servicio y propina en proporción, y aparece lo que cada uno le tiene que devolver al que pagó. Si sobra o falta dinero, se ve al momento.",
+    title: "Sale lo que pone cada uno",
+    body: "El servicio se reparte en proporción y aparece lo que cada uno le tiene que devolver a quien pagó. Quien puso la tarjeta ve de un vistazo quién le falta.",
   },
 ];
 

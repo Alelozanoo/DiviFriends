@@ -55,18 +55,9 @@ export default function PaperTicket({
         </div>
       )}
 
-      {ticket.tipCents > 0 && (
-        <div className="flex items-baseline justify-between text-sm text-[#776a5c]">
-          <span className="stamp">Propina</span>
-          <span className="tnum">{money(ticket.tipCents, ticket.currency)}</span>
-        </div>
-      )}
-
       <div className="mt-2 flex items-baseline justify-between">
         <span className="stamp font-bold">Total</span>
-        <span className="tnum text-2xl font-bold">
-          {money(ticket.totalCents + ticket.tipCents, ticket.currency)}
-        </span>
+        <span className="tnum text-2xl font-bold">{money(ticket.totalCents, ticket.currency)}</span>
       </div>
 
       {children}

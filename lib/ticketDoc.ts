@@ -17,7 +17,8 @@ export interface TicketDoc {
   tableLabel: string | null;
   currency: string;
   totalCents: number;
-  tipCents: number;
+  /** @deprecated La propina se quitó: complicaba la pantalla de cuentas. */
+  tipCents?: number;
   createdAt: string;
   updatedAt: string;
   items: ItemDoc[];
@@ -51,7 +52,9 @@ export interface ParticipantDoc {
   name: string;
   color: string;
   isPayer: boolean;
-  paidCents: number;
+  settled?: boolean;
+  /** @deprecated Antes se guardaba cuánto puso cada uno; ahora es un sí o un no. */
+  paidCents?: number;
 }
 
 /** Topes para que el documento no pueda crecer sin control. */
@@ -75,8 +78,14 @@ export function docToState(code: string, doc: TicketDoc): TicketState {
     }));
 
   const participants: Participant[] = (doc.participants ?? []).map((person) => ({
-    ...person,
+    id: person.id,
     ticketId: code,
+    name: person.name,
+    color: person.color,
+    isPayer: person.isPayer === true,
+    // Comandas abiertas ahora mismo en algún móvil guardan un importe en vez de
+    // un sí/no. Haber puesto algo equivale a estar saldado.
+    settled: person.settled ?? (person.paidCents ?? 0) > 0,
   }));
 
   const claims: Claim[] = rawClaims
@@ -99,7 +108,6 @@ export function docToState(code: string, doc: TicketDoc): TicketState {
       tableLabel: doc.tableLabel ?? null,
       currency: doc.currency ?? "EUR",
       totalCents: doc.totalCents ?? 0,
-      tipCents: doc.tipCents ?? 0,
       createdAt: doc.createdAt ?? "",
     },
     items,

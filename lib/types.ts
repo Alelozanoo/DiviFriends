@@ -5,8 +5,6 @@ export interface Ticket {
   currency: string;
   /** Total impreso en el ticket, en céntimos. */
   totalCents: number;
-  /** Propina añadida por el grupo (no está en el ticket), en céntimos. */
-  tipCents: number;
   createdAt: string;
 }
 
@@ -41,8 +39,17 @@ export interface Participant {
   ticketId: string;
   name: string;
   color: string;
+  /** Quien puso la tarjeta. Sólo puede haber uno. */
   isPayer: boolean;
-  paidCents: number;
+  /**
+   * true cuando ya le ha devuelto su parte a quien pagó.
+   *
+   * Es un sí o un no, no un importe: lo que la mesa necesita saber es quién
+   * falta, y cada uno debe exactamente su parte. Guardar cuánto puso cada cual
+   * sólo hacía falta para repartir entre varios pagadores, que es justo la
+   * complicación que sobraba.
+   */
+  settled: boolean;
 }
 
 /** Cuántas partes de una línea se ha quedado alguien. */
@@ -84,38 +91,26 @@ export interface ParticipantBalance {
   isPayer: boolean;
   /** Suma de sus platos. */
   itemsCents: number;
-  /** Su parte proporcional de servicio/descuento/propina. */
+  /** Su parte proporcional de servicio, impuestos o descuento. */
   extrasCents: number;
   /** itemsCents + extrasCents: lo que le toca pagar. */
   owesCents: number;
-  paidCents: number;
-  /** paidCents - owesCents. Positivo = le deben; negativo = debe. */
-  balanceCents: number;
+  /** Ya ha devuelto lo suyo. Quien pagó lo está siempre: adelantó la cuenta. */
+  settled: boolean;
 }
 
 export interface Settlement {
   itemsTotalCents: number;
   /** total del ticket - suma de platos (servicio, impuestos, descuentos…). */
   extrasCents: number;
-  tipCents: number;
   grandTotalCents: number;
   /** Importe de platos todavía sin dueño. */
   unassignedCents: number;
   assignedCents: number;
-  paidCents: number;
-  /** paidCents - grandTotalCents. Positivo = se ha pagado de más. */
-  overpaidCents: number;
+  /** Lo que falta por devolverle a quien pagó. */
+  pendingCents: number;
   byItem: Record<string, ItemBreakdown>;
+  /** De más a menos: arriba quien más debe, y los que ya pagaron al final. */
   byParticipant: ParticipantBalance[];
-  /** Quién le paga a quién, con el mínimo de transferencias. */
-  transfers: Transfer[];
   complete: boolean;
-}
-
-export interface Transfer {
-  fromId: string;
-  fromName: string;
-  toId: string;
-  toName: string;
-  cents: number;
 }

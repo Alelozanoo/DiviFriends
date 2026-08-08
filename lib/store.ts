@@ -57,7 +57,6 @@ export async function createTicket(input: NewTicket): Promise<string> {
     tableLabel: input.tableLabel,
     currency: input.currency,
     totalCents: input.totalCents,
-    tipCents: 0,
     createdAt: now,
     updatedAt: now,
     items: input.items.slice(0, LIMITS.items).map((item, index) => ({
@@ -101,10 +100,9 @@ function isAlreadyExists(error: unknown): boolean {
 
 export function patchTicket(
   code: string,
-  patch: { tipCents?: number; totalCents?: number; place?: string; tableLabel?: string },
+  patch: { totalCents?: number; place?: string; tableLabel?: string },
 ): Promise<TicketState> {
   return mutate(code, (doc) => {
-    if (patch.tipCents !== undefined) doc.tipCents = Math.max(0, Math.round(patch.tipCents));
     if (patch.totalCents !== undefined) doc.totalCents = Math.max(0, Math.round(patch.totalCents));
     if (patch.place !== undefined) doc.place = patch.place.trim() || null;
     if (patch.tableLabel !== undefined) doc.tableLabel = patch.tableLabel.trim() || null;
@@ -138,7 +136,7 @@ export async function addParticipant(
       name,
       color: colorFor(doc.participants.length),
       isPayer: false,
-      paidCents: 0,
+      settled: false,
     });
   });
 
@@ -148,7 +146,7 @@ export async function addParticipant(
 export function patchParticipant(
   code: string,
   participantId: string,
-  patch: { name?: string; paidCents?: number; isPayer?: boolean },
+  patch: { name?: string; settled?: boolean; isPayer?: boolean },
 ): Promise<TicketState> {
   return mutate(code, (doc) => {
     const person = doc.participants.find((p) => p.id === participantId);
@@ -159,9 +157,9 @@ export function patchParticipant(
       if (!name) throw new StoreError("Escribe un nombre.");
       person.name = name;
     }
-    if (patch.paidCents !== undefined) person.paidCents = Math.max(0, Math.round(patch.paidCents));
+    if (patch.settled !== undefined) person.settled = patch.settled;
     if (patch.isPayer !== undefined) {
-      // Sólo puede haber un pagador: es la referencia del «quién debe a quién».
+      // Sólo puede haber un pagador: es a quien le deben todos los demás.
       if (patch.isPayer) for (const other of doc.participants) other.isPayer = false;
       person.isPayer = patch.isPayer;
     }

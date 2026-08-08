@@ -19,7 +19,7 @@ function item(over: Partial<Item> & Pick<Item, "id" | "totalCents">): Item {
 }
 
 function person(id: string, over: Partial<Participant> = {}): Participant {
-  return { id, ticketId: "T", name: id, color: "#fff", isPayer: false, paidCents: 0, ...over };
+  return { id, ticketId: "T", name: id, color: "#fff", isPayer: false, settled: false, ...over };
 }
 
 function state(
@@ -27,22 +27,18 @@ function state(
   participants: Participant[],
   claims: Claim[],
   totalCents: number,
-  tipCents = 0,
 ): TicketState {
   return {
-    ticket: {
-      id: "T",
-      place: null,
-      tableLabel: null,
-      currency: "EUR",
-      totalCents,
-      tipCents,
-      createdAt: "",
-    },
+    ticket: { id: "T", place: null, tableLabel: null, currency: "EUR", totalCents, createdAt: "" },
     items,
     participants,
     claims,
   };
+}
+
+/** El orden de `byParticipant` es de pantalla, no de entrada. */
+function owed(out: { byParticipant: { participantId: string; owesCents: number }[] }, id: string) {
+  return out.byParticipant.find((p) => p.participantId === id)!.owesCents;
 }
 
 test("splitCents nunca pierde ni inventa un céntimo", () => {
@@ -62,8 +58,8 @@ test("un plato de una unidad va entero a quien lo reclama", () => {
     1200,
   );
   const out = computeSettlement(s);
-  assert.equal(out.byParticipant[0].owesCents, 1200);
-  assert.equal(out.byParticipant[1].owesCents, 0);
+  assert.equal(owed(out, "a"), 1200);
+  assert.equal(owed(out, "b"), 0);
   assert.equal(out.unassignedCents, 0);
   assert.equal(out.complete, true);
 });
@@ -109,7 +105,7 @@ test("«compartir entre 4» fija tu parte sin esperar a que se apunte nadie", ()
     2000,
   );
   const out = computeSettlement(s);
-  assert.equal(out.byParticipant[0].owesCents, 500);
+  assert.equal(owed(out, "a"), 500);
   assert.equal(out.byItem.paella.freeShares, 3);
   assert.equal(out.byItem.paella.perShareCents, 500);
   assert.equal(out.unassignedCents, 1500);
@@ -120,8 +116,8 @@ test("«compartir entre 4» fija tu parte sin esperar a que se apunte nadie", ()
     ...s,
     claims: [...s.claims, { itemId: "paella", participantId: "b", shares: 1 }],
   });
-  assert.equal(withB.byParticipant[0].owesCents, 500);
-  assert.equal(withB.byParticipant[1].owesCents, 500);
+  assert.equal(owed(withB, "a"), 500);
+  assert.equal(owed(withB, "b"), 500);
   assert.equal(withB.unassignedCents, 1000);
 });
 
@@ -136,8 +132,8 @@ test("varias partes de la misma línea suman para el mismo comensal", () => {
     750,
   );
   const out = computeSettlement(s);
-  assert.equal(out.byParticipant[0].owesCents, 500);
-  assert.equal(out.byParticipant[1].owesCents, 250);
+  assert.equal(owed(out, "a"), 500);
+  assert.equal(owed(out, "b"), 250);
   assert.equal(out.complete, true);
 });
 
@@ -156,29 +152,18 @@ test("el servicio del ticket se reparte en proporción a lo consumido", () => {
     11000,
   );
   const out = computeSettlement(s);
-  assert.equal(out.byParticipant[0].owesCents, 8250);
-  assert.equal(out.byParticipant[1].owesCents, 2750);
+  assert.equal(owed(out, "a"), 8250);
+  assert.equal(owed(out, "b"), 2750);
   assert.equal(out.assignedCents, 11000);
   assert.equal(out.unassignedCents, 0);
 });
 
-test("la propina se suma al total y se reparte igual", () => {
-  const s = state(
-    [item({ id: "i1", totalCents: 1000 })],
-    [person("a")],
-    [{ itemId: "i1", participantId: "a", shares: 1 }],
-    1000,
-    200,
-  );
-  const out = computeSettlement(s);
-  assert.equal(out.grandTotalCents, 1200);
-  assert.equal(out.byParticipant[0].owesCents, 1200);
-});
-
-test("quien pagó de más queda con saldo a favor y recibe las transferencias", () => {
+test("quien pagó no se debe nada a sí mismo", () => {
+  // Adelantó los 40 €, así que lo pendiente son sólo los 10 € del otro. Si su
+  // propia parte contara, la pantalla pediría cobrar dinero que ya está pagado.
   const s = state(
     [item({ id: "i1", totalCents: 3000 }), item({ id: "i2", totalCents: 1000 })],
-    [person("pagador", { isPayer: true, paidCents: 4000 }), person("otro")],
+    [person("pagador", { isPayer: true }), person("otro")],
     [
       { itemId: "i1", participantId: "pagador", shares: 1 },
       { itemId: "i2", participantId: "otro", shares: 1 },
@@ -186,24 +171,53 @@ test("quien pagó de más queda con saldo a favor y recibe las transferencias", 
     4000,
   );
   const out = computeSettlement(s);
-  assert.equal(out.byParticipant[0].balanceCents, 1000);
-  assert.equal(out.byParticipant[1].balanceCents, -1000);
-  assert.equal(out.transfers.length, 1);
-  assert.deepEqual(
-    { from: out.transfers[0].fromName, to: out.transfers[0].toName, cents: out.transfers[0].cents },
-    { from: "otro", to: "pagador", cents: 1000 },
-  );
-  assert.equal(out.overpaidCents, 0);
+  assert.equal(out.pendingCents, 1000);
+  assert.equal(out.byParticipant.find((p) => p.isPayer)!.settled, true);
 });
 
-test("detecta que se ha cobrado de más", () => {
+test("marcar «he pagado» descuenta esa parte de lo pendiente", () => {
+  const items = [item({ id: "i1", totalCents: 3000 }), item({ id: "i2", totalCents: 1000 })];
+  const claims: Claim[] = [
+    { itemId: "i1", participantId: "pagador", shares: 1 },
+    { itemId: "i2", participantId: "otro", shares: 1 },
+  ];
+  const saldado = computeSettlement(
+    state(items, [person("pagador", { isPayer: true }), person("otro", { settled: true })], claims, 4000),
+  );
+  assert.equal(saldado.pendingCents, 0);
+});
+
+test("sin pagador marcado, lo pendiente es la cuenta entera", () => {
   const s = state(
     [item({ id: "i1", totalCents: 2000 })],
-    [person("a", { paidCents: 2500 })],
+    [person("a")],
     [{ itemId: "i1", participantId: "a", shares: 1 }],
     2000,
   );
-  assert.equal(computeSettlement(s).overpaidCents, 500);
+  assert.equal(computeSettlement(s).pendingCents, 2000);
+});
+
+test("la lista pone arriba a quien más debe y hunde a los que ya pagaron", () => {
+  // Es el orden que contesta «¿quién me falta?» sin tener que leer la lista.
+  const s = state(
+    [
+      item({ id: "i1", totalCents: 1000 }),
+      item({ id: "i2", totalCents: 3000 }),
+      item({ id: "i3", totalCents: 2000 }),
+    ],
+    [person("poco"), person("mucho"), person("yapagó", { settled: true })],
+    [
+      { itemId: "i1", participantId: "poco", shares: 1 },
+      { itemId: "i2", participantId: "mucho", shares: 1 },
+      { itemId: "i3", participantId: "yapagó", shares: 1 },
+    ],
+    6000,
+  );
+  const out = computeSettlement(s);
+  assert.deepEqual(
+    out.byParticipant.map((p) => p.participantId),
+    ["mucho", "poco", "yapagó"],
+  );
 });
 
 test("quitar una línea se lleva su dinero, no lo reparte entre todos", () => {
@@ -223,7 +237,7 @@ test("quitar una línea se lleva su dinero, no lo reparte entre todos", () => {
       totalAfterRemoving(3200, items, "vino"),
     ),
   );
-  assert.equal(after.byParticipant[0].owesCents, 2000);
+  assert.equal(owed(after, "a"), 2000);
   assert.equal(after.extrasCents, 0);
   assert.equal(after.complete, true);
 });
@@ -252,14 +266,16 @@ test("quitar la última línea deja el ticket a cero y no en negativo", () => {
   assert.equal(totalAfterRemoving(900, items, "fantasma"), 900);
 });
 
-test("las transferencias saldan exactamente todos los balances", () => {
+test("lo que cobra el pagador cuadra con el ticket hasta el último céntimo", () => {
+  // Importes feos a propósito: si el reparto de céntimos se torciera, lo que le
+  // devuelven más su propia parte no sumaría los 48,33 € que puso.
   const s = state(
     [
       item({ id: "i1", totalCents: 1733 }),
       item({ id: "i2", totalCents: 999 }),
       item({ id: "i3", totalCents: 2101, splitInto: 3 }),
     ],
-    [person("a", { paidCents: 4833 }), person("b"), person("c")],
+    [person("a", { isPayer: true }), person("b"), person("c")],
     [
       { itemId: "i1", participantId: "a", shares: 1 },
       { itemId: "i2", participantId: "b", shares: 1 },
@@ -270,11 +286,6 @@ test("las transferencias saldan exactamente todos los balances", () => {
     4833,
   );
   const out = computeSettlement(s);
-  const net = new Map(out.byParticipant.map((p) => [p.participantId, p.balanceCents]));
-  for (const transfer of out.transfers) {
-    net.set(transfer.fromId, net.get(transfer.fromId)! + transfer.cents);
-    net.set(transfer.toId, net.get(transfer.toId)! - transfer.cents);
-  }
-  for (const [, remaining] of net) assert.equal(remaining, 0);
   assert.equal(out.unassignedCents, 0);
+  assert.equal(out.pendingCents + owed(out, "a"), 4833);
 });

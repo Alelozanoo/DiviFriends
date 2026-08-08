@@ -5,7 +5,6 @@ import type {
   ParticipantBalance,
   Settlement,
   TicketState,
-  Transfer,
 } from "./types";
 
 /**
@@ -89,8 +88,13 @@ function breakdownForItem(item: Item, claims: Claim[]): ItemBreakdown {
 }
 
 /**
- * Calcula el reparto completo: quién debe cuánto, qué queda sin asignar
- * y las transferencias mínimas para saldar la cuenta.
+ * Calcula el reparto completo: quién debe cuánto, qué queda sin dueño y cuánto
+ * falta por devolverle a quien pagó.
+ *
+ * El modelo es de un solo pagador: alguien adelanta la cuenta entera y los
+ * demás le devuelven su parte. Por eso no hay aquí ningún reparto de deudas
+ * cruzadas — con un único acreedor, «quién le paga a quién» siempre tiene la
+ * misma respuesta y no hace falta calcularla.
  */
 export function computeSettlement(state: TicketState): Settlement {
   const { ticket, items, participants, claims } = state;
@@ -115,7 +119,6 @@ export function computeSettlement(state: TicketState): Settlement {
   // Diferencia entre el total impreso y la suma de líneas: servicio, IVA no
   // desglosado, descuentos… Se reparte en proporción a lo que come cada uno.
   const extrasCents = ticket.totalCents - itemsTotalCents;
-  const extrasPool = extrasCents + ticket.tipCents;
 
   const extraWeights = [
     ...participants.map((p) => itemsCentsByParticipant.get(p.id) ?? 0),
@@ -123,13 +126,12 @@ export function computeSettlement(state: TicketState): Settlement {
   ];
   const anyWeight = extraWeights.some((w) => w > 0);
   const extrasSplit = anyWeight
-    ? splitCents(extrasPool, extraWeights)
-    : extraWeights.map((_, i) => (i === extraWeights.length - 1 ? extrasPool : 0));
+    ? splitCents(extrasCents, extraWeights)
+    : extraWeights.map((_, i) => (i === extraWeights.length - 1 ? extrasCents : 0));
 
   const byParticipant: ParticipantBalance[] = participants.map((p, i) => {
     const itemsC = itemsCentsByParticipant.get(p.id) ?? 0;
     const extrasC = extrasSplit[i];
-    const owes = itemsC + extrasC;
     return {
       participantId: p.id,
       name: p.name,
@@ -137,70 +139,43 @@ export function computeSettlement(state: TicketState): Settlement {
       isPayer: p.isPayer,
       itemsCents: itemsC,
       extrasCents: extrasC,
-      owesCents: owes,
-      paidCents: p.paidCents,
-      balanceCents: p.paidCents - owes,
+      owesCents: itemsC + extrasC,
+      // Quien pagó no se debe nada a sí mismo, se derive y no se guarde: así
+      // cambiar de pagador no deja a nadie marcado por error.
+      settled: p.isPayer || p.settled,
     };
   });
 
-  const grandTotalCents = ticket.totalCents + ticket.tipCents;
+  const grandTotalCents = ticket.totalCents;
   const assignedCents = byParticipant.reduce((a, p) => a + p.owesCents, 0);
-  const unassignedCents = grandTotalCents - assignedCents;
-  const paidCents = byParticipant.reduce((a, p) => a + p.paidCents, 0);
 
   return {
     itemsTotalCents,
     extrasCents,
-    tipCents: ticket.tipCents,
     grandTotalCents,
-    unassignedCents,
+    unassignedCents: grandTotalCents - assignedCents,
     assignedCents,
-    paidCents,
-    overpaidCents: paidCents - grandTotalCents,
+    pendingCents: byParticipant.reduce((a, p) => (p.settled ? a : a + p.owesCents), 0),
     byItem,
-    byParticipant,
-    transfers: computeTransfers(byParticipant),
+    byParticipant: sortForDisplay(byParticipant),
     complete:
       participants.length > 0 &&
-      unassignedCents === 0 &&
+      grandTotalCents - assignedCents === 0 &&
       items.every((i) => byItem[i.id].settled),
   };
 }
 
 /**
- * Salda los balances con el mínimo de transferencias: el que más debe le paga
- * al que más ha adelantado, y así sucesivamente.
+ * Deja arriba a quien más debe y hunde a los que ya han pagado.
+ *
+ * La pregunta que se hace quien adelantó la cuenta es «¿quién me falta?», así
+ * que lo pendiente va primero; dentro de cada grupo, de más a menos.
  */
-export function computeTransfers(balances: ParticipantBalance[]): Transfer[] {
-  const debtors = balances
-    .filter((b) => b.balanceCents < 0)
-    .map((b) => ({ ...b, left: -b.balanceCents }))
-    .sort((a, b) => b.left - a.left);
-  const creditors = balances
-    .filter((b) => b.balanceCents > 0)
-    .map((b) => ({ ...b, left: b.balanceCents }))
-    .sort((a, b) => b.left - a.left);
-
-  const transfers: Transfer[] = [];
-  let di = 0;
-  let ci = 0;
-  while (di < debtors.length && ci < creditors.length) {
-    const d = debtors[di];
-    const c = creditors[ci];
-    const amount = Math.min(d.left, c.left);
-    if (amount > 0) {
-      transfers.push({
-        fromId: d.participantId,
-        fromName: d.name,
-        toId: c.participantId,
-        toName: c.name,
-        cents: amount,
-      });
-      d.left -= amount;
-      c.left -= amount;
-    }
-    if (d.left === 0) di += 1;
-    if (c.left === 0) ci += 1;
-  }
-  return transfers;
+function sortForDisplay(balances: ParticipantBalance[]): ParticipantBalance[] {
+  return [...balances].sort(
+    (a, b) =>
+      Number(a.settled) - Number(b.settled) ||
+      b.owesCents - a.owesCents ||
+      a.name.localeCompare(b.name, "es"),
+  );
 }

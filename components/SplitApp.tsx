@@ -142,25 +142,34 @@ export default function SplitApp({
               {code}
             </p>
           </div>
-          {/* Quién está en la mesa y, en el mismo gesto, cómo meter a los demás. */}
+          {/*
+            Quién está en la mesa y, en el mismo gesto, cómo meter a los demás.
+            Las caras solas no decían qué pasaba al tocarlas: quien entra por
+            primera vez no adivina que ahí está el QR. La palabra lo dice y las
+            caras siguen contando quién hay, que es lo que gustaba de esto.
+          */}
           <button
             type="button"
             onClick={() => setSharing(true)}
-            aria-label="Invitar a la mesa: QR y enlace"
-            className="flex shrink-0 items-center -space-x-1.5 rounded-full py-0.5 active:scale-95 transition-transform"
+            className="flex shrink-0 items-center gap-1.5 rounded-full border border-line bg-paper-2 py-1 pl-1.5 pr-2.5 transition-transform active:scale-95"
           >
-            {state.participants.slice(0, 4).map((person) => (
-              <Avatar
-                key={person.id}
-                name={person.name}
-                color={person.color}
-                size={26}
-                dimmed={person.id !== meId}
-              />
-            ))}
-            <span className="grid h-[26px] w-[26px] place-items-center rounded-full border-2 border-dashed border-line bg-paper text-sm font-bold leading-none text-ink-faint">
-              +
+            <span className="flex items-center -space-x-1.5">
+              {state.participants.slice(0, 3).map((person) => (
+                <Avatar
+                  key={person.id}
+                  name={person.name}
+                  color={person.color}
+                  size={22}
+                  dimmed={person.id !== meId}
+                />
+              ))}
+              {state.participants.length > 3 && (
+                <span className="tnum grid h-[22px] w-[22px] place-items-center rounded-full border-2 border-line bg-paper text-[0.6rem] font-bold text-ink-faint">
+                  +{state.participants.length - 3}
+                </span>
+              )}
             </span>
+            <span className="text-xs font-bold text-amber">Compartir</span>
           </button>
         </div>
         <Progress value={progress} />
@@ -231,19 +240,14 @@ export default function SplitApp({
             meId={meId}
             onSetPayer={(participantId) => {
               const person = state.participants.find((p) => p.id === participantId);
-              void patchParticipant(participantId, {
-                isPayer: !person?.isPayer,
-                ...(person?.isPayer || person?.paidCents
-                  ? {}
-                  : { paidCents: settlement.grandTotalCents }),
-              });
+              // Volver a tocar al pagador lo quita: si te equivocas de persona
+              // no hace falta buscar otra manera de deshacerlo.
+              void patchParticipant(participantId, { isPayer: !person?.isPayer });
             }}
-            onSetPaid={(participantId, cents) => void patchParticipant(participantId, { paidCents: cents })}
-            onSetTip={(cents) => void patchTicket({ tipCents: cents })}
-            onSetTotal={(cents) => void patchTicket({ totalCents: cents })}
-            onRemoveParticipant={(participantId) =>
-              void send(`/participants/${participantId}`, { method: "DELETE" })
+            onSetSettled={(participantId, settled) =>
+              void patchParticipant(participantId, { settled })
             }
+            onSetTotal={(cents) => void patchTicket({ totalCents: cents })}
           />
         )}
       </main>
