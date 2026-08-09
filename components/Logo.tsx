@@ -1,6 +1,26 @@
 import Image from "next/image";
 
 /**
+ * El nombre escrito, con las dos mitades en distinto color.
+ *
+ * «Divi» en el color del texto y «Friends» en ámbar: separa las dos palabras
+ * sin meter un espacio ni una mayúscula rara, y hace que el nombre se lea como
+ * una marca y no como una palabra cualquiera de la frase.
+ *
+ * Vive aquí, junto al símbolo, y en un solo sitio: escrito a mano en cada
+ * pantalla acabaría con la mitad de los sitios sin actualizar el día que
+ * cambie el color.
+ */
+export function Wordmark({ className = "" }: { className?: string }) {
+  return (
+    <span className={className}>
+      <span className="text-ink">Divi</span>
+      <span className="text-amber">Friends</span>
+    </span>
+  );
+}
+
+/**
  * El logo de la marca dentro de la web.
  *
  * Va sin fondo a propósito. El icono de iOS lleva un cuadrado oscuro porque el

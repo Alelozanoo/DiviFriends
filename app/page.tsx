@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Logo from "@/components/Logo";
+import Logo, { Wordmark } from "@/components/Logo";
 import TicketUploader from "@/components/TicketUploader";
 import { PasoCuentas, PasoFoto, PasoMarcar } from "@/components/ComoVa";
 
@@ -49,7 +49,7 @@ export default function Home() {
           <div className="flex-1">
             <Link href="/" className="inline-flex items-center gap-2.5 lg:gap-4">
               <Logo size={128} priority className="h-11 w-11 lg:h-20 lg:w-20" />
-              <span className="text-xl font-bold tracking-tight lg:text-3xl">DiviFriends</span>
+              <Wordmark className="text-xl font-bold tracking-tight lg:text-3xl" />
             </Link>
 
             <h1 className="mt-7 text-[2.6rem] font-bold leading-[1.02] tracking-[-0.03em] lg:mt-9 sm:text-6xl">
@@ -154,7 +154,9 @@ export default function Home() {
 
       <footer className="border-t border-line">
         <div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-8 text-sm text-ink-faint sm:flex-row sm:items-center sm:justify-between">
-          <p>DiviFriends · reparte la cuenta sin discutir</p>
+          <p>
+            <Wordmark className="font-semibold" /> · reparte la cuenta sin discutir
+          </p>
           <p className="tnum">Los importes se calculan al céntimo.</p>
         </div>
       </footer>
