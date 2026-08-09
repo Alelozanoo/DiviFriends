@@ -16,6 +16,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: state?.ticket.place
       ? `${state.ticket.place} · repartir la cuenta`
       : "Repartir la cuenta",
+    // Una comanda es la cuenta de gente real y se abre con sólo tener el
+    // código. Fuera de los buscadores: indexarlas dejaría cenas ajenas —con
+    // el bar, la fecha y lo que pidió cada uno— a un search de distancia.
+    robots: { index: false, follow: false, nocache: true },
   };
 }
 
