@@ -1,23 +1,37 @@
 import Link from "next/link";
+import Image, { type StaticImageData } from "next/image";
 import Logo from "@/components/Logo";
 import TicketUploader from "@/components/TicketUploader";
 import JoinByCode from "@/components/JoinByCode";
+import pantallaCuenta from "@/assets/como-va/1-la-cuenta.png";
+import pantallaMarcar from "@/assets/como-va/2-marcas-lo-tuyo.png";
+import pantallaCuentas from "@/assets/como-va/3-las-cuentas.png";
 
-const STEPS = [
+/**
+ * Los tres pasos, contados con la pantalla de verdad.
+ *
+ * Antes eran tres párrafos describiendo una app que no se veía por ningún
+ * lado. Una captura del producto funcionando convence en un segundo y ahorra
+ * el párrafo entero: el pie sólo tiene que nombrar lo que ya se está viendo.
+ */
+const PASOS: { n: string; title: string; foot: string; shot: StaticImageData }[] = [
   {
     n: "01",
-    title: "El ticket lleva un QR",
-    body: "El bar imprime el código junto al total. Quien quiera repartir, lo escanea: no hay que instalar nada ni registrarse.",
+    title: "Le haces una foto",
+    foot: "Salen los platos, los precios y el total.",
+    shot: pantallaCuenta,
   },
   {
     n: "02",
-    title: "Cada uno marca lo suyo",
-    body: "Todos ven la misma comanda en su móvil. Tocas los platos que te has comido y desaparecen de la lista. Lo que fue de todos se marca como compartido y se parte solo.",
+    title: "Marcas lo tuyo",
+    foot: "Lo compartido se parte solo entre quienes lo tomaron.",
+    shot: pantallaMarcar,
   },
   {
     n: "03",
-    title: "Sale lo que pone cada uno",
-    body: "El servicio se reparte en proporción y aparece lo que cada uno le tiene que devolver a quien pagó. Quien puso la tarjeta ve de un vistazo quién le falta.",
+    title: "Cada uno ve lo que debe",
+    foot: "Y quien puso la tarjeta ve quién le falta por pagar.",
+    shot: pantallaCuentas,
   },
 ];
 
@@ -80,15 +94,36 @@ export default function Home() {
       <section className="border-y border-line bg-paper-2/40">
         <div className="mx-auto max-w-6xl px-5 py-16 sm:py-20">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Cómo va</h2>
-          <div className="mt-10 grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-3">
-            {STEPS.map((step) => (
-              <article key={step.n} className="bg-paper p-6 sm:p-7">
-                <span className="tnum text-3xl font-bold text-amber">{step.n}</span>
-                <h3 className="mt-4 text-lg font-semibold tracking-tight">{step.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-ink-soft">{step.body}</p>
-              </article>
+          <p className="mt-3 max-w-md text-ink-soft">Tres pantallas y ya está.</p>
+
+          {/*
+            En el móvil no caben tres teléfonos uno debajo de otro sin convertir
+            la portada en un scroll infinito, así que van en carrusel con
+            anclaje; en escritorio, las tres a la vez.
+          */}
+          <ol className="-mx-5 mt-10 flex snap-x snap-mandatory gap-5 overflow-x-auto px-5 pb-4 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-6 sm:overflow-visible sm:px-0 sm:pb-0">
+            {PASOS.map((paso) => (
+              <li
+                key={paso.n}
+                className="w-[72vw] max-w-[19rem] shrink-0 snap-center sm:w-auto sm:max-w-none"
+              >
+                <div className="overflow-hidden rounded-[1.6rem] border border-line bg-paper shadow-2xl shadow-black/40">
+                  <Image
+                    src={paso.shot}
+                    alt=""
+                    placeholder="blur"
+                    sizes="(min-width: 640px) 21rem, 72vw"
+                    className="h-auto w-full"
+                  />
+                </div>
+                <p className="mt-4 flex items-baseline gap-2.5">
+                  <span className="tnum text-sm font-bold text-amber">{paso.n}</span>
+                  <span className="text-lg font-semibold tracking-tight">{paso.title}</span>
+                </p>
+                <p className="mt-1 text-sm leading-relaxed text-ink-soft">{paso.foot}</p>
+              </li>
             ))}
-          </div>
+          </ol>
         </div>
       </section>
 

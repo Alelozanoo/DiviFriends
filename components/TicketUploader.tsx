@@ -9,7 +9,10 @@ import Link from "next/link";
  * reescribe cualquier formato que el navegador sepa pintar (HEIC en iOS,
  * incluido) como JPEG, que es lo que acepta la API de visión.
  */
-async function toJpegBase64(file: File, maxEdge = 2000): Promise<string> {
+async function toJpegBase64(
+  file: File,
+  maxEdge = 2000,
+): Promise<{ base64: string; vista: string }> {
   const bitmap = await createImageBitmap(file);
   const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
   const width = Math.round(bitmap.width * scale);
@@ -24,7 +27,10 @@ async function toJpegBase64(file: File, maxEdge = 2000): Promise<string> {
   bitmap.close?.();
 
   const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
-  return dataUrl.slice(dataUrl.indexOf(",") + 1);
+  // Se devuelve también la imagen entera para poder enseñarla mientras se lee.
+  // Va la del canvas y no el archivo original a propósito: aquí ya es un JPEG
+  // que cualquier navegador pinta, y el HEIC del iPhone no lo sería.
+  return { base64: dataUrl.slice(dataUrl.indexOf(",") + 1), vista: dataUrl };
 }
 
 type Phase = "idle" | "reading" | "parsing" | "error";
@@ -43,13 +49,16 @@ export default function TicketUploader() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [vista, setVista] = useState<string | null>(null);
 
   const upload = useCallback(
     async (file: File) => {
       setError(null);
+      setVista(null);
       setPhase("reading");
       try {
-        const base64 = await toJpegBase64(file);
+        const { base64, vista } = await toJpegBase64(file);
+        setVista(vista);
         setPhase("parsing");
 
         const response = await fetch("/api/tickets", {
@@ -92,14 +101,24 @@ export default function TicketUploader() {
         }`}
       >
         <div className="flex w-full flex-col items-center gap-4 rounded-2xl bg-paper-2 px-6 py-8 text-center sm:py-10">
-          <span
-            className={`grid h-16 w-16 place-items-center rounded-2xl bg-amber text-paper ${
-              busy ? "animate-pulse" : ""
-            }`}
-            aria-hidden
-          >
-            <CameraIcon />
-          </span>
+          {/*
+            En cuanto la foto está lista se enseña con el escáner encima. Leer
+            un ticket tarda varios segundos y un icono parpadeando no dice nada:
+            ver tu propia foto con la línea pasando por encima cuenta que se
+            está trabajando sobre ella, y que la que has hecho vale.
+          */}
+          {vista ? (
+            <Escaner src={vista} />
+          ) : (
+            <span
+              className={`grid h-16 w-16 place-items-center rounded-2xl bg-amber text-paper ${
+                busy ? "animate-pulse" : ""
+              }`}
+              aria-hidden
+            >
+              <CameraIcon />
+            </span>
+          )}
 
           <span className="text-xl font-semibold tracking-tight sm:text-2xl">
             {busy ? PHASE_COPY[phase] : "Sube la foto del ticket"}
@@ -177,6 +196,45 @@ export default function TicketUploader() {
           Escribe la comanda a mano
         </Link>
       </p>
+    </div>
+  );
+}
+
+/**
+ * La foto que acabas de hacer, con una línea recorriéndola de arriba abajo.
+ *
+ * Las esquinas en ángulo son las del visor de una cámara: encuadran la foto sin
+ * taparla y dicen «esto se está mirando». La imagen se atenúa un poco para que
+ * la línea destaque sobre un ticket blanco, que es lo normal.
+ */
+function Escaner({ src }: { src: string }) {
+  return (
+    <div className="relative h-40 w-32 overflow-hidden rounded-xl border border-line bg-paper sm:h-48 sm:w-36">
+      {/* Es un data URL efímero de la propia sesión: `next/image` no aporta nada. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={src} alt="" className="h-full w-full object-cover opacity-70" />
+
+      {/* la línea que barre */}
+      <div
+        aria-hidden
+        className="absolute inset-x-0 h-16 animate-[escaneo_2.2s_ease-in-out_infinite] motion-reduce:hidden"
+        style={{
+          background:
+            "linear-gradient(to bottom, transparent, color-mix(in oklab, var(--amber) 26%, transparent) 62%, var(--amber) 96%, transparent)",
+        }}
+      />
+
+      {/* esquinas de visor */}
+      <div aria-hidden className="absolute inset-0">
+        {[
+          "left-1.5 top-1.5 border-l-2 border-t-2",
+          "right-1.5 top-1.5 border-r-2 border-t-2",
+          "left-1.5 bottom-1.5 border-b-2 border-l-2",
+          "right-1.5 bottom-1.5 border-b-2 border-r-2",
+        ].map((esquina) => (
+          <span key={esquina} className={`absolute h-4 w-4 rounded-sm border-amber ${esquina}`} />
+        ))}
+      </div>
     </div>
   );
 }
