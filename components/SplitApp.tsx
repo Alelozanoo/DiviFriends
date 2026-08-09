@@ -13,6 +13,7 @@ import ItemSheet from "./ItemSheet";
 import Logo from "./Logo";
 import TicketSheet from "./TicketSheet";
 import TableSheet from "./TableSheet";
+import GuideSheet from "./GuideSheet";
 import { Avatar, Progress, Sheet } from "./ui";
 
 export default function SplitApp({
@@ -31,6 +32,7 @@ export default function SplitApp({
   const [adding, setAdding] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [viewing, setViewing] = useState(false);
+  const [guiding, setGuiding] = useState(false);
   // null = decide la app (abierto si no te has unido); true/false = lo has decidido tú.
   const [joinOverride, setJoinOverride] = useState<boolean | null>(null);
 
@@ -170,6 +172,21 @@ export default function SplitApp({
               )}
             </span>
             <span className="text-xs font-bold text-amber">Compartir</span>
+          </button>
+
+          {/* La ayuda vive al lado de compartir porque es el mismo momento: te
+              acaban de pasar un enlace, entras y no sabes qué se espera de ti. */}
+          <button
+            type="button"
+            onClick={() => setGuiding(true)}
+            aria-label="Cómo funciona"
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-line text-ink-faint transition-colors hover:border-amber hover:text-amber active:bg-paper-2"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+              <circle cx="12" cy="12" r="9.5" />
+              <path d="M12 11v5.5" />
+              <circle cx="12" cy="7.6" r="0.6" fill="currentColor" />
+            </svg>
           </button>
         </div>
         <Progress value={progress} />
@@ -314,6 +331,8 @@ export default function SplitApp({
       )}
 
       {viewing && <TicketSheet state={state} onClose={() => setViewing(false)} />}
+
+      {guiding && <GuideSheet onClose={() => setGuiding(false)} />}
 
       {sharing && (
         <TableSheet

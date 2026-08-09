@@ -2,7 +2,8 @@
 
 import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import JoinByCode from "./JoinByCode";
+import { Sheet } from "./ui";
 
 /**
  * Reduce la foto antes de subirla. Además de ahorrar ancho de banda, el canvas
@@ -50,6 +51,7 @@ export default function TicketUploader() {
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const [vista, setVista] = useState<string | null>(null);
+  const [pidiendoCodigo, setPidiendoCodigo] = useState(false);
 
   const upload = useCallback(
     async (file: File) => {
@@ -124,11 +126,13 @@ export default function TicketUploader() {
             {busy ? PHASE_COPY[phase] : "Sube la foto del ticket"}
           </span>
 
-          <span className="max-w-sm text-sm text-ink-soft">
-            {busy
-              ? "Tardo unos segundos en reconocer cada línea."
-              : "Reconozco los platos, los precios y el total."}
-          </span>
+          {/* Sólo mientras trabaja: al empezar, la frase de apoyo repetía lo que
+              ya dicen el título y los dos botones de debajo. */}
+          {busy && (
+            <span className="max-w-sm text-sm text-ink-soft">
+              Tardo unos segundos en reconocer cada línea.
+            </span>
+          )}
 
           <div className="mt-1 flex w-full max-w-xs flex-col gap-2 sm:flex-row">
             <button
@@ -190,14 +194,34 @@ export default function TicketUploader() {
         </p>
       )}
 
-      {/* Decía «¿No tienes el ticket a mano? Escribe la comanda a mano»: la
-          misma expresión dos veces en una frase de nueve palabras. */}
+      {/*
+        Quien llega con un enlace o un QR de una mesa que ya existe no tiene que
+        subir ninguna foto: sólo meter el código. Antes eso vivía en un bloque
+        aparte siempre abierto, y le robaba sitio al único botón que importa la
+        primera vez. Ahora se pide al pulsar.
+      */}
       <p className="mt-4 text-center text-sm text-ink-soft">
-        ¿Se ha perdido el papel?{" "}
-        <Link href="/nueva" className="text-amber underline underline-offset-4 hover:text-ink">
-          Escríbela a mano
-        </Link>
+        ¿Ya tienes un Divi?{" "}
+        <button
+          type="button"
+          onClick={() => setPidiendoCodigo(true)}
+          className="text-amber underline underline-offset-4 hover:text-ink"
+        >
+          Introduce el código
+        </button>
       </p>
+
+      {pidiendoCodigo && (
+        <Sheet onClose={() => setPidiendoCodigo(false)}>
+          <h2 className="text-xl font-bold tracking-tight">El código de la mesa</h2>
+          <p className="mt-1 text-sm text-ink-soft">
+            Seis caracteres. Están en el ticket impreso o te los pasa quien creó el Divi.
+          </p>
+          <div className="mt-4">
+            <JoinByCode />
+          </div>
+        </Sheet>
+      )}
     </div>
   );
 }

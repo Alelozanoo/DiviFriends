@@ -1,7 +1,6 @@
 import Link from "next/link";
 import Logo from "@/components/Logo";
 import TicketUploader from "@/components/TicketUploader";
-import JoinByCode from "@/components/JoinByCode";
 import { PasoCuentas, PasoFoto, PasoMarcar } from "@/components/ComoVa";
 
 /**
@@ -65,20 +64,14 @@ export default function Home() {
             </p>
 
             {/*
-              Lo que más frena a alguien que llega de un QR en un bar: pensar
-              que le van a pedir descargar algo o darse de alta. Va en una sola
-              línea y no en tarjetas grandes porque en el móvil esto está justo
-              encima del botón de subir la foto, y antes lo empujaba fuera de
-              la pantalla.
-            */}
-            {/*
-              Centradas y no alineadas a la izquierda: así se leen como un sello
-              del producto y no como la cuarta línea del párrafo de arriba.
+              Lo que más frena a alguien que llega de un QR en un bar es pensar
+              que le van a pedir descargar algo o darse de alta.
 
-              El tamaño es ajustado a propósito. En 390 px las tres burbujas
-              caben en una sola fila por poco; con una pizca más de relleno
-              saltaban a dos líneas y empujaban el bloque de subir la foto fuera
-              de la pantalla, que es lo que hay que proteger aquí.
+              Centradas y no a la izquierda: así se leen como un sello del
+              producto y no como la cuarta línea del párrafo. El tamaño va
+              ajustado porque en 360 px caben en una fila por poco, y con una
+              pizca más de relleno saltan a dos y empujan el bloque de subir la
+              foto fuera de la pantalla, que es lo que hay que proteger aquí.
             */}
             <ul className="mt-6 flex flex-wrap justify-center gap-1.5 lg:mt-8 lg:gap-2">
               {/* «Sin instalar» y no «Sin instalar nada»: las dos sílabas de
@@ -99,15 +92,6 @@ export default function Home() {
             <div className="rounded-[1.75rem] border border-line bg-paper-2/60 p-4 shadow-2xl shadow-black/40 backdrop-blur">
               <p className="stamp mb-3 px-2 text-ink-faint">Empieza aquí</p>
               <TicketUploader />
-            </div>
-
-            {/* Antes decía «o entra con el código del ticket» y era la tercera
-                vez que salía la palabra «ticket» en la misma tarjeta. Además
-                esto no es para quien trae el papel, sino para quien llega a una
-                comanda que ya existe: decirlo así explica cuándo se usa. */}
-            <div className="mt-5 rounded-2xl border border-line bg-paper-2/40 p-4">
-              <p className="stamp mb-3 text-ink-faint">¿Ya la ha creado alguien de la mesa?</p>
-              <JoinByCode />
             </div>
           </div>
         </div>
