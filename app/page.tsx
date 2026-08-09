@@ -1,37 +1,35 @@
 import Link from "next/link";
-import Image, { type StaticImageData } from "next/image";
 import Logo from "@/components/Logo";
 import TicketUploader from "@/components/TicketUploader";
 import JoinByCode from "@/components/JoinByCode";
-import pantallaCuenta from "@/assets/como-va/1-la-cuenta.png";
-import pantallaMarcar from "@/assets/como-va/2-marcas-lo-tuyo.png";
-import pantallaCuentas from "@/assets/como-va/3-las-cuentas.png";
+import { PasoCuentas, PasoFoto, PasoMarcar } from "@/components/ComoVa";
 
 /**
- * Los tres pasos, contados con la pantalla de verdad.
+ * Los tres pasos, dibujados con las piezas de la propia app.
  *
- * Antes eran tres párrafos describiendo una app que no se veía por ningún
- * lado. Una captura del producto funcionando convence en un segundo y ahorra
- * el párrafo entero: el pie sólo tiene que nombrar lo que ya se está viendo.
+ * Se probó con capturas de pantalla y pesaban medio mega para acabar
+ * enseñando la app entera —cabecera, barra de abajo, diez líneas— cuando cada
+ * paso sólo necesita una de esas piezas. Dibujadas se recortan a lo justo, se
+ * ven nítidas en cualquier pantalla y no cuestan una sola petición.
  */
-const PASOS: { n: string; title: string; foot: string; shot: StaticImageData }[] = [
+const PASOS = [
   {
     n: "01",
     title: "Le haces una foto",
-    foot: "Salen los platos, los precios y el total.",
-    shot: pantallaCuenta,
+    foot: "El ticket se convierte en la lista, plato a plato.",
+    Pieza: PasoFoto,
   },
   {
     n: "02",
-    title: "Marcas lo tuyo",
-    foot: "Lo compartido se parte solo entre quienes lo tomaron.",
-    shot: pantallaMarcar,
+    title: "Tocas lo que has tomado",
+    foot: "Lo compartido se parte solo entre quienes lo pidieron.",
+    Pieza: PasoMarcar,
   },
   {
     n: "03",
-    title: "Cada uno ve lo que debe",
+    title: "Sale lo que debe cada uno",
     foot: "Y quien puso la tarjeta ve quién le falta por pagar.",
-    shot: pantallaCuentas,
+    Pieza: PasoCuentas,
   },
 ];
 
@@ -96,31 +94,17 @@ export default function Home() {
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Cómo va</h2>
           <p className="mt-3 max-w-md text-ink-soft">Tres pantallas y ya está.</p>
 
-          {/*
-            En el móvil no caben tres teléfonos uno debajo de otro sin convertir
-            la portada en un scroll infinito, así que van en carrusel con
-            anclaje; en escritorio, las tres a la vez.
-          */}
-          <ol className="-mx-5 mt-10 flex snap-x snap-mandatory gap-5 overflow-x-auto px-5 pb-4 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-6 sm:overflow-visible sm:px-0 sm:pb-0">
-            {PASOS.map((paso) => (
-              <li
-                key={paso.n}
-                className="w-[72vw] max-w-[19rem] shrink-0 snap-center sm:w-auto sm:max-w-none"
-              >
-                <div className="overflow-hidden rounded-[1.6rem] border border-line bg-paper shadow-2xl shadow-black/40">
-                  <Image
-                    src={paso.shot}
-                    alt=""
-                    placeholder="blur"
-                    sizes="(min-width: 640px) 21rem, 72vw"
-                    className="h-auto w-full"
-                  />
-                </div>
+          {/* Al dibujarlas son bajitas, así que caben apiladas en el móvil sin
+              carrusel ni scroll lateral: se leen de arriba abajo, en orden. */}
+          <ol className="mt-10 grid gap-8 sm:grid-cols-3 sm:gap-6">
+            {PASOS.map(({ n, title, foot, Pieza }) => (
+              <li key={n}>
+                <Pieza />
                 <p className="mt-4 flex items-baseline gap-2.5">
-                  <span className="tnum text-sm font-bold text-amber">{paso.n}</span>
-                  <span className="text-lg font-semibold tracking-tight">{paso.title}</span>
+                  <span className="tnum text-sm font-bold text-amber">{n}</span>
+                  <span className="text-lg font-semibold tracking-tight">{title}</span>
                 </p>
-                <p className="mt-1 text-sm leading-relaxed text-ink-soft">{paso.foot}</p>
+                <p className="mt-1 text-sm leading-relaxed text-ink-soft">{foot}</p>
               </li>
             ))}
           </ol>
