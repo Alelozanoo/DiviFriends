@@ -190,10 +190,12 @@ export default function TicketUploader() {
         </p>
       )}
 
+      {/* Decía «¿No tienes el ticket a mano? Escribe la comanda a mano»: la
+          misma expresión dos veces en una frase de nueve palabras. */}
       <p className="mt-4 text-center text-sm text-ink-soft">
-        ¿No tienes el ticket a mano?{" "}
+        ¿Se ha perdido el papel?{" "}
         <Link href="/nueva" className="text-amber underline underline-offset-4 hover:text-ink">
-          Escribe la comanda a mano
+          Escríbela a mano
         </Link>
       </p>
     </div>

@@ -44,14 +44,16 @@ export default function Home() {
           style={{ background: "radial-gradient(circle, var(--amber), transparent 65%)" }}
         />
 
-        <div className="mx-auto flex max-w-6xl flex-col gap-14 px-5 pb-20 pt-8 lg:flex-row lg:items-center lg:gap-16 lg:pt-16">
+        {/* El aire de arriba y entre columnas se recorta en el móvil para que
+            el bloque de subir la foto siga entrando en la primera pantalla. */}
+        <div className="mx-auto flex max-w-6xl flex-col gap-10 px-5 pb-20 pt-6 lg:flex-row lg:items-center lg:gap-16 lg:pt-16">
           <div className="flex-1">
             <Link href="/" className="inline-flex items-center gap-2.5 lg:gap-4">
               <Logo size={128} priority className="h-11 w-11 lg:h-20 lg:w-20" />
               <span className="text-xl font-bold tracking-tight lg:text-3xl">DiviFriends</span>
             </Link>
 
-            <h1 className="mt-9 text-[2.6rem] font-bold leading-[1.02] tracking-[-0.03em] sm:text-6xl">
+            <h1 className="mt-7 text-[2.6rem] font-bold leading-[1.02] tracking-[-0.03em] lg:mt-9 sm:text-6xl">
               La cuenta se reparte
               <br />
               <span className="text-amber">antes de pedir la segunda</span>
@@ -69,9 +71,23 @@ export default function Home() {
               encima del botón de subir la foto, y antes lo empujaba fuera de
               la pantalla.
             */}
-            <ul className="mt-5 flex flex-wrap gap-x-4 gap-y-1.5 lg:mt-7 lg:gap-x-6">
-              {["Gratis", "Sin registro", "Sin instalar nada"].map((texto) => (
-                <li key={texto} className="flex items-center gap-1.5 text-sm font-semibold">
+            {/*
+              Centradas y no alineadas a la izquierda: así se leen como un sello
+              del producto y no como la cuarta línea del párrafo de arriba.
+
+              El tamaño es ajustado a propósito. En 390 px las tres burbujas
+              caben en una sola fila por poco; con una pizca más de relleno
+              saltaban a dos líneas y empujaban el bloque de subir la foto fuera
+              de la pantalla, que es lo que hay que proteger aquí.
+            */}
+            <ul className="mt-6 flex flex-wrap justify-center gap-1.5 lg:mt-8 lg:gap-2">
+              {/* «Sin instalar» y no «Sin instalar nada»: las dos sílabas de
+                  más partían la fila en pantallas de 360 px. */}
+              {["Gratis", "Sin registro", "Sin instalar"].map((texto) => (
+                <li
+                  key={texto}
+                  className="flex items-center gap-1.5 rounded-full border border-line bg-paper-2/70 py-1.5 pl-2.5 pr-3 text-xs font-semibold text-ink-soft lg:py-2 lg:pl-3 lg:pr-4 lg:text-sm"
+                >
                   <CheckIcon />
                   {texto}
                 </li>
@@ -85,8 +101,12 @@ export default function Home() {
               <TicketUploader />
             </div>
 
+            {/* Antes decía «o entra con el código del ticket» y era la tercera
+                vez que salía la palabra «ticket» en la misma tarjeta. Además
+                esto no es para quien trae el papel, sino para quien llega a una
+                comanda que ya existe: decirlo así explica cuándo se usa. */}
             <div className="mt-5 rounded-2xl border border-line bg-paper-2/40 p-4">
-              <p className="stamp mb-3 text-ink-faint">O entra con el código del ticket</p>
+              <p className="stamp mb-3 text-ink-faint">¿Ya la ha creado alguien de la mesa?</p>
               <JoinByCode />
             </div>
           </div>
