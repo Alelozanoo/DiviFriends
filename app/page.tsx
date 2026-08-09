@@ -63,15 +63,20 @@ export default function Home() {
             </p>
 
             {/*
-              En el móvil esto va justo encima de subir la foto y lo empuja
-              fuera de la pantalla, así que sólo sale donde cabe al lado: en
-              escritorio las dos columnas están una junto a otra y no estorba.
+              Lo que más frena a alguien que llega de un QR en un bar: pensar
+              que le van a pedir descargar algo o darse de alta. Va en una sola
+              línea y no en tarjetas grandes porque en el móvil esto está justo
+              encima del botón de subir la foto, y antes lo empujaba fuera de
+              la pantalla.
             */}
-            <dl className="mt-9 hidden flex-wrap gap-x-10 gap-y-4 lg:flex">
-              <Metric value="0" label="apps que instalar" />
-              <Metric value="1" label="foto o un QR" />
-              <Metric value="0,00 €" label="de descuadre" />
-            </dl>
+            <ul className="mt-5 flex flex-wrap gap-x-4 gap-y-1.5 lg:mt-7 lg:gap-x-6">
+              {["Gratis", "Sin registro", "Sin instalar nada"].map((texto) => (
+                <li key={texto} className="flex items-center gap-1.5 text-sm font-semibold">
+                  <CheckIcon />
+                  {texto}
+                </li>
+              ))}
+            </ul>
           </div>
 
           <div className="w-full lg:max-w-md">
@@ -91,7 +96,7 @@ export default function Home() {
       {/* ------------------------------------------------------------- proceso */}
       <section className="border-y border-line bg-paper-2/40">
         <div className="mx-auto max-w-6xl px-5 py-16 sm:py-20">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Cómo va</h2>
+          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Cómo funciona</h2>
           <p className="mt-3 max-w-md text-ink-soft">Tres pantallas y ya está.</p>
 
           {/* Al dibujarlas son bajitas, así que caben apiladas en el móvil sin
@@ -153,12 +158,22 @@ export default function Home() {
   );
 }
 
-function Metric({ value, label }: { value: string; label: string }) {
+function CheckIcon() {
   return (
-    <div>
-      <dt className="tnum text-2xl font-bold text-ink">{value}</dt>
-      <dd className="stamp mt-1 text-ink-faint">{label}</dd>
-    </div>
+    <svg
+      aria-hidden
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="var(--mint)"
+      strokeWidth="3.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="shrink-0"
+    >
+      <path d="M4 12.5 9.5 18 20 6.5" />
+    </svg>
   );
 }
 
