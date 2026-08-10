@@ -65,27 +65,40 @@ export default function SplitApp({
     }
   }
 
-  async function join(name: string) {
-    const response = await fetch(`/api/tickets/${code}/participants`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name }),
-    });
-    if (!response.ok) {
-      setError("No se ha podido entrar en la mesa.");
-      return;
-    }
-    setServer((await response.json()) as TicketState);
-    const participantId = response.headers.get("x-participant-id");
-    if (participantId) {
-      store(participantId);
-      setJoinOverride(null);
+  /**
+   * Apunta a alguien a la mesa y devuelve su ficha.
+   *
+   * Devolverla importa: quien apunta a Sofía desde el reparto de un plato
+   * quiere darle su parte en el mismo gesto, y para eso hace falta el id que
+   * acaba de nacer. No es hacerse pasar por ella —la ficha no es tuya—, sólo
+   * guardarle el sitio hasta que entre por el enlace y toque su nombre.
+   */
+  async function addPerson(name: string): Promise<string | null> {
+    setError(null);
+    try {
+      const response = await fetch(`/api/tickets/${code}/participants`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const data = (await response.json()) as TicketState & { error?: string };
+      if (!response.ok) {
+        setError(data.error ?? "No se ha podido apuntar a nadie más.");
+        return null;
+      }
+      setServer(data);
+      return response.headers.get("x-participant-id");
+    } catch {
+      setError("Sin conexión. Los cambios no se están guardando.");
+      return null;
     }
   }
 
-  /** Apunta a alguien a la mesa sin hacerse pasar por él: la ficha no es tuya. */
-  async function addPerson(name: string) {
-    await send("/participants", { method: "POST", body: JSON.stringify({ name }) });
+  async function join(name: string) {
+    const participantId = await addPerson(name);
+    if (!participantId) return;
+    store(participantId);
+    setJoinOverride(null);
   }
 
   /**
@@ -118,6 +131,17 @@ export default function SplitApp({
 
   const patchParticipant = (participantId: string, body: Record<string, unknown>) =>
     send(`/participants/${participantId}`, { method: "PATCH", body: JSON.stringify(body) });
+
+  /**
+   * Cambia el reparto de una línea sin tocar quién la lleva.
+   *
+   * Hace falta para quien todavía no se ha unido: puede decir que la paella va
+   * entre cuatro y repartirla entre los de la mesa aunque él no coja parte.
+   * Por el camino de los claims eso no se podía, porque siempre arrastraba una
+   * parte para quien pulsaba.
+   */
+  const setSplitInto = (itemId: string, into: number) =>
+    send(`/items/${itemId}`, { method: "PATCH", body: JSON.stringify({ splitInto: into }) });
 
   /* ----------------------------------------------------------------- vista */
 
@@ -313,16 +337,24 @@ export default function SplitApp({
             state.items,
             editingItem.id,
           )}
+          meId={meId}
           onClose={() => setEditing(null)}
           // Aquí la hoja se queda abierta: se marca a varios de una sentada.
-          onSetShares={(participantId, shares) =>
-            claim(editingItem.id, shares, undefined, participantId)
+          onSetShares={(participantId, shares, into) =>
+            claim(editingItem.id, shares, into, participantId)
           }
+          onAddPerson={addPerson}
           onPick={(into) => {
-            setEditing(null);
-            // Al elegir «entre N» te apuntas de una: es lo que quiere el 99 %.
-            claim(editingItem.id, 1, into);
+            // Ya no cierra la hoja: elegir el número es sólo la primera mitad,
+            // y cerrar aquí era lo que dejaba a la gente sin llegar nunca al
+            // «¿con quién?». Al elegir «entre N» te apuntas de una, que es lo
+            // que quiere el 99 %; si aún no te has unido sólo se parte la línea.
+            if (meId) claim(editingItem.id, 1, into);
+            else void setSplitInto(editingItem.id, into);
           }}
+          onUndoSplit={() =>
+            void setSplitInto(editingItem.id, Math.max(1, Math.round(editingItem.qty || 1)))
+          }
           onRemove={() => {
             setEditing(null);
             void send(`/items/${editingItem.id}`, { method: "DELETE" });
@@ -371,9 +403,11 @@ export default function SplitApp({
 /**
  * Lo primero que ve quien entra por el QR o por el enlace.
  *
- * Arriba el nombre a mano, y debajo los que ya están apuntados: cuando alguien
- * de la mesa te ha metido antes de que llegaras, sólo tienes que tocarte a ti
- * mismo y heredas todo lo que ya te habían marcado.
+ * Primero los nombres que ya están apuntados, y sólo debajo el hueco para
+ * escribir. Va en ese orden porque desde que se puede apuntar a alguien al
+ * repartir un plato, lo normal es que tu nombre ya esté ahí: tocarlo es un
+ * gesto y hereda todo lo que te habían marcado mientras no mirabas. El teclado
+ * sólo salta solo cuando la lista está vacía y escribir es la única salida.
  */
 function JoinSheet({
   people,
@@ -392,8 +426,30 @@ function JoinSheet({
       <h2 className="text-xl font-bold tracking-tight">¿Quién eres?</h2>
       <p className="mt-1 text-sm text-ink-soft">Para que la mesa sepa qué platos son tuyos.</p>
 
+      {people.length > 0 && (
+        <>
+          <p className="stamp mt-4 text-ink-faint">Toca tu nombre si ya estás en la lista</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {people.map((person) => (
+              <button
+                key={person.id}
+                type="button"
+                onClick={() => void onJoin(person.name)}
+                className="flex items-center gap-2 rounded-xl border-2 border-line py-2.5 pl-2.5 pr-3.5 transition-colors hover:border-amber active:bg-paper-3"
+              >
+                <Avatar name={person.name} color={person.color} size={24} />
+                <span className="max-w-32 truncate text-sm font-semibold">{person.name}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="rule my-4" />
+          <p className="stamp text-ink-faint">¿No estás? Escríbelo</p>
+        </>
+      )}
+
       <form
-        className="mt-4 flex gap-2"
+        className={`flex gap-2 ${people.length > 0 ? "mt-2" : "mt-4"}`}
         onSubmit={async (event) => {
           event.preventDefault();
           if (!name.trim() || busy) return;
@@ -403,10 +459,12 @@ function JoinSheet({
         }}
       >
         <input
-          autoFocus
+          autoFocus={people.length === 0}
           value={name}
           onChange={(event) => setName(event.target.value)}
-          placeholder="Álex"
+          // Un nombre de ejemplo cantaba raro desde que la lista de arriba
+          // lleva nombres de verdad: parecía que te sugería llamarte Álex.
+          placeholder="Tu nombre"
           maxLength={40}
           className="min-w-0 flex-1 rounded-xl border border-line bg-paper px-4 py-3 focus:border-amber focus:outline-none"
         />
@@ -418,25 +476,6 @@ function JoinSheet({
           Entrar
         </button>
       </form>
-
-      {people.length > 0 && (
-        <div className="mt-5">
-          <p className="stamp text-ink-faint">O toca tu nombre si ya te han apuntado</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {people.map((person) => (
-              <button
-                key={person.id}
-                type="button"
-                onClick={() => void onJoin(person.name)}
-                className="flex items-center gap-2 rounded-xl border-2 border-line py-2 pl-2 pr-3 transition-colors hover:border-amber active:bg-paper-3"
-              >
-                <Avatar name={person.name} color={person.color} size={22} />
-                <span className="max-w-32 truncate text-sm font-semibold">{person.name}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
 
       <button
         type="button"

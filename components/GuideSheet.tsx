@@ -33,15 +33,21 @@ const SECCIONES: { pregunta: string; pasos: React.ReactNode[] }[] = [
     pregunta: "¿Cómo divido un plato entre varios?",
     pasos: [
       <>
-        Toca <B>÷ Dividir</B> en la tarjeta del plato.
+        Toca <B>÷ Dividir</B> en la tarjeta del plato. Van dos preguntas
+        seguidas.
       </>,
       <>
-        Elige entre cuántos va. Tu parte se fija en ese momento, sin esperar a
-        que los demás se apunten.
+        <B>Entre cuántos.</B> Debajo de cada número tienes lo que costaría cada
+        parte. Tu parte queda fijada ahí mismo, sin esperar a que se apunte
+        nadie.
       </>,
       <>
-        En esa misma pantalla puedes marcar quién lo ha tomado, útil cuando sólo
-        uno de la mesa tiene el móvil abierto.
+        <B>Con quién.</B> Toca a los de la mesa, y a quien no esté lo apuntas
+        ahí mismo escribiendo su nombre.
+      </>,
+      <>
+        A quien apuntes le saldrá su nombre esperándole cuando entre por el
+        enlace: sólo tiene que tocarlo y hereda lo que le marcaste.
       </>,
     ],
   },

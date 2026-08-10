@@ -28,7 +28,8 @@ export default function TableSheet({
   qrSvg: string;
   participants: Participant[];
   meId: string | null;
-  onAdd: (name: string) => Promise<void>;
+  /** Devuelve la ficha creada, pero aquí no hace falta: sólo se apunta. */
+  onAdd: (name: string) => Promise<unknown>;
   onRemove: (participantId: string) => void;
   onClose: () => void;
 }) {
