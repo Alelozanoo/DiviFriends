@@ -10,6 +10,8 @@ import type { Participant, TicketState } from "@/lib/types";
 import AccountsPanel from "./AccountsPanel";
 import ItemBubble from "./ItemBubble";
 import ItemSheet from "./ItemSheet";
+import RemoveItemSheet from "./RemoveItemSheet";
+import HistorySheet from "./HistorySheet";
 import Logo from "./Logo";
 import TicketSheet from "./TicketSheet";
 import TableSheet from "./TableSheet";
@@ -29,6 +31,8 @@ export default function SplitApp({
   const [tab, setTab] = useState<"comanda" | "cuentas">("comanda");
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
+  const [removing, setRemoving] = useState<string | null>(null);
+  const [showingLog, setShowingLog] = useState(false);
   const [adding, setAdding] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [viewing, setViewing] = useState(false);
@@ -126,8 +130,9 @@ export default function SplitApp({
     claim(itemId, mine ? 0 : 1);
   }
 
+  // `meId` viaja con todo lo que mueve dinero: es lo que firma el historial.
   const patchTicket = (body: Record<string, unknown>) =>
-    send("", { method: "PATCH", body: JSON.stringify(body) });
+    send("", { method: "PATCH", body: JSON.stringify({ ...body, by: meId }) });
 
   const patchParticipant = (participantId: string, body: Record<string, unknown>) =>
     send(`/participants/${participantId}`, { method: "PATCH", body: JSON.stringify(body) });
@@ -149,6 +154,7 @@ export default function SplitApp({
   const progress =
     settlement.grandTotalCents > 0 ? settlement.assignedCents / settlement.grandTotalCents : 0;
   const editingItem = state.items.find((i) => i.id === editing) ?? null;
+  const removingItem = state.items.find((i) => i.id === removing) ?? null;
   const left = settlement.unassignedCents;
 
   return (
@@ -238,14 +244,31 @@ export default function SplitApp({
                     ? `Faltan ${money(left, state.ticket.currency)}`
                     : "Toca lo que has comido"}
               </p>
-              {/* A mitad de reparto siempre sale «¿qué ponía el ticket?». */}
-              <button
-                type="button"
-                onClick={() => setViewing(true)}
-                className="stamp shrink-0 rounded-lg border border-line px-2 py-1 text-ink-faint transition-colors hover:border-amber hover:text-amber active:bg-paper-2"
-              >
-                Ver ticket
-              </button>
+              <span className="flex shrink-0 items-center gap-1.5">
+                {/*
+                  Sólo cuando hay algo que contar. Si nadie ha tocado nada, un
+                  «Historial (0)» permanente sería ruido; en cuanto alguien
+                  quita una línea, aparece aquí y en color, que es justo el
+                  momento en que la mesa quiere saber quién ha sido.
+                */}
+                {state.events.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowingLog(true)}
+                    className="stamp rounded-lg border border-clay/40 bg-clay/10 px-2 py-1 text-clay transition-colors active:bg-clay/20"
+                  >
+                    Cambios {state.events.length}
+                  </button>
+                )}
+                {/* A mitad de reparto siempre sale «¿qué ponía el ticket?». */}
+                <button
+                  type="button"
+                  onClick={() => setViewing(true)}
+                  className="stamp rounded-lg border border-line px-2 py-1 text-ink-faint transition-colors hover:border-amber hover:text-amber active:bg-paper-2"
+                >
+                  Ver ticket
+                </button>
+              </span>
             </div>
 
             {/* dos columnas de burbujas */}
@@ -261,6 +284,7 @@ export default function SplitApp({
                   onToggle={() => toggle(item.id)}
                   onSetShares={(shares) => claim(item.id, shares)}
                   onOpenOptions={() => setEditing(item.id)}
+                  onRemove={() => setRemoving(item.id)}
                 />
               ))}
 
@@ -289,6 +313,7 @@ export default function SplitApp({
               void patchParticipant(participantId, { settled })
             }
             onSetTotal={(cents) => void patchTicket({ totalCents: cents })}
+            onOpenLog={() => setShowingLog(true)}
           />
         )}
       </main>
@@ -331,12 +356,6 @@ export default function SplitApp({
           breakdown={settlement.byItem[editingItem.id]}
           participants={state.participants}
           currency={state.ticket.currency}
-          ticketTotalCents={state.ticket.totalCents}
-          totalAfterCents={totalAfterRemoving(
-            state.ticket.totalCents,
-            state.items,
-            editingItem.id,
-          )}
           meId={meId}
           onClose={() => setEditing(null)}
           // Aquí la hoja se queda abierta: se marca a varios de una sentada.
@@ -355,10 +374,36 @@ export default function SplitApp({
           onUndoSplit={() =>
             void setSplitInto(editingItem.id, Math.max(1, Math.round(editingItem.qty || 1)))
           }
-          onRemove={() => {
-            setEditing(null);
-            void send(`/items/${editingItem.id}`, { method: "DELETE" });
+        />
+      )}
+
+      {removingItem && (
+        <RemoveItemSheet
+          item={removingItem}
+          breakdown={settlement.byItem[removingItem.id]}
+          currency={state.ticket.currency}
+          ticketTotalCents={state.ticket.totalCents}
+          totalAfterCents={totalAfterRemoving(
+            state.ticket.totalCents,
+            state.items,
+            removingItem.id,
+          )}
+          onClose={() => setRemoving(null)}
+          onConfirm={() => {
+            setRemoving(null);
+            // Con firma: quien quita una línea deja su nombre en el historial.
+            void send(`/items/${removingItem.id}?by=${meId ?? ""}`, { method: "DELETE" });
           }}
+        />
+      )}
+
+      {showingLog && (
+        <HistorySheet
+          events={state.events}
+          participants={state.participants}
+          currency={state.ticket.currency}
+          meId={meId}
+          onClose={() => setShowingLog(false)}
         />
       )}
 
@@ -385,7 +430,10 @@ export default function SplitApp({
         <AddItemSheet
           onClose={() => setAdding(false)}
           onAdd={async (name, qty, price) => {
-            await send("/items", { method: "POST", body: JSON.stringify({ name, qty, price }) });
+            await send("/items", {
+              method: "POST",
+              body: JSON.stringify({ name, qty, price, by: meId }),
+            });
             setAdding(false);
           }}
         />

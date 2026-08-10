@@ -12,6 +12,7 @@ interface Props {
   onSetPayer: (participantId: string) => void;
   onSetSettled: (participantId: string, settled: boolean) => void;
   onSetTotal: (cents: number) => void;
+  onOpenLog: () => void;
 }
 
 /**
@@ -30,11 +31,13 @@ export default function AccountsPanel({
   onSetPayer,
   onSetSettled,
   onSetTotal,
+  onOpenLog,
 }: Props) {
   const { currency } = state.ticket;
   const people = settlement.byParticipant;
   const payer = people.find((p) => p.isPayer) ?? null;
   const pending = people.filter((p) => !p.settled);
+  const changeCount = state.events.length;
 
   return (
     <div className="space-y-4 pb-40">
@@ -120,6 +123,30 @@ export default function AccountsPanel({
           los platos y el total. Se reparte entre todos en proporción a lo que ha tomado cada uno.
         </p>
       )}
+
+      {/*
+        La puerta fija al historial. Aquí y no en la comanda porque ésta es la
+        pantalla en la que se miran los números con lupa, y la pregunta que
+        trae a alguien hasta aquí —«esto no me cuadra»— tiene su respuesta
+        muchas veces en algo que alguien quitó.
+      */}
+      <button
+        type="button"
+        onClick={onOpenLog}
+        className="flex w-full items-center justify-between gap-3 rounded-2xl border border-line bg-paper-2 px-4 py-3 text-left transition-colors active:bg-paper-3"
+      >
+        <span>
+          <span className="text-sm font-semibold">Historial de la mesa</span>
+          <span className="mt-0.5 block text-xs text-ink-faint">
+            {changeCount === 0
+              ? "Nadie ha quitado ni añadido nada"
+              : `${changeCount} ${changeCount === 1 ? "cambio" : "cambios"} en la cuenta`}
+          </span>
+        </span>
+        <span aria-hidden className="shrink-0 text-ink-faint">
+          →
+        </span>
+      </button>
 
       {/* Sólo a quien cobra: al resto no le sirve de nada y añade ruido. */}
       {pending.length > 0 && payer?.participantId === meId && (

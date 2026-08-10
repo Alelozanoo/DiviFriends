@@ -33,6 +33,7 @@ function state(
     items,
     participants,
     claims,
+    events: [],
   };
 }
 

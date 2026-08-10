@@ -44,6 +44,7 @@ function base(items: Item[]): TicketState {
       settled: false,
     })),
     claims: [],
+    events: [],
   };
 }
 

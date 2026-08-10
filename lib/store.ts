@@ -1,5 +1,5 @@
 import { firestore, TICKETS } from "./firebaseAdmin";
-import { docToState, LIMITS, type ItemDoc, type TicketDoc } from "./ticketDoc";
+import { docToState, LIMITS, type EventDoc, type ItemDoc, type TicketDoc } from "./ticketDoc";
 import { colorFor, id, ticketCode } from "./format";
 import { totalAfterRemoving } from "./settle";
 import type { TicketState } from "./types";
@@ -40,6 +40,35 @@ async function mutate(code: string, apply: (doc: TicketDoc) => void): Promise<Ti
     return doc;
   });
   return docToState(code, updated);
+}
+
+/**
+ * Deja constancia de un cambio que mueve dinero de sitio.
+ *
+ * El nombre se copia aquí en vez de mirarse luego por el id: quien quitó la
+ * línea puede irse de la mesa después, y el historial tiene que seguir
+ * diciendo quién fue. Y `by` llega del navegador sin comprobar nada, así que
+ * esto no impide que nadie mienta: sirve para que se vea, no para bloquear.
+ */
+function log(
+  doc: TicketDoc,
+  kind: EventDoc["kind"],
+  by: string | null | undefined,
+  what: string,
+  cents: number,
+): void {
+  const person = by ? doc.participants.find((p) => p.id === by) : null;
+  const events = doc.events ?? (doc.events = []);
+  events.push({
+    at: new Date().toISOString(),
+    kind,
+    participantId: person?.id ?? null,
+    by: person?.name ?? "Alguien sin nombre",
+    what,
+    cents,
+  });
+  // Con tope, o una mesa muy trasteada engordaría el documento sin freno.
+  if (events.length > LIMITS.events) doc.events = events.slice(-LIMITS.events);
 }
 
 export interface NewTicket {
@@ -101,9 +130,16 @@ function isAlreadyExists(error: unknown): boolean {
 export function patchTicket(
   code: string,
   patch: { totalCents?: number; place?: string; tableLabel?: string },
+  by?: string | null,
 ): Promise<TicketState> {
   return mutate(code, (doc) => {
-    if (patch.totalCents !== undefined) doc.totalCents = Math.max(0, Math.round(patch.totalCents));
+    if (patch.totalCents !== undefined) {
+      const antes = doc.totalCents;
+      doc.totalCents = Math.max(0, Math.round(patch.totalCents));
+      // Tocar el total le cambia la cuenta a todos a la vez, así que va al
+      // historial igual que quitar una línea. `what` guarda el total viejo.
+      if (doc.totalCents !== antes) log(doc, "total.edit", by, String(antes), doc.totalCents);
+    }
     if (patch.place !== undefined) doc.place = patch.place.trim() || null;
     if (patch.tableLabel !== undefined) doc.tableLabel = patch.tableLabel.trim() || null;
   });
@@ -183,6 +219,7 @@ export function removeParticipant(code: string, participantId: string): Promise<
 export function addItem(
   code: string,
   input: { name: string; qty: number; unitCents: number },
+  by?: string | null,
 ): Promise<TicketState> {
   const name = input.name.trim().slice(0, 80);
   if (!name) throw new StoreError("El plato necesita un nombre.");
@@ -192,16 +229,18 @@ export function addItem(
   return mutate(code, (doc) => {
     if (doc.items.length >= LIMITS.items) throw new StoreError("Demasiadas líneas en la comanda.");
     const position = doc.items.reduce((max, i) => Math.max(max, i.position), -1) + 1;
+    const totalCents = Math.round(unitCents * qty);
     doc.items.push({
       id: id("itm"),
       name,
       qty,
       unitCents,
-      totalCents: Math.round(unitCents * qty),
+      totalCents,
       splitInto: qty,
       manualSplit: false,
       position,
     });
+    log(doc, "item.add", by, name, totalCents);
   });
 }
 
@@ -274,11 +313,17 @@ function sharesOn(doc: TicketDoc, itemId: string, exceptParticipant?: string): n
     .reduce((a, c) => a + (c.shares ?? c.units ?? 1), 0);
 }
 
-export function removeItem(code: string, itemId: string): Promise<TicketState> {
+export function removeItem(
+  code: string,
+  itemId: string,
+  by?: string | null,
+): Promise<TicketState> {
   return mutate(code, (doc) => {
-    if (!doc.items.some((i) => i.id === itemId)) {
+    const quitado = doc.items.find((i) => i.id === itemId);
+    if (!quitado) {
       throw new StoreError("Ese plato no está en esta comanda.", 404);
     }
+    log(doc, "item.remove", by, quitado.name, quitado.totalCents);
     // El total baja con la línea. Si no, su importe reaparecería como «extras»
     // repartidos entre todos y borrar no serviría de nada.
     doc.totalCents = totalAfterRemoving(doc.totalCents, doc.items, itemId);

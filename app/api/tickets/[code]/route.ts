@@ -19,14 +19,18 @@ export async function GET(_request: Request, { params }: Ctx) {
 
 export async function PATCH(request: Request, { params }: Ctx) {
   const { code } = await params;
-  const body = (await request.json()) as {
+  // `by` es quien dice ser el que hace el cambio: va al historial tal cual,
+  // sin comprobarlo. Aquí no hay sesiones, y el historial es un registro
+  // social, no un control de acceso.
+  const { by, ...patch } = (await request.json()) as {
     totalCents?: number;
     place?: string;
     tableLabel?: string;
+    by?: string | null;
   };
 
   try {
-    return ok(await patchTicket(code.toUpperCase(), body));
+    return ok(await patchTicket(code.toUpperCase(), patch, by));
   } catch (error) {
     return fail(error);
   }

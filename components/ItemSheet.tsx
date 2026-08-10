@@ -27,13 +27,10 @@ export default function ItemSheet({
   participants,
   meId,
   currency,
-  ticketTotalCents,
-  totalAfterCents,
   onSetShares,
   onPick,
   onUndoSplit,
   onAddPerson,
-  onRemove,
   onClose,
 }: {
   item: Item;
@@ -41,9 +38,6 @@ export default function ItemSheet({
   participants: Participant[];
   meId: string | null;
   currency: string;
-  ticketTotalCents: number;
-  /** Con qué total se queda el ticket si se quita esta línea. */
-  totalAfterCents: number;
   /** `into` parte la línea en un trozo más para hacer sitio a quien no cabía. */
   onSetShares: (participantId: string, shares: number, into?: number) => void;
   onPick: (into: number) => void;
@@ -51,7 +45,6 @@ export default function ItemSheet({
   onUndoSplit: () => void;
   /** Apunta a alguien a la mesa y devuelve su ficha para darle su parte. */
   onAddPerson: (name: string) => Promise<string | null>;
-  onRemove: () => void;
   onClose: () => void;
 }) {
   // Una línea ya repartida entra directamente por el «¿con quién?»: el número
@@ -62,9 +55,7 @@ export default function ItemSheet({
   const [custom, setCustom] = useState("");
   const [nuevo, setNuevo] = useState("");
   const [busy, setBusy] = useState(false);
-  const [confirming, setConfirming] = useState(false);
 
-  const personas = breakdown.shares.length;
   // Partes ya repartidas, no personas: si Sofía lleva tres cañas y Ana dos, el
   // reparto no puede bajar de cinco aunque sólo haya dos nombres. Contando
   // cabezas, «entre 3» salía pulsable y el servidor lo corregía en silencio.
@@ -346,60 +337,17 @@ export default function ItemSheet({
         </>
       )}
 
-      <div className="rule my-4" />
-
-      {/* ---------------------------------------------------- quitar la línea */}
-      {confirming ? (
-        <div className="rounded-xl border border-clay/40 bg-clay/10 p-3">
-          <p className="text-sm leading-relaxed text-clay">
-            Desaparece de la comanda
-            {personas > 0 &&
-              (personas === 1
-                ? " y quien la tenía marcada deja de pagarla"
-                : ` y las ${personas} personas que la tenían marcada dejan de pagarla`)}
-            .{" "}
-            {totalAfterCents === ticketTotalCents ? (
-              "El total del ticket no cambia."
-            ) : (
-              <>
-                El total baja a{" "}
-                <span className="tnum font-bold">{money(totalAfterCents, currency)}</span>.
-              </>
-            )}
-          </p>
-          <div className="mt-3 flex gap-2">
-            <button
-              type="button"
-              onClick={onRemove}
-              className="flex-1 rounded-xl bg-clay py-2.5 text-sm font-bold text-paper active:scale-[0.98] transition-transform"
-            >
-              Sí, quitar
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirming(false)}
-              className="flex-1 rounded-xl border border-line py-2.5 text-sm font-semibold text-ink-soft"
-            >
-              Dejarla
-            </button>
-          </div>
-        </div>
-      ) : (
-        <button
-          type="button"
-          onClick={() => setConfirming(true)}
-          className="w-full rounded-xl py-2.5 text-sm font-semibold text-ink-faint transition-colors hover:text-clay"
-        >
-          Quitar de la comanda
-        </button>
-      )}
-
       {/*
         Nunca «Cancelar»: cada toque de aquí arriba se guarda al momento, así
         que no hay nada que deshacer al salir. En el paso 1 el botón empuja
         hacia adelante en vez de cerrar, porque quedarse ahí es justo el fallo
         que traía a la gente con tres cuartos de paella sin dueño.
+
+        Quitar la línea ya no vive aquí: estaba bajo una raya al final de una
+        hoja que va de repartir, y no tenía nada que ver. Ahora es la ✕ de la
+        esquina de la burbuja.
       */}
+      <div className="mt-4" />
       {paso === "cuantos" && item.splitInto === 1 ? (
         <button
           type="button"

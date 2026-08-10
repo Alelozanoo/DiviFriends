@@ -22,10 +22,14 @@ export async function PATCH(request: Request, { params }: Ctx) {
   }
 }
 
-export async function DELETE(_request: Request, { params }: Ctx) {
+export async function DELETE(request: Request, { params }: Ctx) {
   const { code, itemId } = await params;
+  // Quitar una línea baja el total de la mesa, así que queda anotado quién lo
+  // pidió. Va en la URL y no en el cuerpo porque hay proxies y clientes que
+  // descartan el cuerpo de un DELETE sin avisar.
+  const by = new URL(request.url).searchParams.get("by");
   try {
-    return ok(await removeItem(code.toUpperCase(), itemId));
+    return ok(await removeItem(code.toUpperCase(), itemId, by));
   } catch (error) {
     return fail(error);
   }

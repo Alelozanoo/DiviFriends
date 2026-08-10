@@ -59,8 +59,9 @@ const SECCIONES: { pregunta: string; pasos: React.ReactNode[] }[] = [
         lista.
       </>,
       <>
-        Para quitar una línea: <B>÷ Dividir</B> y abajo{" "}
-        <B>Quitar de la comanda</B>. El total del ticket baja con ella.
+        Para quitar una línea: la <B>✕</B> de su esquina. El total del ticket
+        baja con ella, así que queda anotado en el <B>historial</B> con el
+        nombre de quien la quitó.
       </>,
       <>
         Si el total leído no cuadra con el papel, se corrige en <B>Cuentas</B>,

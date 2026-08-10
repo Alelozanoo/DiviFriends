@@ -13,6 +13,7 @@ interface Props {
   onToggle: () => void;
   onSetShares: (shares: number) => void;
   onOpenOptions: () => void;
+  onRemove: () => void;
 }
 
 /**
@@ -33,6 +34,7 @@ export default function ItemBubble({
   onToggle,
   onSetShares,
   onOpenOptions,
+  onRemove,
 }: Props) {
   const mine = breakdown.shares.find((s) => s.participantId === meId);
   const others = breakdown.shares.filter((s) => s.participantId !== meId);
@@ -60,6 +62,24 @@ export default function ItemBubble({
             : "border-line bg-paper-2"
       }`}
     >
+      {/*
+        Quitar la línea, en la esquina y a un toque.
+
+        Vivía escondida al final de la hoja del ÷, que es un sitio raro para
+        algo que no tiene nada que ver con repartir: para borrar una línea mal
+        leída había que entrar a «dividir» primero. Va fuera del botón grande
+        porque un botón dentro de otro no es HTML válido, y sigue pidiendo
+        confirmación: es lo único de la comanda que no tiene vuelta atrás.
+      */}
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={`Quitar ${item.name} de la comanda`}
+        className="absolute right-0 top-0 z-10 grid h-8 w-8 place-items-center rounded-bl-xl rounded-tr-2xl text-sm leading-none text-ink-faint transition-colors hover:bg-clay/15 hover:text-clay active:bg-clay/20"
+      >
+        ✕
+      </button>
+
       <button
         type="button"
         onClick={onToggle}
@@ -68,7 +88,7 @@ export default function ItemBubble({
         className="flex flex-1 flex-col gap-1.5 p-3 pb-2 text-left transition-transform active:scale-[0.97] disabled:active:scale-100"
       >
         {/* cuántos hay de esto */}
-        <span className="flex items-start justify-between gap-1.5">
+        <span className="flex items-start justify-between gap-1.5 pr-7">
           <span
             className={`min-w-0 flex-1 text-[0.92rem] font-semibold leading-tight ${
               full && !isMine ? "text-ink-soft" : "text-ink"
@@ -173,7 +193,7 @@ export default function ItemBubble({
         <button
           type="button"
           onClick={onOpenOptions}
-          aria-label={`Dividir o quitar ${item.name}`}
+          aria-label={`Repartir ${item.name} entre varios`}
           className="flex flex-1 items-center justify-center gap-1.5 py-2 text-[0.72rem] font-bold uppercase tracking-wider text-ink-faint transition-colors hover:text-mint active:bg-paper-3"
         >
           <span aria-hidden className="text-sm leading-none">

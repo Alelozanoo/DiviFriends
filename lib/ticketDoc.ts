@@ -1,4 +1,4 @@
-import type { Claim, Item, Participant, TicketState } from "./types";
+import type { ChangeEvent, Claim, Item, Participant, TicketState } from "./types";
 
 /**
  * Una comanda entera vive en un solo documento de Firestore (`tickets/{CODE}`).
@@ -24,6 +24,24 @@ export interface TicketDoc {
   items: ItemDoc[];
   participants: ParticipantDoc[];
   claims: ClaimDoc[];
+  /**
+   * Quién ha quitado, añadido o retocado qué. Del más viejo al más reciente,
+   * que es como se escribe; la pantalla lo da la vuelta.
+   *
+   * Opcional porque las comandas abiertas ahora mismo en algún móvil no lo
+   * traen, y una comanda sin historial es una comanda a la que nadie ha
+   * cambiado nada.
+   */
+  events?: EventDoc[];
+}
+
+export interface EventDoc {
+  at: string;
+  kind: ChangeEvent["kind"];
+  participantId: string | null;
+  by: string;
+  what: string;
+  cents: number;
 }
 
 export interface ItemDoc {
@@ -58,7 +76,7 @@ export interface ParticipantDoc {
 }
 
 /** Topes para que el documento no pueda crecer sin control. */
-export const LIMITS = { items: 200, participants: 25, splitInto: 50 } as const;
+export const LIMITS = { items: 200, participants: 25, splitInto: 50, events: 80 } as const;
 
 export function docToState(code: string, doc: TicketDoc): TicketState {
   const rawClaims = doc.claims ?? [];
@@ -101,6 +119,19 @@ export function docToState(code: string, doc: TicketDoc): TicketState {
         participants.some((p) => p.id === claim.participantId),
     );
 
+  // Del más reciente arriba: lo que se quiere ver al abrir el historial es el
+  // último cambio, no el primero.
+  const events: ChangeEvent[] = [...(doc.events ?? [])]
+    .map((raw) => ({
+      at: raw.at,
+      kind: raw.kind,
+      participantId: raw.participantId ?? null,
+      by: raw.by,
+      what: raw.what,
+      cents: raw.cents,
+    }))
+    .reverse();
+
   return {
     ticket: {
       id: code,
@@ -113,6 +144,7 @@ export function docToState(code: string, doc: TicketDoc): TicketState {
     items,
     participants,
     claims,
+    events,
   };
 }
 

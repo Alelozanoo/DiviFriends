@@ -59,11 +59,38 @@ export interface Claim {
   shares: number;
 }
 
+/**
+ * Un cambio que mueve dinero, con nombre y apellidos.
+ *
+ * Quitar una línea baja el total de la mesa, y hasta ahora desaparecía sin
+ * dejar rastro: nadie podía saber que la paella había estado ahí. No es una
+ * medida de seguridad —cualquiera puede entrar diciendo que se llama Ana— sino
+ * social: lo que frena a quien iba a quitar su chuletón es que se vea.
+ */
+export interface ChangeEvent {
+  /** ISO. Sirve además de clave: dos cambios no caen en el mismo milisegundo. */
+  at: string;
+  kind: "item.remove" | "item.add" | "total.edit";
+  participantId: string | null;
+  /**
+   * El nombre congelado en el momento del cambio. Guardarlo duplicado es a
+   * propósito: quien quitó la línea puede irse de la mesa después, y el
+   * historial tiene que seguir diciendo quién fue.
+   */
+  by: string;
+  /** La línea afectada, o el total viejo cuando se edita el total. */
+  what: string;
+  /** Lo que la línea costaba, o el total nuevo. */
+  cents: number;
+}
+
 export interface TicketState {
   ticket: Ticket;
   items: Item[];
   participants: Participant[];
   claims: Claim[];
+  /** Del más reciente al más viejo. */
+  events: ChangeEvent[];
 }
 
 export interface ItemShare {
