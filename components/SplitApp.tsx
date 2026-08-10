@@ -407,7 +407,9 @@ export default function SplitApp({
         />
       )}
 
-      {viewing && <TicketSheet state={state} onClose={() => setViewing(false)} />}
+      {viewing && (
+        <TicketSheet state={state} shareUrl={shareUrl} qrSvg={qrSvg} onClose={() => setViewing(false)} />
+      )}
 
       {guiding && <GuideSheet onClose={() => setGuiding(false)} />}
 

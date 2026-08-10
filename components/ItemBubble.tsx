@@ -85,12 +85,12 @@ export default function ItemBubble({
         onClick={onToggle}
         disabled={locked}
         aria-pressed={isMine}
-        className="flex flex-1 flex-col gap-1.5 p-3 pb-2 text-left transition-transform active:scale-[0.97] disabled:active:scale-100"
+        className="flex flex-1 flex-col gap-1.5 p-3 pr-11 pb-2 text-left transition-transform active:scale-[0.97] disabled:active:scale-100"
       >
         {/* cuántos hay de esto */}
-        {/* El hueco de la derecha es para la ✕: con menos, el nombre le llegaba
-            a ocho píxeles y las dos cosas se leían como una sola. */}
-        <span className="flex items-start justify-between gap-1.5 pr-9">
+        {/* El hueco de la derecha lo hace el pr-11 del botón padre, para que
+            nada (ni el nombre ni el precio) pise la ✕ de borrar. */}
+        <span className="flex items-start justify-between gap-1.5 w-full">
           <span
             className={`min-w-0 flex-1 text-[0.92rem] font-semibold leading-tight ${
               full && !isMine ? "text-ink-soft" : "text-ink"
@@ -168,40 +168,61 @@ export default function ItemBubble({
         al lado: como icono suelto en una esquina no lo entendía nadie.
       */}
       <div className="flex items-stretch border-t border-line/60">
-        {canStep && (
-          <span className="flex shrink-0 items-center border-r border-line/60">
-            {isMine && (
-              <>
-                <Step
-                  label={`Quitar una unidad de ${item.name}`}
-                  onClick={() => onSetShares(mine!.shares - 1)}
-                >
-                  −
-                </Step>
-                <span className="tnum w-4 text-center text-sm font-bold">{mine!.shares}</span>
-              </>
-            )}
-            <Step
-              label={`Añadir una unidad de ${item.name}`}
-              disabled={full}
-              highlight={!isMine}
-              onClick={() => onSetShares((mine?.shares ?? 0) + 1)}
+        {isMine ? (
+          canStep ? (
+            <span className="flex flex-1 items-center justify-center border-r border-line/60">
+              <Step
+                label={`Quitar una unidad de ${item.name}`}
+                onClick={() => onSetShares(mine!.shares - 1)}
+              >
+                −
+              </Step>
+              <span className="tnum w-6 text-center text-sm font-bold">{mine!.shares}</span>
+              <Step
+                label={`Añadir una unidad de ${item.name}`}
+                disabled={full}
+                highlight={false}
+                onClick={() => onSetShares((mine?.shares ?? 0) + 1)}
+              >
+                +
+              </Step>
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => onSetShares(0)}
+              className="flex flex-1 items-center justify-center gap-1.5 border-r border-line/60 py-2 text-[0.72rem] font-bold uppercase tracking-wider text-ink-soft transition-colors hover:text-clay active:bg-paper-3"
             >
+              <span aria-hidden className="text-sm leading-none">
+                −
+              </span>
+              Quitar
+            </button>
+          )
+        ) : (
+          <button
+            type="button"
+            disabled={full}
+            onClick={() => onSetShares(1)}
+            className="flex flex-1 items-center justify-center gap-1.5 border-r border-line/60 py-2 text-[0.72rem] font-bold uppercase tracking-wider text-ink-faint opacity-60 transition-all hover:opacity-100 hover:text-amber active:bg-paper-3 disabled:opacity-30"
+          >
+            <span aria-hidden className="text-sm leading-none">
               +
-            </Step>
-          </span>
+            </span>
+            Añadir
+          </button>
         )}
 
         <button
           type="button"
           onClick={onOpenOptions}
           aria-label={`Repartir ${item.name} entre varios`}
-          className="flex flex-1 items-center justify-center gap-1.5 py-2 text-[0.72rem] font-bold uppercase tracking-wider text-ink-faint transition-colors hover:text-mint active:bg-paper-3"
+          className="flex flex-1 items-center justify-center gap-1.5 py-2 text-[0.72rem] font-bold uppercase tracking-wider text-ink-faint opacity-60 transition-all hover:opacity-100 hover:text-mint active:bg-paper-3"
         >
           <span aria-hidden className="text-sm leading-none">
             ÷
           </span>
-          Dividir
+          A medias
         </button>
       </div>
     </div>

@@ -72,7 +72,7 @@ export default function ManualTicketForm({ demo }: { demo: boolean }) {
       setError(data.error ?? "No se ha podido crear la comanda.");
       return;
     }
-    router.push(`/t/${data.code}/qr`);
+    router.push(`/t/${data.code}`);
   }
 
   return (
@@ -179,7 +179,7 @@ export default function ManualTicketForm({ demo }: { demo: boolean }) {
         disabled={busy}
         className="w-full rounded-xl bg-amber py-4 text-lg font-semibold text-paper transition-colors hover:bg-ink disabled:opacity-50"
       >
-        {busy ? "Creando…" : "Crear comanda y generar QR"}
+        {busy ? "Creando…" : "Crear comanda"}
       </button>
     </form>
   );

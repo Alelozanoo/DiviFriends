@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { TicketState } from "@/lib/types";
 import PaperTicket from "./PaperTicket";
+import ShareTicketButton from "./ShareTicketButton";
 import { Sheet } from "./ui";
 
 /**
@@ -15,9 +16,13 @@ import { Sheet } from "./ui";
  */
 export default function TicketSheet({
   state,
+  shareUrl,
+  qrSvg,
   onClose,
 }: {
   state: TicketState;
+  shareUrl: string;
+  qrSvg: string;
   onClose: () => void;
 }) {
   return (
@@ -31,12 +36,13 @@ export default function TicketSheet({
         <PaperTicket ticket={state.ticket} items={state.items} />
       </div>
 
-      <Link
-        href={`/t/${state.ticket.id}/qr`}
-        className="mt-4 block w-full rounded-xl border border-line py-2.5 text-center text-sm font-semibold text-ink-soft transition-colors hover:border-amber hover:text-amber"
-      >
-        Verlo con el QR para imprimir
-      </Link>
+      {/*
+        Compartir manda; imprimir es lo raro. Lo que pasa aquí es que uno de la
+        mesa quiere enseñarles lo que ha salido y que entren, y para eso va la
+        imagen del ticket con el enlace dentro. Imprimir el QR lo hace un bar
+        una vez, así que se queda debajo y en pequeño.
+      */}
+      <ShareTicketButton state={state} url={shareUrl} qrSvg={qrSvg} onDone={onClose} />
 
       <button
         type="button"

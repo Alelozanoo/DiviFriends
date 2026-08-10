@@ -240,6 +240,7 @@ export function addItem(
       manualSplit: false,
       position,
     });
+    doc.totalCents += totalCents;
     log(doc, "item.add", by, name, totalCents);
   });
 }

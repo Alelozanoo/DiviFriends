@@ -158,13 +158,6 @@ export default function TableSheet({
 
       <p className="tnum mt-3 truncate text-center text-xs text-ink-faint">{url}</p>
 
-      <Link
-        href={`/t/${code}/qr`}
-        className="mt-4 block w-full rounded-xl border border-line py-2.5 text-center text-sm font-semibold text-ink-soft transition-colors hover:border-amber hover:text-amber"
-      >
-        Ver el ticket con el QR para imprimir
-      </Link>
-
       <button
         type="button"
         onClick={onClose}
