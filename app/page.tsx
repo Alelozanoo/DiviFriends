@@ -2,6 +2,7 @@ import Link from "next/link";
 import Logo, { Wordmark } from "@/components/Logo";
 import TicketUploader from "@/components/TicketUploader";
 import { PasoCuentas, PasoFoto, PasoMarcar } from "@/components/ComoVa";
+import Preguntas from "@/components/Preguntas";
 
 /**
  * Los tres pasos, dibujados con las piezas de la propia app.
@@ -120,37 +121,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ---------------------------------------------------------------- bares */}
-      <section className="mx-auto max-w-6xl px-5 py-16 sm:py-24">
-        <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:gap-16">
-          <div>
-            <p className="stamp text-amber">Para bares y restaurantes</p>
-            <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
-              Un QR en el ticket y se acabaron las diez tarjetas
-            </h2>
-            <p className="mt-5 leading-relaxed text-ink-soft">
-              Creas la comanda desde el TPV o a mano, imprimes el código junto al total y la mesa se
-              organiza sola. Tú cobras una vez, ellos se lo reparten después.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                href="/nueva"
-                className="rounded-xl bg-amber px-5 py-3 font-semibold text-paper transition-colors hover:bg-ink"
-              >
-                Crear una comanda
-              </Link>
-              <Link
-                href="/nueva?demo=1"
-                className="rounded-xl border border-line px-5 py-3 font-semibold text-ink-soft transition-colors hover:border-amber hover:text-ink"
-              >
-                Ver un ejemplo
-              </Link>
-            </div>
-          </div>
-
-          <ReceiptPreview />
-        </div>
-      </section>
+      <Preguntas />
 
       <footer className="border-t border-line">
         <div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-8 text-sm text-ink-faint sm:flex-row sm:items-center sm:justify-between">
@@ -182,55 +153,3 @@ function CheckIcon() {
     </svg>
   );
 }
-
-/** Maqueta estática: enseña de un vistazo dónde acaba el QR. */
-function ReceiptPreview() {
-  const lines = [
-    ["2", "Croquetas jamón", "9,80"],
-    ["1", "Ensaladilla", "7,50"],
-    ["3", "Caña", "7,50"],
-    ["1", "Pulpo a la brasa", "18,90"],
-  ];
-  return (
-    <div className="mx-auto w-full max-w-xs">
-      <div className="torn-top h-3 bg-[#f4ece0]" />
-      <div className="bg-[#f4ece0] px-6 pb-6 pt-2 text-[#14100d]">
-        <p className="stamp text-center text-[#776a5c]">Bar Casa Nuria · Mesa 12</p>
-        <div className="rule my-4 opacity-30" />
-        <ul className="space-y-2 text-sm">
-          {lines.map(([qty, name, price]) => (
-            <li key={name} className="flex items-baseline gap-3">
-              <span className="tnum w-4 text-[#776a5c]">{qty}</span>
-              <span className="flex-1">{name}</span>
-              <span className="tnum">{price}</span>
-            </li>
-          ))}
-        </ul>
-        <div className="rule my-4 opacity-30" />
-        <div className="flex items-baseline justify-between font-bold">
-          <span className="stamp">Total</span>
-          <span className="tnum text-lg">43,70 €</span>
-        </div>
-
-        <div className="mt-5 flex items-center gap-3 rounded-lg border border-dashed border-[#776a5c]/40 p-3">
-          <div className="grid h-14 w-14 shrink-0 grid-cols-5 grid-rows-5 gap-[2px]" aria-hidden>
-            {QR_PATTERN.map((on, i) => (
-              <span key={i} className={on ? "bg-[#14100d]" : "bg-transparent"} />
-            ))}
-          </div>
-          <p className="stamp leading-relaxed text-[#776a5c]">
-            Escanea
-            <br />
-            y reparte
-          </p>
-        </div>
-      </div>
-      <div className="torn-top h-3 rotate-180 bg-[#f4ece0]" />
-    </div>
-  );
-}
-
-// Rejilla decorativa 5×5; el QR real se genera en /t/[code]/qr.
-const QR_PATTERN = [
-  1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1,
-].map(Boolean);
