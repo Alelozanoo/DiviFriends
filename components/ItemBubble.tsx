@@ -75,7 +75,7 @@ export default function ItemBubble({
         type="button"
         onClick={onRemove}
         aria-label={`Quitar ${item.name} de la comanda`}
-        className="absolute right-0 top-0 z-10 grid h-8 w-8 place-items-center rounded-bl-xl rounded-tr-2xl text-sm leading-none text-ink-faint transition-colors hover:bg-clay/15 hover:text-clay active:bg-clay/20"
+        className="absolute right-1.5 top-1.5 z-10 grid h-7 w-7 place-items-center rounded-full border border-line bg-paper-3/70 text-[0.7rem] leading-none text-ink-faint transition-colors hover:border-clay hover:bg-clay/15 hover:text-clay active:bg-clay/25"
       >
         ✕
       </button>
@@ -88,7 +88,9 @@ export default function ItemBubble({
         className="flex flex-1 flex-col gap-1.5 p-3 pb-2 text-left transition-transform active:scale-[0.97] disabled:active:scale-100"
       >
         {/* cuántos hay de esto */}
-        <span className="flex items-start justify-between gap-1.5 pr-7">
+        {/* El hueco de la derecha es para la ✕: con menos, el nombre le llegaba
+            a ocho píxeles y las dos cosas se leían como una sola. */}
+        <span className="flex items-start justify-between gap-1.5 pr-9">
           <span
             className={`min-w-0 flex-1 text-[0.92rem] font-semibold leading-tight ${
               full && !isMine ? "text-ink-soft" : "text-ink"
