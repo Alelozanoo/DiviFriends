@@ -108,7 +108,8 @@ export default function ItemSheet({
           <h2 className="truncate text-lg font-bold tracking-tight">{item.name}</h2>
           <p className="mt-0.5 text-sm text-ink-soft">
             {money(item.totalCents, currency)}
-            {item.qty > 1 && ` · ${item.qty} unidades`}
+            {/* «1,025 unidades» no es una frase: eso es un peso, no unidades. */}
+            {Number.isInteger(item.qty) && item.qty > 1 && ` · ${item.qty} unidades`}
           </p>
         </div>
         <button

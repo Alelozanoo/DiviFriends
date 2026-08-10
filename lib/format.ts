@@ -21,6 +21,21 @@ export function money(cents: number, currency = "EUR"): string {
   }).format(cents / 100);
 }
 
+/**
+ * La cantidad de una línea, tal y como venía en el papel.
+ *
+ * En un bar son unidades enteras —«2 cañas»— pero en una carnicería la
+ * cantidad es un peso, y el ticket trae 1,025 de entrañas. Sin pasar por aquí
+ * se escribía tal cual sale de JavaScript, con punto, que en español es el
+ * separador de los miles: «1.025» se lee mil veinticinco.
+ *
+ * Sin ceros de relleno a la derecha: «1,5» y no «1,500».
+ */
+export function quantity(qty: number): string {
+  if (!Number.isFinite(qty) || qty <= 0) return "1";
+  return new Intl.NumberFormat("es-ES", { maximumFractionDigits: 3 }).format(qty);
+}
+
 /** "12,50" o "12.50" -> 1250 céntimos. */
 export function parseMoney(input: string | number | null | undefined): number {
   if (input === null || input === undefined || input === "") return 0;

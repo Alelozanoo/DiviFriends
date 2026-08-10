@@ -76,7 +76,14 @@ export default function ItemBubble({
           >
             {item.name}
           </span>
-          {item.qty > 1 && (
+          {/*
+            Sólo unidades enteras. El «×9» está para decir «hay nueve, coge las
+            tuyas», y es lo que cuenta el + de abajo. Una carnicería trae 1,025
+            de entrañas, y ahí no hay nada que contar: un «×1,025» en una
+            esquina no informa de nada y encima cabe mal. El peso exacto sigue
+            estando en «Ver ticket», que es donde se va a comprobar el papel.
+          */}
+          {Number.isInteger(item.qty) && item.qty > 1 && (
             <span className="tnum shrink-0 rounded-md bg-paper-3 px-1.5 py-0.5 text-[0.7rem] font-bold text-ink-soft">
               ×{item.qty}
             </span>

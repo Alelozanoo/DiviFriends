@@ -1,4 +1,4 @@
-import { money } from "@/lib/format";
+import { money, quantity } from "@/lib/format";
 import type { Item, Ticket } from "@/lib/types";
 
 /**
@@ -22,6 +22,18 @@ export default function PaperTicket({
   const itemsTotal = items.reduce((a, i) => a + i.totalCents, 0);
   const extras = ticket.totalCents - itemsTotal;
 
+  /*
+    La columna de cantidades se mide sobre la más larga de este ticket, y todas
+    las líneas comparten ese ancho: así los nombres arrancan a la misma altura
+    aunque una línea traiga «2» y la de debajo «1,025».
+
+    Antes eran veinte píxeles fijos que no cedían, medida para un «2» de bar.
+    En una carnicería la cantidad es un peso y se salía de su hueco: «1,025» se
+    montaba encima del nombre del corte.
+  */
+  const cantidades = items.map((item) => quantity(item.qty));
+  const anchoCantidad = `${Math.max(1, ...cantidades.map((c) => c.length))}ch`;
+
   return (
     <article className="mx-auto w-full max-w-[22rem] bg-[#f4ece0] px-7 pb-8 pt-7 text-[#14100d]">
       <header className="text-center">
@@ -35,9 +47,16 @@ export default function PaperTicket({
         <p className="py-2 text-center text-sm text-[#776a5c]">No queda ninguna línea.</p>
       ) : (
         <ul className="space-y-1.5 text-sm">
-          {items.map((item) => (
+          {items.map((item, index) => (
             <li key={item.id} className="flex items-baseline gap-3">
-              <span className="tnum w-5 shrink-0 text-[#776a5c]">{item.qty}</span>
+              {/* A la derecha de su columna: el número queda pegado al nombre
+                  y con la misma separación lleve las cifras que lleve. */}
+              <span
+                style={{ width: anchoCantidad }}
+                className="tnum shrink-0 text-right text-[#776a5c]"
+              >
+                {cantidades[index]}
+              </span>
               <span className="min-w-0 flex-1">{item.name}</span>
               <span className="tnum shrink-0">{money(item.totalCents, ticket.currency)}</span>
             </li>
