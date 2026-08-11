@@ -78,6 +78,7 @@ export interface ClaimDoc {
 export interface ParticipantDoc {
   id: string;
   name: string;
+  avatar?: string;
   color: string;
   isPayer: boolean;
   settled?: boolean;
@@ -110,6 +111,7 @@ export function docToState(code: string, doc: TicketDoc): TicketState {
     id: person.id,
     ticketId: code,
     name: person.name,
+    avatar: person.avatar,
     color: person.color,
     isPayer: person.isPayer === true,
     // Comandas abiertas ahora mismo en algún móvil guardan un importe en vez de

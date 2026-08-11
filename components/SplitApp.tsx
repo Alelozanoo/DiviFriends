@@ -80,13 +80,13 @@ export default function SplitApp({
    * acaba de nacer. No es hacerse pasar por ella —la ficha no es tuya—, sólo
    * guardarle el sitio hasta que entre por el enlace y toque su nombre.
    */
-  async function addPerson(name: string): Promise<string | null> {
+  async function addPerson(name: string, avatar?: string): Promise<string | null> {
     setError(null);
     try {
       const response = await fetch(`/api/tickets/${code}/participants`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name, avatar }),
       });
       const data = (await response.json()) as TicketState & { error?: string };
       if (!response.ok) {
@@ -101,8 +101,8 @@ export default function SplitApp({
     }
   }
 
-  async function join(name: string) {
-    const participantId = await addPerson(name);
+  async function join(name: string, avatar?: string) {
+    const participantId = await addPerson(name, avatar);
     if (!participantId) return;
     store(participantId);
     setJoinOverride(null);
@@ -211,6 +211,7 @@ export default function SplitApp({
                 <Avatar
                   key={person.id}
                   name={person.name}
+                  avatar={person.avatar}
                   color={person.color}
                   size={22}
                 />
@@ -556,11 +557,13 @@ function JoinSheet({
   onClose,
 }: {
   people: Participant[];
-  onJoin: (name: string) => Promise<void>;
+  onJoin: (name: string, avatar?: string) => Promise<void>;
   onClose: () => void;
 }) {
   const [name, setName] = useState("");
+  const [avatar, setAvatar] = useState("");
   const [busy, setBusy] = useState(false);
+  const emojis = ["🐶", "🐱", "🦊", "🐼", "🐯", "🦁", "🐰", "🐸"];
 
   return (
     <Sheet onClose={onClose}>
@@ -578,7 +581,7 @@ function JoinSheet({
                 onClick={() => void onJoin(person.name)}
                 className="flex items-center gap-2 rounded-xl border-2 border-line py-2.5 pl-2.5 pr-3.5 transition-colors hover:border-amber active:bg-paper-3"
               >
-                <Avatar name={person.name} color={person.color} size={24} />
+                <Avatar name={person.name} avatar={person.avatar} color={person.color} size={24} />
                 <span className="max-w-32 truncate text-sm font-semibold">{person.name}</span>
               </button>
             ))}
@@ -590,15 +593,16 @@ function JoinSheet({
       )}
 
       <form
-        className={`flex gap-2 ${people.length > 0 ? "mt-2" : "mt-4"}`}
+        className={`flex flex-col gap-4 ${people.length > 0 ? "mt-2" : "mt-4"}`}
         onSubmit={async (event) => {
           event.preventDefault();
           if (!name.trim() || busy) return;
           setBusy(true);
-          await onJoin(name.trim());
+          await onJoin(name.trim(), avatar || undefined);
           setBusy(false);
         }}
       >
+        <div className="flex gap-2">
         <input
           autoFocus={people.length === 0}
           value={name}
@@ -609,13 +613,29 @@ function JoinSheet({
           maxLength={40}
           className="min-w-0 flex-1 rounded-xl border border-line bg-paper px-4 py-3 focus:border-amber focus:outline-none"
         />
-        <button
-          type="submit"
-          disabled={busy || !name.trim()}
-          className="shrink-0 rounded-xl bg-amber px-5 font-bold text-paper disabled:opacity-40"
-        >
-          Entrar
-        </button>
+          <button
+            type="submit"
+            disabled={busy || !name.trim()}
+            className="shrink-0 rounded-xl bg-amber px-5 font-bold text-paper disabled:opacity-40"
+          >
+            Entrar
+          </button>
+        </div>
+
+        <div className="flex gap-2 overflow-x-auto pb-2">
+          {emojis.map((emoji) => (
+            <button
+              key={emoji}
+              type="button"
+              onClick={() => setAvatar(avatar === emoji ? "" : emoji)}
+              className={`grid h-10 w-10 shrink-0 place-items-center rounded-full border-2 text-xl transition-all ${
+                avatar === emoji ? "border-amber bg-amber/10 scale-110" : "border-transparent bg-paper-3 hover:bg-paper-4"
+              }`}
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
       </form>
 
       <button

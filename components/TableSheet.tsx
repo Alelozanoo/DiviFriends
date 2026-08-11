@@ -72,7 +72,7 @@ export default function TableSheet({
         <ul className="mt-4 space-y-1.5">
           {participants.map((person) => (
             <li key={person.id} className="flex items-center gap-2.5 rounded-xl bg-paper px-3 py-2">
-              <Avatar name={person.name} color={person.color} size={26} />
+              <Avatar name={person.name} avatar={person.avatar} color={person.color} size={26} />
               <span className="min-w-0 flex-1 truncate text-sm font-semibold">
                 {person.name}
                 {person.id === meId && <span className="ml-1.5 text-xs text-amber">(tú)</span>}

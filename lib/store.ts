@@ -150,6 +150,7 @@ export function patchTicket(
 export async function addParticipant(
   code: string,
   rawName: string,
+  avatar?: string,
 ): Promise<{ state: TicketState; participantId: string }> {
   const name = rawName.trim().slice(0, 40);
   if (!name) throw new StoreError("Escribe un nombre.");
@@ -160,6 +161,7 @@ export async function addParticipant(
     // el QR es el mismo para toda la mesa.
     const already = doc.participants.find((p) => p.name.toLowerCase() === name.toLowerCase());
     if (already) {
+      if (avatar) already.avatar = avatar; // Actualizar avatar si se proporciona uno nuevo
       participantId = already.id;
       return;
     }
@@ -170,6 +172,7 @@ export async function addParticipant(
     doc.participants.push({
       id: participantId,
       name,
+      avatar,
       color: colorFor(doc.participants.length),
       isPayer: false,
       settled: false,

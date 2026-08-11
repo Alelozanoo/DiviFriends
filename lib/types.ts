@@ -40,6 +40,7 @@ export interface Participant {
   id: string;
   ticketId: string;
   name: string;
+  avatar?: string;
   color: string;
   /** Quien puso la tarjeta. Sólo puede haber uno. */
   isPayer: boolean;
@@ -124,6 +125,7 @@ export interface ItemBreakdown {
 export interface ParticipantBalance {
   participantId: string;
   name: string;
+  avatar?: string;
   color: string;
   /** Lo que adelantó (si pagó algún ticket/recibo). */
   paidCents: number;

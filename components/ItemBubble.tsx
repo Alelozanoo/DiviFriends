@@ -147,11 +147,11 @@ export default function ItemBubble({
 
       {/* quién lo lleva */}
       <div className="flex min-h-[26px] items-center gap-1 px-3 pb-2">
-        {mine && <Avatar name="tú" color={byId.get(meId!)?.color ?? "#e8b04b"} size={22} />}
+        {mine && <Avatar name="tú" avatar={byId.get(meId!)?.avatar} color={byId.get(meId!)?.color ?? "#e8b04b"} size={22} />}
         {others.slice(0, 3).map((share) => {
           const person = byId.get(share.participantId);
           return person ? (
-            <Avatar key={share.participantId} name={person.name} color={person.color} size={20} />
+            <Avatar key={share.participantId} name={person.name} avatar={person.avatar} color={person.color} size={20} />
           ) : null;
         })}
         {others.length > 3 && (

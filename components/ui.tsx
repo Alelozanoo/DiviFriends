@@ -5,11 +5,13 @@ import { initials } from "@/lib/format";
 
 export function Avatar({
   name,
+  avatar,
   color,
   size = 28,
   dimmed = false,
 }: {
   name: string;
+  avatar?: string;
   color: string;
   size?: number;
   dimmed?: boolean;
@@ -27,7 +29,11 @@ export function Avatar({
       }}
       className="inline-grid shrink-0 place-items-center rounded-full border-2 font-bold leading-none"
     >
-      {initials(name)}
+      {avatar ? (
+        <span className="leading-none" style={{ fontSize: size * 0.55 }}>{avatar}</span>
+      ) : (
+        initials(name)
+      )}
     </span>
   );
 }

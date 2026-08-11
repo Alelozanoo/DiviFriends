@@ -161,6 +161,7 @@ export function computeSettlement(state: TicketState): Settlement {
     return {
       participantId: p.id,
       name: p.name,
+      avatar: p.avatar,
       color: p.color,
       paidCents: paidC,
       itemsCents: itemsC,

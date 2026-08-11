@@ -109,7 +109,7 @@ export default function AccountsPanel({
                           : "border-line text-ink-soft active:bg-paper-3"
                       }`}
                     >
-                      <Avatar name={person.name} color={person.color} size={24} />
+                      <Avatar name={person.name} avatar={person.avatar} color={person.color} size={24} />
                       <span className="max-w-28 truncate">{person.name}</span>
                     </button>
                   );
@@ -325,7 +325,7 @@ function PersonRow({
         divider ? "border-t-2 border-t-line" : ""
       } ${person.settled ? "opacity-60" : ""}`}
     >
-      <Avatar name={person.name} color={person.color} size={30} />
+      <Avatar name={person.name} avatar={person.avatar} color={person.color} size={30} />
 
       <span className="min-w-0 flex-1 truncate font-medium">
         {person.name}

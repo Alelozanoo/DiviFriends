@@ -222,7 +222,7 @@ export default function ItemSheet({
                       onClick={() => (share ? onSetShares(person.id, 0) : darParte(person.id))}
                       className="flex items-center gap-1.5 py-2 pl-2 pr-2.5"
                     >
-                      <Avatar name={person.name} color={person.color} size={22} />
+                      <Avatar name={person.name} avatar={person.avatar} color={person.color} size={22} />
                       <span className="max-w-28 truncate text-sm font-semibold">
                         {person.name}
                         {person.id === meId && (
