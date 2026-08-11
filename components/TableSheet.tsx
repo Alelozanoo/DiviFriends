@@ -20,6 +20,7 @@ export default function TableSheet({
   participants,
   meId,
   onAdd,
+  onUpdateAvatar,
   onRemove,
   onClose,
 }: {
@@ -28,14 +29,18 @@ export default function TableSheet({
   qrSvg: string;
   participants: Participant[];
   meId: string | null;
-  /** Devuelve la ficha creada, pero aquí no hace falta: sólo se apunta. */
-  onAdd: (name: string) => Promise<unknown>;
+  onAdd: (name: string, avatar?: string) => Promise<unknown>;
+  onUpdateAvatar: (participantId: string, avatar: string) => void;
   onRemove: (participantId: string) => void;
   onClose: () => void;
 }) {
   const [name, setName] = useState("");
+  const [avatar, setAvatar] = useState("");
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [editingAvatarId, setEditingAvatarId] = useState<string | null>(null);
+  
+  const emojis = ["🐶", "🐱", "🦊", "🐼", "🐯", "🦁", "🐰", "🐸"];
 
   async function copy() {
     try {
@@ -71,51 +76,111 @@ export default function TableSheet({
       {participants.length > 0 && (
         <ul className="mt-4 space-y-1.5">
           {participants.map((person) => (
-            <li key={person.id} className="flex items-center gap-2.5 rounded-xl bg-paper px-3 py-2">
-              <Avatar name={person.name} avatar={person.avatar} color={person.color} size={26} />
-              <span className="min-w-0 flex-1 truncate text-sm font-semibold">
-                {person.name}
-                {person.id === meId && <span className="ml-1.5 text-xs text-amber">(tú)</span>}
-              </span>
-              <button
-                type="button"
-                onClick={() => onRemove(person.id)}
-                aria-label={`Quitar a ${person.name} de la mesa`}
-                className="rounded-lg px-2 py-1 text-xs text-ink-faint transition-colors hover:text-clay"
-              >
-                ✕
-              </button>
+            <li key={person.id} className="flex flex-col gap-1 rounded-xl bg-paper px-3 py-2">
+              <div className="flex items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setEditingAvatarId(editingAvatarId === person.id ? null : person.id)}
+                  className="rounded-full transition-transform hover:scale-110"
+                  aria-label={`Cambiar avatar de ${person.name}`}
+                >
+                  <Avatar name={person.name} avatar={person.avatar} color={person.color} size={26} />
+                </button>
+                <span className="min-w-0 flex-1 truncate text-sm font-semibold">
+                  {person.name}
+                  {person.id === meId && <span className="ml-1.5 text-xs text-amber">(tú)</span>}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onRemove(person.id)}
+                  aria-label={`Quitar a ${person.name} de la mesa`}
+                  className="rounded-lg px-2 py-1 text-xs text-ink-faint transition-colors hover:text-clay"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              {editingAvatarId === person.id && (
+                <div className="flex gap-2 overflow-x-auto py-2">
+                  {emojis.map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => {
+                        onUpdateAvatar(person.id, emoji);
+                        setEditingAvatarId(null);
+                      }}
+                      className={`grid h-8 w-8 shrink-0 place-items-center rounded-full border-2 text-sm transition-all ${
+                        person.avatar === emoji ? "border-amber bg-amber/10 scale-110" : "border-transparent bg-paper-3 hover:bg-paper-4"
+                      }`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                  {person.avatar && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onUpdateAvatar(person.id, "");
+                        setEditingAvatarId(null);
+                      }}
+                      className="grid h-8 w-8 shrink-0 place-items-center rounded-full border-2 border-transparent bg-paper-3 text-xs font-bold text-ink-soft hover:bg-paper-4"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              )}
             </li>
           ))}
         </ul>
       )}
 
       <form
-        className="mt-3 flex gap-2"
+        className="mt-3 flex flex-col gap-2"
         onSubmit={async (event) => {
           event.preventDefault();
           if (!name.trim() || busy) return;
           setBusy(true);
-          await onAdd(name.trim());
+          await onAdd(name.trim(), avatar || undefined);
           setName("");
+          setAvatar("");
           setBusy(false);
         }}
       >
-        <input
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          placeholder="Añade a alguien"
-          maxLength={40}
-          aria-label="Nombre de quien se sienta en la mesa"
-          className="min-w-0 flex-1 rounded-xl border border-line bg-paper px-4 py-2.5 focus:border-amber focus:outline-none"
-        />
-        <button
-          type="submit"
-          disabled={busy || !name.trim()}
-          className="shrink-0 rounded-xl bg-amber px-5 text-sm font-bold text-paper disabled:opacity-30"
-        >
-          Añadir
-        </button>
+        <div className="flex gap-2">
+          <input
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            placeholder="Añade a alguien"
+            maxLength={40}
+            aria-label="Nombre de quien se sienta en la mesa"
+            className="min-w-0 flex-1 rounded-xl border border-line bg-paper px-4 py-2.5 focus:border-amber focus:outline-none"
+          />
+          <button
+            type="submit"
+            disabled={busy || !name.trim()}
+            className="shrink-0 rounded-xl bg-amber px-5 text-sm font-bold text-paper disabled:opacity-30"
+          >
+            Añadir
+          </button>
+        </div>
+        {name.trim() && (
+          <div className="flex gap-2 overflow-x-auto pb-1 pt-1">
+            {emojis.map((emoji) => (
+              <button
+                key={emoji}
+                type="button"
+                onClick={() => setAvatar(avatar === emoji ? "" : emoji)}
+                className={`grid h-8 w-8 shrink-0 place-items-center rounded-full border-2 text-sm transition-all ${
+                  avatar === emoji ? "border-amber bg-amber/10 scale-110" : "border-transparent bg-paper-3 hover:bg-paper-4"
+                }`}
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        )}
       </form>
 
       <div className="rule my-5" />

@@ -9,6 +9,7 @@ export async function PATCH(request: Request, { params }: Ctx) {
   const { code, participantId } = await params;
   const body = (await request.json()) as {
     name?: string;
+    avatar?: string;
     settled?: boolean;
     isPayer?: boolean;
   };

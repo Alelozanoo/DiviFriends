@@ -499,6 +499,9 @@ export default function SplitApp({
           participants={state.participants}
           meId={meId}
           onAdd={addPerson}
+          onUpdateAvatar={(participantId, avatar) =>
+            void patchParticipant(participantId, { avatar })
+          }
           onRemove={(participantId) =>
             void send(`/participants/${participantId}`, { method: "DELETE" })
           }
@@ -592,6 +595,7 @@ function JoinSheet({
         </>
       )}
 
+      <p className="stamp mt-4 text-ink-faint">Elige tu foto de perfil</p>
       <form
         className={`flex flex-col gap-4 ${people.length > 0 ? "mt-2" : "mt-4"}`}
         onSubmit={async (event) => {

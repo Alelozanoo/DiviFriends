@@ -185,7 +185,7 @@ export async function addParticipant(
 export function patchParticipant(
   code: string,
   participantId: string,
-  patch: { name?: string; settled?: boolean; isPayer?: boolean },
+  patch: { name?: string; avatar?: string; settled?: boolean; isPayer?: boolean },
 ): Promise<TicketState> {
   return mutate(code, (doc) => {
     const person = doc.participants.find((p) => p.id === participantId);
@@ -196,6 +196,7 @@ export function patchParticipant(
       if (!name) throw new StoreError("Escribe un nombre.");
       person.name = name;
     }
+    if (patch.avatar !== undefined) person.avatar = patch.avatar;
     if (patch.settled !== undefined) person.settled = patch.settled;
     if (patch.isPayer !== undefined) {
       // (Legacy) Sólo puede haber un pagador original
