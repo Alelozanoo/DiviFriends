@@ -191,9 +191,9 @@ export default function ItemBubble({
             <button
               type="button"
               onClick={() => onSetShares(0)}
-              className="flex flex-1 items-center justify-center gap-1.5 border-r border-line/60 py-2 text-[0.72rem] font-bold uppercase tracking-wider text-ink-soft transition-colors hover:text-clay active:bg-paper-3"
+              className="flex flex-1 items-center justify-center gap-1 border-r border-line/60 py-2 text-[0.65rem] font-bold uppercase tracking-wide text-ink-soft transition-colors hover:text-clay active:bg-paper-3"
             >
-              <span aria-hidden className="text-sm leading-none">
+              <span aria-hidden className="text-xs leading-none">
                 −
               </span>
               Quitar
@@ -204,9 +204,9 @@ export default function ItemBubble({
             type="button"
             disabled={full}
             onClick={() => onSetShares(1)}
-            className="flex flex-1 items-center justify-center gap-1.5 border-r border-line/60 py-2 text-[0.72rem] font-bold uppercase tracking-wider text-ink-faint opacity-60 transition-all hover:opacity-100 hover:text-amber active:bg-paper-3 disabled:opacity-30"
+            className="flex flex-1 items-center justify-center gap-1 border-r border-line/60 py-2 text-[0.65rem] font-bold uppercase tracking-wide text-ink-faint opacity-60 transition-all hover:opacity-100 hover:text-amber active:bg-paper-3 disabled:opacity-30"
           >
-            <span aria-hidden className="text-sm leading-none">
+            <span aria-hidden className="text-xs leading-none">
               +
             </span>
             Añadir
@@ -217,9 +217,9 @@ export default function ItemBubble({
           type="button"
           onClick={onOpenOptions}
           aria-label={`Repartir ${item.name} entre varios`}
-          className="flex flex-1 items-center justify-center gap-1.5 py-2 text-[0.72rem] font-bold uppercase tracking-wider text-ink-faint opacity-60 transition-all hover:opacity-100 hover:text-mint active:bg-paper-3"
+          className="flex flex-1 items-center justify-center gap-1 py-2 text-[0.65rem] font-bold uppercase tracking-wide text-ink-faint opacity-60 transition-all hover:opacity-100 hover:text-mint active:bg-paper-3"
         >
-          <span aria-hidden className="text-sm leading-none">
+          <span aria-hidden className="text-xs leading-none">
             ÷
           </span>
           A medias
