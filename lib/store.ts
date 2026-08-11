@@ -195,9 +195,35 @@ export function patchParticipant(
     }
     if (patch.settled !== undefined) person.settled = patch.settled;
     if (patch.isPayer !== undefined) {
-      // Sólo puede haber un pagador: es a quien le deben todos los demás.
+      // (Legacy) Sólo puede haber un pagador original
       if (patch.isPayer) for (const other of doc.participants) other.isPayer = false;
       person.isPayer = patch.isPayer;
+    }
+  });
+}
+
+export function setPayer(
+  code: string,
+  participantId: string | null,
+  receiptId: string | null,
+): Promise<TicketState> {
+  return mutate(code, (doc) => {
+    // Si payerId no es null, asegurarse de que el participante existe
+    if (participantId) {
+      const exists = doc.participants.some((p) => p.id === participantId);
+      if (!exists) throw new StoreError("Ese comensal no está en la comanda.", 404);
+    }
+
+    if (receiptId) {
+      const receipt = doc.receipts?.find((r) => r.id === receiptId);
+      if (!receipt) throw new StoreError("Ese ticket no existe.", 404);
+      receipt.payerId = participantId;
+    } else {
+      doc.payerId = participantId;
+      // Por limpieza, quitamos el isPayer de todos los participantes si estamos usando payerId
+      if (participantId) {
+        for (const p of doc.participants) p.isPayer = false;
+      }
     }
   });
 }
@@ -218,7 +244,7 @@ export function removeParticipant(code: string, participantId: string): Promise<
 
 export function addItem(
   code: string,
-  input: { name: string; qty: number; unitCents: number },
+  input: { name: string; qty: number; unitCents: number; receiptId?: string },
   by?: string | null,
 ): Promise<TicketState> {
   const name = input.name.trim().slice(0, 80);
@@ -232,6 +258,7 @@ export function addItem(
     const totalCents = Math.round(unitCents * qty);
     doc.items.push({
       id: id("itm"),
+      receiptId: input.receiptId,
       name,
       qty,
       unitCents,
@@ -266,10 +293,20 @@ export function patchItem(
     }
 
     if (patch.qty !== undefined) {
+      const oldTotalCents = item.totalCents;
       item.qty = Math.max(1, patch.qty);
       item.totalCents = Math.round(item.unitCents * item.qty);
       item.splitInto = item.qty;
       clampShares(doc, item);
+
+      const diffCents = item.totalCents - oldTotalCents;
+      if (diffCents !== 0) {
+        doc.totalCents = Math.max(0, doc.totalCents + diffCents);
+        if (item.receiptId) {
+          const r = doc.receipts?.find(r => r.id === item.receiptId);
+          if (r) r.totalCents = Math.max(0, r.totalCents + diffCents);
+        }
+      }
     }
 
     if (patch.unitCents !== undefined) {
@@ -328,6 +365,11 @@ export function removeItem(
     // El total baja con la línea. Si no, su importe reaparecería como «extras»
     // repartidos entre todos y borrar no serviría de nada.
     doc.totalCents = totalAfterRemoving(doc.totalCents, doc.items, itemId);
+    if (quitado.receiptId) {
+      const r = doc.receipts?.find(r => r.id === quitado.receiptId);
+      if (r) r.totalCents = Math.max(0, r.totalCents - quitado.totalCents);
+    }
+    
     doc.items = doc.items.filter((i) => i.id !== itemId);
     doc.claims = doc.claims.filter((c) => c.itemId !== itemId);
   });
@@ -392,5 +434,42 @@ export function setClaim(
     } else {
       doc.claims.push({ itemId, participantId, shares: granted });
     }
+  });
+}
+
+export async function addReceipt(
+  code: string,
+  input: {
+    label: string;
+    totalCents: number;
+    items: { name: string; qty: number; unitCents: number; totalCents: number }[];
+  },
+): Promise<TicketState> {
+  const receiptId = id("rcp");
+  return mutate(code, (doc) => {
+    const receipts = doc.receipts ?? (doc.receipts = []);
+    receipts.push({
+      id: receiptId,
+      label: input.label.trim() || `Ticket ${receipts.length + 1}`,
+      totalCents: input.totalCents,
+    });
+
+    // Añadir el nuevo total al total global de la comanda
+    doc.totalCents += input.totalCents;
+
+    const startPosition = doc.items.reduce((max, i) => Math.max(max, i.position), -1) + 1;
+    const newItems = input.items.slice(0, LIMITS.items - doc.items.length).map((item, index) => ({
+      id: id("itm"),
+      receiptId,
+      name: item.name,
+      qty: item.qty,
+      unitCents: item.unitCents,
+      totalCents: item.totalCents,
+      splitInto: Math.max(1, Math.round(item.qty || 1)),
+      manualSplit: false,
+      position: startPosition + index,
+    }));
+    
+    doc.items.push(...newItems);
   });
 }

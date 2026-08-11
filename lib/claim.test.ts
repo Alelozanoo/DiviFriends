@@ -27,13 +27,15 @@ function item(over: Partial<Item> & Pick<Item, "id" | "totalCents">): Item {
 function base(items: Item[]): TicketState {
   return {
     ticket: {
-      id: "T",
+      id: "A",
       place: null,
       tableLabel: null,
       currency: "EUR",
       totalCents: items.reduce((a, i) => a + i.totalCents, 0),
+      payerId: null,
       createdAt: "",
     },
+    receipts: [],
     items,
     participants: ["alex", "marta", "nuria"].map((id) => ({
       id,

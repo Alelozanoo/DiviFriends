@@ -129,25 +129,70 @@ export function computeSettlement(state: TicketState): Settlement {
     ? splitCents(extrasCents, extraWeights)
     : extraWeights.map((_, i) => (i === extraWeights.length - 1 ? extrasCents : 0));
 
+  const paidByParticipant = new Map<string, number>();
+  
+  // Calcular cuánto ha adelantado cada persona (por los tickets que ha pagado)
+  const legacyPayer = participants.find(p => p.isPayer)?.id;
+  const mainPayerId = ticket.payerId || legacyPayer;
+  
+  // El ticket.totalCents incluye todos los recibos, así que para el ticket principal
+  // solo debemos sumar la parte que no pertenece a ningún recibo adicional.
+  const receiptsTotal = state.receipts ? state.receipts.reduce((a, r) => a + r.totalCents, 0) : 0;
+  const legacyTicketCents = ticket.totalCents - receiptsTotal;
+  
+  if (mainPayerId && legacyTicketCents > 0) {
+    paidByParticipant.set(mainPayerId, (paidByParticipant.get(mainPayerId) ?? 0) + legacyTicketCents);
+  }
+  
+  if (state.receipts) {
+    for (const r of state.receipts) {
+      if (r.payerId) {
+        paidByParticipant.set(r.payerId, (paidByParticipant.get(r.payerId) ?? 0) + r.totalCents);
+      }
+    }
+  }
+
   const byParticipant: ParticipantBalance[] = participants.map((p, i) => {
     const itemsC = itemsCentsByParticipant.get(p.id) ?? 0;
     const extrasC = extrasSplit[i];
+    const paidC = paidByParticipant.get(p.id) ?? 0;
+    const owesCents = itemsC + extrasC - paidC;
+    
     return {
       participantId: p.id,
       name: p.name,
       color: p.color,
-      isPayer: p.isPayer,
+      paidCents: paidC,
       itemsCents: itemsC,
       extrasCents: extrasC,
-      owesCents: itemsC + extrasC,
-      // Quien pagó no se debe nada a sí mismo, se derive y no se guarde: así
-      // cambiar de pagador no deja a nadie marcado por error.
-      settled: p.isPayer || p.settled,
+      owesCents,
+      // Dejamos a los acreedores como no saldados por ahora para que no se difuminen
+      // (lo recalcularemos después de sacar las transacciones).
+      settled: owesCents === 0 || (owesCents > 0 && (p.settled || p.isPayer)),
     };
   });
 
   const grandTotalCents = ticket.totalCents;
-  const assignedCents = byParticipant.reduce((a, p) => a + p.owesCents, 0);
+  const assignedCents = participants.reduce((a, p) => a + (itemsCentsByParticipant.get(p.id) ?? 0), 0) + extrasCents;
+  const unassignedCents = grandTotalCents - assignedCents;
+
+  const transactions = calculateTransactions(byParticipant);
+
+  // Segunda pasada para acreedores: están saldados si TODO el dinero de la cuenta está asignado
+  // Y todos los que les deben dinero ya han saldado su parte.
+  for (const p of byParticipant) {
+    if (p.owesCents < 0) {
+      if (unassignedCents > 0) {
+        p.settled = false;
+      } else {
+        const incoming = transactions.filter(t => t.toId === p.participantId);
+        p.settled = incoming.length > 0 && incoming.every(t => {
+          const debtor = byParticipant.find(x => x.participantId === t.fromId);
+          return debtor?.settled;
+        });
+      }
+    }
+  }
 
   return {
     itemsTotalCents,
@@ -155,14 +200,57 @@ export function computeSettlement(state: TicketState): Settlement {
     grandTotalCents,
     unassignedCents: grandTotalCents - assignedCents,
     assignedCents,
-    pendingCents: byParticipant.reduce((a, p) => (p.settled ? a : a + p.owesCents), 0),
+    // pendingCents es la suma de los que tienen saldo positivo y aún no están saldados
+    pendingCents: byParticipant.reduce((a, p) => (p.settled || p.owesCents <= 0 ? a : a + p.owesCents), 0),
     byItem,
     byParticipant: sortForDisplay(byParticipant),
+    transactions,
     complete:
       participants.length > 0 &&
       grandTotalCents - assignedCents === 0 &&
       items.every((i) => byItem[i.id].settled),
   };
+}
+
+/**
+ * Calcula el mínimo número de transferencias para liquidar las deudas.
+ * Estilo Tricount/Splitwise: los que deben pagan directamente a los que se les debe.
+ */
+function calculateTransactions(balances: ParticipantBalance[]): import("./types").Transaction[] {
+  // Filtramos y clonamos para no mutar los originales
+  const debtors = balances.filter(b => b.owesCents > 0).map(b => ({ id: b.participantId, amount: b.owesCents }));
+  const creditors = balances.filter(b => b.owesCents < 0).map(b => ({ id: b.participantId, amount: -b.owesCents }));
+
+  // Ordenamos para emparejar los más grandes primero (optimización simple)
+  debtors.sort((a, b) => b.amount - a.amount);
+  creditors.sort((a, b) => b.amount - a.amount);
+
+  const transactions: import("./types").Transaction[] = [];
+  let d = 0;
+  let c = 0;
+
+  while (d < debtors.length && c < creditors.length) {
+    const debtor = debtors[d];
+    const creditor = creditors[c];
+
+    const amount = Math.min(debtor.amount, creditor.amount);
+    
+    if (amount > 0) {
+      transactions.push({
+        fromId: debtor.id,
+        toId: creditor.id,
+        cents: amount,
+      });
+    }
+
+    debtor.amount -= amount;
+    creditor.amount -= amount;
+
+    if (debtor.amount === 0) d++;
+    if (creditor.amount === 0) c++;
+  }
+
+  return transactions;
 }
 
 /**
@@ -176,6 +264,7 @@ function sortForDisplay(balances: ParticipantBalance[]): ParticipantBalance[] {
     (a, b) =>
       Number(a.settled) - Number(b.settled) ||
       b.owesCents - a.owesCents ||
+      b.paidCents - a.paidCents ||
       a.name.localeCompare(b.name, "es"),
   );
 }

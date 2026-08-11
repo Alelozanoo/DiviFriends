@@ -110,6 +110,7 @@ export function useTicketSync(code: string, initial: TicketState) {
 function pick(state: TicketState): TicketState {
   return {
     ticket: state.ticket,
+    receipts: state.receipts || [],
     items: state.items,
     participants: state.participants,
     claims: state.claims,

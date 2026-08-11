@@ -32,8 +32,42 @@ export default function TicketSheet({
         Lo que se leyó del papel. Si algo no cuadra, se corrige desde la comanda.
       </p>
 
-      <div className="mt-4 overflow-hidden rounded-xl">
-        <PaperTicket ticket={state.ticket} items={state.items} />
+      <div className="mt-4 flex flex-col gap-6">
+        {(!state.receipts || state.receipts.length === 0) ? (
+          <div className="overflow-hidden rounded-xl">
+            <PaperTicket ticket={state.ticket} items={state.items} />
+          </div>
+        ) : (
+          <>
+            {/* Ticket original (legacy) */}
+            {(state.items.some(i => !i.receiptId) || (state.ticket.totalCents - state.receipts.reduce((a, r) => a + r.totalCents, 0)) > 0) && (
+              <div className="overflow-hidden rounded-xl">
+                <PaperTicket 
+                  ticket={{
+                    ...state.ticket, 
+                    place: state.ticket.place || "Ticket Original",
+                    totalCents: state.ticket.totalCents - state.receipts.reduce((a, r) => a + r.totalCents, 0)
+                  }} 
+                  items={state.items.filter(i => !i.receiptId)} 
+                />
+              </div>
+            )}
+            
+            {/* Nuevos recibos añadidos */}
+            {state.receipts.map(receipt => (
+              <div key={receipt.id} className="overflow-hidden rounded-xl">
+                <PaperTicket 
+                  ticket={{
+                    ...state.ticket,
+                    place: receipt.label,
+                    totalCents: receipt.totalCents
+                  }} 
+                  items={state.items.filter(i => i.receiptId === receipt.id)} 
+                />
+              </div>
+            ))}
+          </>
+        )}
       </div>
 
       {/*

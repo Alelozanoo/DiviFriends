@@ -16,6 +16,7 @@ import Logo from "./Logo";
 import TicketSheet from "./TicketSheet";
 import TableSheet from "./TableSheet";
 import GuideSheet from "./GuideSheet";
+import TicketUploader from "./TicketUploader";
 import { Avatar, Progress, Sheet } from "./ui";
 
 export default function SplitApp({
@@ -37,6 +38,8 @@ export default function SplitApp({
   const [sharing, setSharing] = useState(false);
   const [viewing, setViewing] = useState(false);
   const [guiding, setGuiding] = useState(false);
+  const [uploadingAnother, setUploadingAnother] = useState(false);
+  const [activeReceiptId, setActiveReceiptId] = useState<string | null>(null);
   // null = decide la app (abierto si no te has unido); true/false = lo has decidido tú.
   const [joinOverride, setJoinOverride] = useState<boolean | null>(null);
 
@@ -157,6 +160,24 @@ export default function SplitApp({
   const removingItem = state.items.find((i) => i.id === removing) ?? null;
   const left = settlement.unassignedCents;
 
+  const receipts = state.receipts || [];
+  const hasLegacyItems = state.items.some(i => !i.receiptId) || (state.ticket.totalCents - receipts.reduce((a, r) => a + r.totalCents, 0)) > 0;
+  
+  // Si no hay `activeReceiptId` seleccionado, por defecto seleccionamos el primero disponible
+  let currentReceiptId = activeReceiptId;
+  if (currentReceiptId === null) {
+    if (hasLegacyItems) {
+      currentReceiptId = null;
+    } else if (receipts.length > 0) {
+      currentReceiptId = receipts[0].id;
+    }
+  }
+
+  const currentItems = state.items.filter(i => 
+    (currentReceiptId === null && !i.receiptId) || 
+    i.receiptId === currentReceiptId
+  );
+
   return (
     <div className="flex min-h-full flex-col">
       {/* ------------------------------------------------------------ cabecera */}
@@ -192,7 +213,6 @@ export default function SplitApp({
                   name={person.name}
                   color={person.color}
                   size={22}
-                  dimmed={person.id !== meId}
                 />
               ))}
               {state.participants.length > 3 && (
@@ -220,6 +240,46 @@ export default function SplitApp({
           </button>
         </div>
         <Progress value={progress} />
+        
+        {/* Pestañas de recibos */}
+        {tab === "comanda" && (
+          <div className="flex gap-2 overflow-x-auto px-3 py-2 hide-scrollbar border-t border-line/50">
+            {hasLegacyItems && (
+              <button
+                type="button"
+                onClick={() => setActiveReceiptId(null)}
+                className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold transition-colors ${
+                  currentReceiptId === null
+                    ? "bg-amber text-paper"
+                    : "bg-paper-2 border border-line text-ink-soft hover:border-amber hover:text-amber"
+                }`}
+              >
+                {state.ticket.place || "Ticket Original"}
+              </button>
+            )}
+            {receipts.map((r) => (
+              <button
+                key={r.id}
+                type="button"
+                onClick={() => setActiveReceiptId(r.id)}
+                className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold transition-colors ${
+                  currentReceiptId === r.id
+                    ? "bg-amber text-paper"
+                    : "bg-paper-2 border border-line text-ink-soft hover:border-amber hover:text-amber"
+                }`}
+              >
+                {r.label}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setUploadingAnother(true)}
+              className="shrink-0 rounded-full border border-dashed border-line bg-paper px-3 py-1 text-xs font-bold text-ink-faint transition-colors hover:border-amber hover:text-amber active:bg-paper-2"
+            >
+              + Añadir
+            </button>
+          </div>
+        )}
       </header>
 
       <main className="mx-auto w-full max-w-3xl flex-1 px-3 py-3">
@@ -273,7 +333,7 @@ export default function SplitApp({
 
             {/* dos columnas de burbujas */}
             <div className="grid grid-cols-2 gap-2.5">
-              {state.items.map((item) => (
+              {currentItems.map((item) => (
                 <ItemBubble
                   key={item.id}
                   item={item}
@@ -303,11 +363,21 @@ export default function SplitApp({
             state={state}
             settlement={settlement}
             meId={meId}
-            onSetPayer={(participantId) => {
-              const person = state.participants.find((p) => p.id === participantId);
-              // Volver a tocar al pagador lo quita: si te equivocas de persona
-              // no hace falta buscar otra manera de deshacerlo.
-              void patchParticipant(participantId, { isPayer: !person?.isPayer });
+            onSetPayer={async (participantId, receiptId) => {
+              // Si se vuelve a tocar la persona que ya ha pagado ese receipt, se quita (null)
+              let finalParticipantId: string | null = participantId;
+              if (receiptId) {
+                const r = state.receipts.find((r) => r.id === receiptId);
+                if (r?.payerId === participantId) finalParticipantId = null;
+              } else {
+                if (state.ticket.payerId === participantId || (!state.ticket.payerId && state.participants.find((p) => p.id === participantId)?.isPayer)) {
+                  finalParticipantId = null;
+                }
+              }
+              await send("/payers", {
+                method: "PATCH",
+                body: JSON.stringify({ participantId: finalParticipantId, receiptId }),
+              });
             }}
             onSetSettled={(participantId, settled) =>
               void patchParticipant(participantId, { settled })
@@ -389,10 +459,17 @@ export default function SplitApp({
             removingItem.id,
           )}
           onClose={() => setRemoving(null)}
-          onConfirm={() => {
+          onConfirm={(newQty) => {
             setRemoving(null);
-            // Con firma: quien quita una línea deja su nombre en el historial.
-            void send(`/items/${removingItem.id}?by=${meId ?? ""}`, { method: "DELETE" });
+            if (newQty === 0) {
+              // Con firma: quien quita una línea deja su nombre en el historial.
+              void send(`/items/${removingItem.id}?by=${meId ?? ""}`, { method: "DELETE" });
+            } else {
+              void send(`/items/${removingItem.id}?by=${meId ?? ""}`, { 
+                method: "PATCH", 
+                body: JSON.stringify({ qty: newQty }) 
+              });
+            }
           }}
         />
       )}
@@ -434,11 +511,25 @@ export default function SplitApp({
           onAdd={async (name, qty, price) => {
             await send("/items", {
               method: "POST",
-              body: JSON.stringify({ name, qty, price, by: meId }),
+              body: JSON.stringify({ name, qty, price, by: meId, receiptId: currentReceiptId }),
             });
             setAdding(false);
           }}
         />
+      )}
+
+      {uploadingAnother && (
+        <Sheet onClose={() => setUploadingAnother(false)}>
+          <h2 className="mb-4 text-xl font-bold tracking-tight">Subir otro ticket</h2>
+          <TicketUploader 
+            targetCode={code} 
+            onSuccess={() => {
+              setUploadingAnother(false);
+              // Podríamos forzar un fetch de estado, pero la subscripción de Firebase 
+              // lo actualizará automáticamente, así que la UI se renderizará sola.
+            }} 
+          />
+        </Sheet>
       )}
 
       {showJoin && (

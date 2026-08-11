@@ -9,7 +9,7 @@ interface Props {
   state: TicketState;
   settlement: Settlement;
   meId: string | null;
-  onSetPayer: (participantId: string) => void;
+  onSetPayer: (participantId: string | null, receiptId: string | null) => void;
   onSetSettled: (participantId: string, settled: boolean) => void;
   onSetTotal: (cents: number) => void;
   onOpenLog: () => void;
@@ -35,18 +35,47 @@ export default function AccountsPanel({
 }: Props) {
   const { currency } = state.ticket;
   const people = settlement.byParticipant;
-  const payer = people.find((p) => p.isPayer) ?? null;
+  
+  // Normalizar los tickets para la UI
+  const hasLegacyItems = state.items.some(i => !i.receiptId);
+  const allTickets: { id: string | null; label: string; payerId: string | null; totalCents: number }[] = [];
+  
+  if (hasLegacyItems || state.receipts.length === 0) {
+    // Buscar pagador legacy si no tiene payerId explícito
+    const legacyPayer = state.participants.find((p) => p.isPayer)?.id ?? null;
+    allTickets.push({
+      id: null,
+      label: state.ticket.place || "Ticket Original",
+      totalCents: state.ticket.totalCents,
+      payerId: state.ticket.payerId ?? legacyPayer,
+    });
+  }
+  
+  for (const r of state.receipts || []) {
+    allTickets.push({
+      id: r.id,
+      label: r.label,
+      totalCents: r.totalCents,
+      payerId: r.payerId,
+    });
+  }
+
   const pending = people.filter((p) => !p.settled);
   const changeCount = state.events.length;
+  
+  // Hay múltiples pagadores si hay gente distinta que haya pagado
+  const payers = new Set(allTickets.map(t => t.payerId).filter(Boolean));
+  const isMultiPayer = payers.size > 1;
 
   return (
     <div className="space-y-4 pb-40">
       <Headline
         currency={currency}
-        payer={payer}
         people={people}
         pendingCents={settlement.pendingCents}
         totalCents={settlement.grandTotalCents}
+        isMultiPayer={isMultiPayer}
+        unassignedCents={settlement.unassignedCents}
       />
 
       {settlement.unassignedCents !== 0 && (
@@ -59,48 +88,66 @@ export default function AccountsPanel({
 
       {/* --------------------------------------------------------- quién pagó */}
       <section className="rounded-2xl border border-line bg-paper-2 p-4">
-        <h3 className="font-bold tracking-tight">¿Quién ha pagado la cuenta?</h3>
-        {people.length === 0 ? (
-          <p className="mt-2 text-sm text-ink-faint">Todavía no hay nadie en la mesa.</p>
-        ) : (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {people.map((person) => (
-              <button
-                key={person.participantId}
-                type="button"
-                onClick={() => onSetPayer(person.participantId)}
-                aria-pressed={person.isPayer}
-                className={`flex items-center gap-2 rounded-xl border-2 py-1.5 pl-1.5 pr-3 text-sm font-semibold transition-colors ${
-                  person.isPayer
-                    ? "border-amber bg-amber/15 text-amber"
-                    : "border-line text-ink-soft active:bg-paper-3"
-                }`}
-              >
-                <Avatar name={person.name} color={person.color} size={24} />
-                <span className="max-w-28 truncate">{person.name}</span>
-              </button>
-            ))}
+        {allTickets.map((ticket, index) => (
+          <div key={ticket.id ?? "legacy"} className={index > 0 ? "mt-6 border-t border-line/60 pt-6" : ""}>
+            <h3 className="font-bold tracking-tight">¿Quién ha pagado {allTickets.length > 1 ? <span className="text-amber">{ticket.label}</span> : "la cuenta"}?</h3>
+            {people.length === 0 ? (
+              <p className="mt-2 text-sm text-ink-faint">Todavía no hay nadie en la mesa.</p>
+            ) : (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {people.map((person) => {
+                  const isPayer = ticket.payerId === person.participantId;
+                  return (
+                    <button
+                      key={person.participantId}
+                      type="button"
+                      onClick={() => onSetPayer(person.participantId, ticket.id)}
+                      aria-pressed={isPayer}
+                      className={`flex items-center gap-2 rounded-xl border-2 py-1.5 pl-1.5 pr-3 text-sm font-semibold transition-colors ${
+                        isPayer
+                          ? "border-amber bg-amber/15 text-amber"
+                          : "border-line text-ink-soft active:bg-paper-3"
+                      }`}
+                    >
+                      <Avatar name={person.name} color={person.color} size={24} />
+                      <span className="max-w-28 truncate">{person.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        )}
+        ))}
       </section>
 
       {/* ------------------------------------------------------ quién le debe */}
       {people.length > 0 && (
         <section className="overflow-hidden rounded-2xl border border-line bg-paper-2">
           <ul>
-            {people.map((person, index) => (
-              <PersonRow
-                key={person.participantId}
-                person={person}
-                currency={currency}
-                isMe={person.participantId === meId}
-                /* La raya separa lo pendiente de lo cobrado sin necesidad de
-                   dos listas ni de un título encima de cada una. */
-                divider={index > 0 && person.settled && !people[index - 1].settled}
-                first={index === 0}
-                onToggle={() => onSetSettled(person.participantId, !person.settled)}
-              />
-            ))}
+            {people.map((person, index) => {
+              // Si hay un solo pagador y no es esta persona, le pasamos su nombre para que el botón lo indique
+              const firstPayer = people.find(p => p.owesCents < 0);
+              const payeeName = (!isMultiPayer && firstPayer && firstPayer.participantId !== person.participantId) 
+                ? firstPayer.name 
+                : null;
+
+              return (
+                <PersonRow
+                  key={person.participantId}
+                  person={person}
+                  currency={currency}
+                  isMe={person.participantId === meId}
+                  payeeName={payeeName}
+                  transactions={settlement.transactions}
+                  allPeople={people}
+                  /* La raya separa lo pendiente de lo cobrado sin necesidad de
+                     dos listas ni de un título encima de cada una. */
+                  divider={index > 0 && person.settled && !people[index - 1].settled}
+                  first={index === 0}
+                  onToggle={() => onSetSettled(person.participantId, !person.settled)}
+                />
+              );
+            })}
           </ul>
         </section>
       )}
@@ -148,8 +195,8 @@ export default function AccountsPanel({
         </span>
       </button>
 
-      {/* Sólo a quien cobra: al resto no le sirve de nada y añade ruido. */}
-      {pending.length > 0 && payer?.participantId === meId && (
+      {/* Sólo si hay alguien que deba dinero y yo no debo, sugerimos cobrar */}
+      {pending.length > 0 && (people.find(p => p.participantId === meId)?.owesCents ?? 0) <= 0 && (
         <p className="px-1 text-xs text-ink-faint">
           Cuando alguien te dé su parte, toca «Ha pagado» en su fila.
         </p>
@@ -161,20 +208,26 @@ export default function AccountsPanel({
 /** El número grande: lo único que hay que leer al llegar a esta pantalla. */
 function Headline({
   currency,
-  payer,
   people,
   pendingCents,
   totalCents,
+  isMultiPayer,
+  unassignedCents,
 }: {
   currency: string;
-  payer: ParticipantBalance | null;
   people: ParticipantBalance[];
   pendingCents: number;
   totalCents: number;
+  isMultiPayer: boolean;
+  unassignedCents: number;
 }) {
   const settledCount = people.filter((p) => p.settled).length;
+  const anyPayer = people.some(p => p.paidCents > 0);
+  
+  // Total que se le debe a la gente que ha pagado de más
+  const owedToPayers = people.reduce((a, p) => p.owesCents < 0 ? a + Math.abs(p.owesCents) : a, 0);
 
-  if (!payer) {
+  if (!anyPayer) {
     return (
       <Card
         label="Total de la mesa"
@@ -184,22 +237,28 @@ function Headline({
     );
   }
 
-  if (pendingCents === 0) {
+  if (owedToPayers <= 0) {
     return (
       <Card
         tone="good"
         label="Cuentas"
-        value="Todo pagado"
-        hint={`${payer.name} ya ha cobrado los ${money(totalCents, currency)}.`}
+        value="Todo cuadrado"
+        hint={`Todos han saldado su deuda.`}
       />
     );
   }
 
+  const firstPayer = people.find(p => p.owesCents < 0);
+
   return (
     <Card
-      label={`Falta por devolverle a ${payer.name}`}
-      value={money(pendingCents, currency)}
-      hint={`${settledCount} de ${people.length} ya han pagado · ${money(totalCents, currency)} en total`}
+      label={isMultiPayer || !firstPayer ? `Falta por saldar al bote` : `Falta por devolverle a ${firstPayer.name}`}
+      value={money(owedToPayers, currency)}
+      hint={
+        unassignedCents > 0 
+          ? `Hay ${money(unassignedCents, currency)} sin asignar en la comanda`
+          : `${settledCount} de ${people.length} ya han saldado su balance`
+      }
     />
   );
 }
@@ -234,14 +293,13 @@ function Card({
   );
 }
 
-/**
- * Una persona y su parte. El botón de la derecha es la única acción, y dice
- * siempre lo que va a pasar al tocarlo, no el estado en el que estás.
- */
 function PersonRow({
   person,
   currency,
   isMe,
+  payeeName,
+  transactions,
+  allPeople,
   divider,
   first,
   onToggle,
@@ -249,10 +307,18 @@ function PersonRow({
   person: ParticipantBalance;
   currency: string;
   isMe: boolean;
+  payeeName: string | null;
+  transactions: import("@/lib/types").Transaction[];
+  allPeople: ParticipantBalance[];
   divider: boolean;
   first: boolean;
   onToggle: () => void;
 }) {
+  // owesCents > 0: debe poner dinero
+  // owesCents < 0: se le debe dinero
+  const mustPay = person.owesCents > 0;
+  const isOwed = person.owesCents < 0;
+  
   return (
     <li
       className={`flex items-center gap-3 px-4 py-3 ${first ? "" : "border-t border-line/60"} ${
@@ -264,12 +330,34 @@ function PersonRow({
       <span className="min-w-0 flex-1 truncate font-medium">
         {person.name}
         {isMe && <span className="ml-1.5 text-xs text-amber">(tú)</span>}
+        
+        {!person.settled && mustPay && (
+          <span className="mt-0.5 block truncate text-xs font-normal text-ink-soft">
+            {transactions
+              .filter(t => t.fromId === person.participantId)
+              .map(t => `${money(t.cents, currency)} a ${allPeople.find(p => p.participantId === t.toId)?.name}`)
+              .join(" • ")}
+          </span>
+        )}
+        
+        {!person.settled && isOwed && (
+          <span className="mt-0.5 block truncate text-xs font-normal text-ink-soft">
+            {transactions
+              .filter(t => t.toId === person.participantId)
+              .map(t => `Recibe ${money(t.cents, currency)} de ${allPeople.find(p => p.participantId === t.fromId)?.name}`)
+              .join(" • ")}
+          </span>
+        )}
       </span>
 
-      <span className="tnum shrink-0 font-bold">{money(person.owesCents, currency)}</span>
+      <span className={`tnum shrink-0 font-bold ${isOwed ? "text-mint" : "text-ink"}`}>
+        {money(Math.abs(person.owesCents), currency)}
+      </span>
 
-      {person.isPayer ? (
-        <span className="stamp shrink-0 text-ink-faint">Puso la cuenta</span>
+      {isOwed ? (
+        <span className="stamp shrink-0 text-mint">Se le debe</span>
+      ) : person.owesCents === 0 && person.paidCents === 0 ? (
+         <span className="stamp shrink-0 text-ink-faint">No debe nada</span>
       ) : (
         <button
           type="button"
@@ -283,7 +371,11 @@ function PersonRow({
                 : "border border-line text-ink-soft active:bg-paper-3"
           }`}
         >
-          {person.settled ? "Pagado ✓" : isMe ? "He pagado" : "Ha pagado"}
+          {person.settled 
+            ? "Saldado ✓" 
+            : isMe 
+              ? (payeeName ? `Pagar a ${payeeName}` : "He pagado") 
+              : (payeeName ? `Pagado a ${payeeName}` : "Ha pagado")}
         </button>
       )}
     </li>

@@ -5,12 +5,14 @@ export interface Ticket {
   currency: string;
   /** Total impreso en el ticket, en céntimos. */
   totalCents: number;
+  payerId: string | null;
   createdAt: string;
 }
 
 export interface Item {
   id: string;
   ticketId: string;
+  receiptId?: string;
   name: string;
   /** Unidades impresas en el ticket. Sólo informativo. */
   qty: number;
@@ -84,8 +86,16 @@ export interface ChangeEvent {
   cents: number;
 }
 
+export interface Receipt {
+  id: string;
+  label: string;
+  totalCents: number;
+  payerId: string | null;
+}
+
 export interface TicketState {
   ticket: Ticket;
+  receipts: Receipt[];
   items: Item[];
   participants: Participant[];
   claims: Claim[];
@@ -115,15 +125,22 @@ export interface ParticipantBalance {
   participantId: string;
   name: string;
   color: string;
-  isPayer: boolean;
+  /** Lo que adelantó (si pagó algún ticket/recibo). */
+  paidCents: number;
   /** Suma de sus platos. */
   itemsCents: number;
   /** Su parte proporcional de servicio, impuestos o descuento. */
   extrasCents: number;
-  /** itemsCents + extrasCents: lo que le toca pagar. */
+  /** (itemsCents + extrasCents) - paidCents. Positivo = debe al bote. Negativo = el bote le debe. */
   owesCents: number;
-  /** Ya ha devuelto lo suyo. Quien pagó lo está siempre: adelantó la cuenta. */
+  /** Ya ha saldado su balance. */
   settled: boolean;
+}
+
+export interface Transaction {
+  fromId: string;
+  toId: string;
+  cents: number;
 }
 
 export interface Settlement {
@@ -139,5 +156,6 @@ export interface Settlement {
   byItem: Record<string, ItemBreakdown>;
   /** De más a menos: arriba quien más debe, y los que ya pagaron al final. */
   byParticipant: ParticipantBalance[];
+  transactions: Transaction[];
   complete: boolean;
 }

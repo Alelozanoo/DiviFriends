@@ -41,7 +41,13 @@ const PHASE_COPY: Record<string, string> = {
   parsing: "Leyendo el ticket…",
 };
 
-export default function TicketUploader() {
+export default function TicketUploader({
+  targetCode,
+  onSuccess,
+}: {
+  targetCode?: string;
+  onSuccess?: () => void;
+} = {}) {
   const router = useRouter();
   // Dos entradas separadas: `capture` abre la cámara directamente, y sin él el
   // sistema enseña el carrete. Con una sola no se puede tener ambas cosas.
@@ -63,17 +69,23 @@ export default function TicketUploader() {
         setVista(vista);
         setPhase("parsing");
 
-        const response = await fetch("/api/tickets", {
+        const endpoint = targetCode ? `/api/tickets/${targetCode}/receipts` : "/api/tickets";
+        const response = await fetch(endpoint, {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ image: base64, mediaType: "image/jpeg" }),
         });
         const data = (await response.json()) as { code?: string; error?: string };
 
-        if (!response.ok || !data.code) {
+        if (!response.ok || (!data.code && !targetCode)) {
           throw new Error(data.error ?? "No se ha podido leer el ticket.");
         }
-        router.push(`/t/${data.code}`);
+        
+        if (targetCode && onSuccess) {
+          onSuccess();
+        } else if (data.code) {
+          router.push(`/t/${data.code}`);
+        }
       } catch (cause) {
         setPhase("error");
         setError(cause instanceof Error ? cause.message : "Algo ha ido mal.");
@@ -200,27 +212,31 @@ export default function TicketUploader() {
         aparte siempre abierto, y le robaba sitio al único botón que importa la
         primera vez. Ahora se pide al pulsar.
       */}
-      <p className="mt-4 text-center text-sm text-ink-soft">
-        ¿Ya tienes un Divi?{" "}
-        <button
-          type="button"
-          onClick={() => setPidiendoCodigo(true)}
-          className="text-amber underline underline-offset-4 hover:text-ink"
-        >
-          Introduce el código
-        </button>
-      </p>
-
-      {pidiendoCodigo && (
-        <Sheet onClose={() => setPidiendoCodigo(false)}>
-          <h2 className="text-xl font-bold tracking-tight">El código de la mesa</h2>
-          <p className="mt-1 text-sm text-ink-soft">
-            Seis caracteres. Están en el ticket impreso o te los pasa quien creó el Divi.
+      {!targetCode && (
+        <>
+          <p className="mt-4 text-center text-sm text-ink-soft">
+            ¿Ya tienes un Divi?{" "}
+            <button
+              type="button"
+              onClick={() => setPidiendoCodigo(true)}
+              className="text-amber underline underline-offset-4 hover:text-ink"
+            >
+              Introduce el código
+            </button>
           </p>
-          <div className="mt-4">
-            <JoinByCode />
-          </div>
-        </Sheet>
+
+          {pidiendoCodigo && (
+            <Sheet onClose={() => setPidiendoCodigo(false)}>
+              <h2 className="text-xl font-bold tracking-tight">El código de la mesa</h2>
+              <p className="mt-1 text-sm text-ink-soft">
+                Seis caracteres. Están en el ticket impreso o te los pasa quien creó el Divi.
+              </p>
+              <div className="mt-4">
+                <JoinByCode />
+              </div>
+            </Sheet>
+          )}
+        </>
       )}
     </div>
   );

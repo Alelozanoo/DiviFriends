@@ -29,7 +29,8 @@ function state(
   totalCents: number,
 ): TicketState {
   return {
-    ticket: { id: "T", place: null, tableLabel: null, currency: "EUR", totalCents, createdAt: "" },
+    ticket: { id: "T", place: null, tableLabel: null, currency: "EUR", totalCents, payerId: null, createdAt: "" },
+    receipts: [],
     items,
     participants,
     claims,
@@ -173,7 +174,7 @@ test("quien pagó no se debe nada a sí mismo", () => {
   );
   const out = computeSettlement(s);
   assert.equal(out.pendingCents, 1000);
-  assert.equal(out.byParticipant.find((p) => p.isPayer)!.settled, true);
+  assert.equal(out.byParticipant.find((p) => p.participantId === "pagador")!.settled, true);
 });
 
 test("marcar «he pagado» descuenta esa parte de lo pendiente", () => {

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { initials } from "@/lib/format";
 
 export function Avatar({
@@ -52,6 +53,14 @@ export function Stat({
 
 /** El panel que sube desde abajo: el gesto de toda la app en el móvil. */
 export function Sheet({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  useEffect(() => {
+    const originalStyle = window.getComputedStyle(document.body).overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalStyle;
+    };
+  }, []);
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70" onClick={onClose}>
       <div

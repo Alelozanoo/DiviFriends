@@ -12,15 +12,24 @@ import type { ChangeEvent, Claim, Item, Participant, TicketState } from "./types
  * Todos los campos son primitivos serializables (nada de Timestamp), para que
  * el mismo objeto valga tal cual en el servidor y en el navegador.
  */
+export interface ReceiptDoc {
+  id: string;
+  label: string;
+  totalCents: number;
+  payerId?: string | null;
+}
+
 export interface TicketDoc {
   place: string | null;
   tableLabel: string | null;
   currency: string;
   totalCents: number;
+  payerId?: string | null;
   /** @deprecated La propina se quitó: complicaba la pantalla de cuentas. */
   tipCents?: number;
   createdAt: string;
   updatedAt: string;
+  receipts?: ReceiptDoc[];
   items: ItemDoc[];
   participants: ParticipantDoc[];
   claims: ClaimDoc[];
@@ -46,6 +55,7 @@ export interface EventDoc {
 
 export interface ItemDoc {
   id: string;
+  receiptId?: string;
   name: string;
   qty: number;
   unitCents: number;
@@ -86,6 +96,7 @@ export function docToState(code: string, doc: TicketDoc): TicketState {
     .map((raw) => ({
       id: raw.id,
       ticketId: code,
+      receiptId: raw.receiptId,
       name: raw.name,
       qty: raw.qty,
       unitCents: raw.unitCents,
@@ -139,8 +150,13 @@ export function docToState(code: string, doc: TicketDoc): TicketState {
       tableLabel: doc.tableLabel ?? null,
       currency: doc.currency ?? "EUR",
       totalCents: doc.totalCents ?? 0,
+      payerId: doc.payerId ?? null,
       createdAt: doc.createdAt ?? "",
     },
+    receipts: (doc.receipts ?? []).map(r => ({
+      ...r,
+      payerId: r.payerId ?? null,
+    })),
     items,
     participants,
     claims,

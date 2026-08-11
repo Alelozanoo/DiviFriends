@@ -55,13 +55,16 @@ const SECCIONES: { pregunta: string; pasos: React.ReactNode[] }[] = [
     pregunta: "¿Falta algo, o sobra?",
     pasos: [
       <>
-        Para añadir: el recuadro de puntos <B>+ Falta algo</B>, al final de la
+        Para añadir un plato suelto: el recuadro de puntos <B>+ Falta algo</B>, al final de la
         lista.
       </>,
       <>
-        Para quitar una línea: la <B>✕</B> de su esquina. El total del ticket
-        baja con ella, así que queda anotado en el <B>historial</B> con el
-        nombre de quien la quitó.
+        Para añadir otro ticket entero a la misma cuenta: pulsa <B>+ Añadir</B> en la barra superior.
+      </>,
+      <>
+        Para quitar una línea o reducir su cantidad: la <B>✕</B> de su esquina. 
+        El total del ticket baja automáticamente, así que queda anotado en el <B>historial</B> con el
+        nombre de quien lo hizo.
       </>,
       <>
         Si el total leído no cuadra con el papel, se corrige en <B>Cuentas</B>,
@@ -88,15 +91,14 @@ const SECCIONES: { pregunta: string; pasos: React.ReactNode[] }[] = [
     pregunta: "¿Y al final, quién paga?",
     pasos: [
       <>
-        En <B>Cuentas</B>, marca quién puso la tarjeta.
+        En <B>Cuentas</B>, marca quién ha pagado cada ticket de la lista.
       </>,
       <>
         Sale lo que le debe cada uno, de más a menos. Cuando le devuelvas lo
         tuyo, toca <B>He pagado</B>.
       </>,
       <>
-        Quien pagó ve quién le falta: los pendientes arriba, los saldados en gris
-        al final.
+        Quien pagó ve el balance de todos: los que deben pagar están en negro y los que tienen saldo a su favor en verde.
       </>,
     ],
   },
