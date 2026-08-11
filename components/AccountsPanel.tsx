@@ -327,28 +327,30 @@ function PersonRow({
     >
       <Avatar name={person.name} avatar={person.avatar} color={person.color} size={30} />
 
-      <span className="min-w-0 flex-1 truncate font-medium">
-        {person.name}
-        {isMe && <span className="ml-1.5 text-xs text-amber">(tú)</span>}
+      <div className="min-w-0 flex-1 font-medium py-1">
+        <div className="truncate">
+          {person.name}
+          {isMe && <span className="ml-1.5 text-xs text-amber">(tú)</span>}
+        </div>
         
         {!person.settled && mustPay && (
-          <span className="mt-0.5 block truncate text-xs font-normal text-ink-soft">
+          <div className="mt-0.5 text-xs font-normal text-ink-soft leading-tight">
             {transactions
               .filter(t => t.fromId === person.participantId)
               .map(t => `${money(t.cents, currency)} a ${allPeople.find(p => p.participantId === t.toId)?.name}`)
               .join(" • ")}
-          </span>
+          </div>
         )}
         
         {!person.settled && isOwed && (
-          <span className="mt-0.5 block truncate text-xs font-normal text-ink-soft">
+          <div className="mt-0.5 text-xs font-normal text-ink-soft leading-tight">
             {transactions
               .filter(t => t.toId === person.participantId)
               .map(t => `Recibe ${money(t.cents, currency)} de ${allPeople.find(p => p.participantId === t.fromId)?.name}`)
               .join(" • ")}
-          </span>
+          </div>
         )}
-      </span>
+      </div>
 
       <span className={`tnum shrink-0 font-bold ${isOwed ? "text-mint" : "text-ink"}`}>
         {money(Math.abs(person.owesCents), currency)}
