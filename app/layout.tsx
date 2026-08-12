@@ -16,7 +16,7 @@ const figure = JetBrains_Mono({
 });
 
 const DESCRIPCION =
-  "Escanea el QR del ticket, marca lo que has comido y sabe al instante cuánto le debes a quien pagó.";
+  "Haz una foto del ticket, marca lo que has comido y sabe al instante a quién le debes cuánto. Varios tickets, varios pagadores, una sola cuenta.";
 
 export const metadata: Metadata = {
   // Sin esto, las rutas de `openGraph` y del sitemap salen relativas y ni

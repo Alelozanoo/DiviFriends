@@ -1,11 +1,11 @@
 import Link from "next/link";
 import Logo, { Wordmark } from "@/components/Logo";
 import TicketUploader from "@/components/TicketUploader";
-import { PasoCuentas, PasoFoto, PasoMarcar } from "@/components/ComoVa";
+import { PasoCuentas, PasoFoto, PasoMarcar, PasoTickets } from "@/components/ComoVa";
 import Preguntas from "@/components/Preguntas";
 
 /**
- * Los tres pasos, dibujados con las piezas de la propia app.
+ * Los cuatro pasos, dibujados con las piezas de la propia app.
  *
  * Se probó con capturas de pantalla y pesaban medio mega para acabar
  * enseñando la app entera —cabecera, barra de abajo, diez líneas— cuando cada
@@ -21,14 +21,20 @@ const PASOS = [
   },
   {
     n: "02",
+    title: "¿Otro sitio? Otro ticket",
+    foot: "La carne de una tienda y las bebidas de otra, en la misma cuenta.",
+    Pieza: PasoTickets,
+  },
+  {
+    n: "03",
     title: "Tocas lo que has tomado",
     foot: "Lo compartido se parte solo entre quienes lo pidieron.",
     Pieza: PasoMarcar,
   },
   {
-    n: "03",
-    title: "Sale lo que debe cada uno",
-    foot: "Y quien puso la tarjeta ve quién le falta por pagar.",
+    n: "04",
+    title: "Sale quién le paga a quién",
+    foot: "Aunque haya puesto la tarjeta uno distinto en cada sitio.",
     Pieza: PasoCuentas,
   },
 ];
@@ -102,11 +108,13 @@ export default function Home() {
       <section className="border-y border-line bg-paper-2/40">
         <div className="mx-auto max-w-6xl px-5 py-16 sm:py-20">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Cómo funciona</h2>
-          <p className="mt-3 max-w-md text-ink-soft">Tres pantallas y ya está.</p>
+          <p className="mt-3 max-w-md text-ink-soft">
+            De la foto del papel a quién le paga a quién.
+          </p>
 
           {/* Al dibujarlas son bajitas, así que caben apiladas en el móvil sin
               carrusel ni scroll lateral: se leen de arriba abajo, en orden. */}
-          <ol className="mt-10 grid gap-8 sm:grid-cols-3 sm:gap-6">
+          <ol className="mt-10 grid gap-8 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4">
             {PASOS.map(({ n, title, foot, Pieza }) => (
               <li key={n}>
                 <Pieza />
