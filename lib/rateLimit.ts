@@ -22,13 +22,30 @@ const MINUTO = 60_000;
 const HORA = 60 * MINUTO;
 const DIA = 24 * HORA;
 
+/**
+ * Lo máximo que se puede gastar en un día leyendo tickets, en **dólares**: la
+ * API de Anthropic factura en dólares y mezclarlo con euros aquí sería pedir
+ * que algún día alguien se lleve un susto con la factura.
+ */
+const PRESUPUESTO_DIARIO = 10;
+
+/**
+ * Lo que cuesta hoy leer un ticket, en dólares.
+ *
+ * Medido el 2026-08-07 con la configuración que hay en `lib/ocr.ts`: Opus 5,
+ * effort medium y 2000 px. Cambiar de modelo o de resolución cambia este número
+ * —Haiku 4.5 a 800 px son 0,0022— y con él sube solo el tope de abajo, que es
+ * justo lo que se quiere: el freno lo pone el dinero, no un número inventado.
+ */
+const COSTE_POR_LECTURA = 0.0296;
+
 export const TOPES = {
   /** Crear una comanda desde una foto. Cada una cuesta ~3 ¢ de API. */
   lecturaDeTicket: {
     porIp: { max: 20, windowMs: HORA },
-    // 300 lecturas al día son unos 9 € diarios en el peor de los casos.
-    // Cuando haya uso real, éste es el número que hay que subir a conciencia.
-    global: { max: 300, windowMs: DIA },
+    // Sale de dividir el presupuesto entre lo que cuesta una lectura, para que
+    // el tope y la factura no puedan separarse: hoy son 337 al día.
+    global: { max: Math.floor(PRESUPUESTO_DIARIO / COSTE_POR_LECTURA), windowMs: DIA },
   },
   /** Crear una comanda escrita a mano. No llama a ninguna IA; sólo escribe. */
   comandaManual: {
