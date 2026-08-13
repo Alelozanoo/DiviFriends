@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Logo, { Wordmark } from "@/components/Logo";
 import TicketUploader from "@/components/TicketUploader";
+import { CambiarCookies } from "@/components/Consent";
 import { PasoCuentas, PasoFoto, PasoMarcar, PasoTickets } from "@/components/ComoVa";
 import Preguntas from "@/components/Preguntas";
 
@@ -136,7 +137,10 @@ export default function Home() {
           <p>
             <Wordmark className="font-semibold" /> · reparte la cuenta sin discutir
           </p>
-          <p className="tnum">Los importes se calculan al céntimo.</p>
+          <p className="flex items-center gap-4">
+            <span className="tnum">Los importes se calculan al céntimo.</span>
+            <CambiarCookies className="underline underline-offset-2 transition-colors hover:text-amber" />
+          </p>
         </div>
       </footer>
     </main>

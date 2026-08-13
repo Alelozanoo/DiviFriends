@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { money } from "@/lib/format";
 import { ticketPng } from "@/lib/ticketImage";
+import { EV, track } from "@/lib/track";
 import type { TicketState } from "@/lib/types";
 
 /**
@@ -62,6 +63,7 @@ export default function ShareTicketButton({
 
   function compartir() {
     setNota(null);
+    track(EV.comparte, { via: "ticket" });
 
     if (imagen && navigator.canShare?.({ files: [imagen] })) {
       navigator.share({ files: [imagen], text: mensaje }).then(onDone, avisar);

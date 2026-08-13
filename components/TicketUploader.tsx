@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { EV, track } from "@/lib/track";
 import JoinByCode from "./JoinByCode";
 import { Sheet } from "./ui";
 
@@ -82,8 +83,10 @@ export default function TicketUploader({
         }
         
         if (targetCode && onSuccess) {
+          track(EV.anadeTicket, { origen: "foto" });
           onSuccess();
         } else if (data.code) {
+          track(EV.creaDivi, { metodo: "foto" });
           router.push(`/t/${data.code}`);
         }
       } catch (cause) {

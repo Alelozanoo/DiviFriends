@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { computeSettlement, totalAfterRemoving } from "@/lib/settle";
 import { useStoredParticipant } from "@/lib/useStoredParticipant";
 import { useTicketSync } from "@/lib/useTicketSync";
 import { money, parseMoney } from "@/lib/format";
+import { EV, track, trackOnce } from "@/lib/track";
 import type { Participant, TicketState } from "@/lib/types";
 import AccountsPanel from "./AccountsPanel";
 import ItemBubble from "./ItemBubble";
@@ -40,6 +41,12 @@ export default function SplitApp({
   const [guiding, setGuiding] = useState(false);
   const [uploadingAnother, setUploadingAnother] = useState(false);
   const [activeReceiptId, setActiveReceiptId] = useState<string | null>(null);
+  // Abrir una mesa es el primer momento medible: por el enlace del grupo,
+  // por el QR del bar o tecleando el código.
+  useEffect(() => {
+    trackOnce("mesa", EV.abreMesa);
+  }, []);
+
   // null = decide la app (abierto si no te has unido); true/false = lo has decidido tú.
   const [joinOverride, setJoinOverride] = useState<boolean | null>(null);
 
@@ -104,6 +111,7 @@ export default function SplitApp({
   async function join(name: string, avatar?: string) {
     const participantId = await addPerson(name, avatar);
     if (!participantId) return;
+    track(EV.seApunta, { con_avatar: Boolean(avatar) });
     store(participantId);
     setJoinOverride(null);
   }
@@ -120,6 +128,7 @@ export default function SplitApp({
       return;
     }
     navigator.vibrate?.(8);
+    trackOnce("plato", EV.marcaPlato);
     const token = beginClaim(itemId, target, shares, splitInto);
     void send("/claims", {
       method: "POST",
@@ -162,7 +171,7 @@ export default function SplitApp({
 
   const receipts = state.receipts || [];
   const hasLegacyItems = state.items.some(i => !i.receiptId) || (state.ticket.totalCents - receipts.reduce((a, r) => a + r.totalCents, 0)) > 0;
-  
+
   // Si no hay `activeReceiptId` seleccionado, por defecto seleccionamos el primero disponible
   let currentReceiptId = activeReceiptId;
   if (currentReceiptId === null) {
@@ -173,8 +182,8 @@ export default function SplitApp({
     }
   }
 
-  const currentItems = state.items.filter(i => 
-    (currentReceiptId === null && !i.receiptId) || 
+  const currentItems = state.items.filter(i =>
+    (currentReceiptId === null && !i.receiptId) ||
     i.receiptId === currentReceiptId
   );
 
@@ -241,7 +250,7 @@ export default function SplitApp({
           </button>
         </div>
         <Progress value={progress} />
-        
+
         {/* Pestañas de recibos */}
         {tab === "comanda" && (
           <div className="flex gap-2 overflow-x-auto px-3 py-2 hide-scrollbar border-t border-line/50">
@@ -249,11 +258,10 @@ export default function SplitApp({
               <button
                 type="button"
                 onClick={() => setActiveReceiptId(null)}
-                className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold transition-colors ${
-                  currentReceiptId === null
+                className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold transition-colors ${currentReceiptId === null
                     ? "bg-amber text-paper"
                     : "bg-paper-2 border border-line text-ink-soft hover:border-amber hover:text-amber"
-                }`}
+                  }`}
               >
                 {state.ticket.place || "Ticket Original"}
               </button>
@@ -263,11 +271,10 @@ export default function SplitApp({
                 key={r.id}
                 type="button"
                 onClick={() => setActiveReceiptId(r.id)}
-                className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold transition-colors ${
-                  currentReceiptId === r.id
+                className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold transition-colors ${currentReceiptId === r.id
                     ? "bg-amber text-paper"
                     : "bg-paper-2 border border-line text-ink-soft hover:border-amber hover:text-amber"
-                }`}
+                  }`}
               >
                 {r.label}
               </button>
@@ -404,7 +411,10 @@ export default function SplitApp({
           {meId ? (
             <button
               type="button"
-              onClick={() => setTab(tab === "comanda" ? "cuentas" : "comanda")}
+              onClick={() => {
+                if (tab === "comanda") trackOnce("cuentas", EV.veCuentas);
+                setTab(tab === "comanda" ? "cuentas" : "comanda");
+              }}
               className="shrink-0 rounded-xl bg-amber px-4 py-2.5 text-sm font-bold text-paper active:scale-95 transition-transform"
             >
               {tab === "comanda" ? "Cuentas" : "Comanda"}
@@ -466,9 +476,9 @@ export default function SplitApp({
               // Con firma: quien quita una línea deja su nombre en el historial.
               void send(`/items/${removingItem.id}?by=${meId ?? ""}`, { method: "DELETE" });
             } else {
-              void send(`/items/${removingItem.id}?by=${meId ?? ""}`, { 
-                method: "PATCH", 
-                body: JSON.stringify({ qty: newQty }) 
+              void send(`/items/${removingItem.id}?by=${meId ?? ""}`, {
+                method: "PATCH",
+                body: JSON.stringify({ qty: newQty })
               });
             }
           }}
@@ -525,13 +535,13 @@ export default function SplitApp({
       {uploadingAnother && (
         <Sheet onClose={() => setUploadingAnother(false)}>
           <h2 className="mb-4 text-xl font-bold tracking-tight">Subir otro ticket</h2>
-          <TicketUploader 
-            targetCode={code} 
+          <TicketUploader
+            targetCode={code}
             onSuccess={() => {
               setUploadingAnother(false);
               // Podríamos forzar un fetch de estado, pero la subscripción de Firebase 
               // lo actualizará automáticamente, así que la UI se renderizará sola.
-            }} 
+            }}
           />
         </Sheet>
       )}
@@ -607,16 +617,16 @@ function JoinSheet({
         }}
       >
         <div className="flex gap-2">
-        <input
-          autoFocus={people.length === 0}
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          // Un nombre de ejemplo cantaba raro desde que la lista de arriba
-          // lleva nombres de verdad: parecía que te sugería llamarte Álex.
-          placeholder="Tu nombre"
-          maxLength={40}
-          className="min-w-0 flex-1 rounded-xl border border-line bg-paper px-4 py-3 focus:border-amber focus:outline-none"
-        />
+          <input
+            autoFocus={people.length === 0}
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            // Un nombre de ejemplo cantaba raro desde que la lista de arriba
+            // lleva nombres de verdad: parecía que te sugería llamarte Álex.
+            placeholder="Tu nombre"
+            maxLength={40}
+            className="min-w-0 flex-1 rounded-xl border border-line bg-paper px-4 py-3 focus:border-amber focus:outline-none"
+          />
           <button
             type="submit"
             disabled={busy || !name.trim()}
@@ -632,9 +642,8 @@ function JoinSheet({
               key={emoji}
               type="button"
               onClick={() => setAvatar(avatar === emoji ? "" : emoji)}
-              className={`grid h-10 w-10 shrink-0 place-items-center rounded-full border-2 text-xl transition-all ${
-                avatar === emoji ? "border-amber bg-amber/10 scale-110" : "border-transparent bg-paper-3 hover:bg-paper-4"
-              }`}
+              className={`grid h-10 w-10 shrink-0 place-items-center rounded-full border-2 text-xl transition-all ${avatar === emoji ? "border-amber bg-amber/10 scale-110" : "border-transparent bg-paper-3 hover:bg-paper-4"
+                }`}
             >
               {emoji}
             </button>

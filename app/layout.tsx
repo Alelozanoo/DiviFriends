@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
+import Consent from "@/components/Consent";
+import Pixel from "@/components/Pixel";
 import "./globals.css";
 
 const display = Space_Grotesk({
@@ -60,7 +62,11 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="es" className={`${display.variable} ${figure.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        {children}
+        <Pixel />
+        <Consent />
+      </body>
     </html>
   );
 }

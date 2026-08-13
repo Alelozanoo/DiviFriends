@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { money, parseMoney } from "@/lib/format";
+import { EV, track } from "@/lib/track";
 
 interface Row {
   key: string;
@@ -72,6 +73,7 @@ export default function ManualTicketForm({ demo }: { demo: boolean }) {
       setError(data.error ?? "No se ha podido crear la comanda.");
       return;
     }
+    track(EV.creaDivi, { metodo: "mano" });
     router.push(`/t/${data.code}`);
   }
 

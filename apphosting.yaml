@@ -37,6 +37,23 @@ env:
     value: divifriends-2964
     availability: [RUNTIME]
 
+  # --- Medición ---------------------------------------------------------
+  # El píxel de Meta. Es un identificador público, va en el HTML de todas
+  # formas. Vacío = no se carga el script de Facebook ni se mide nada, que es
+  # lo que tiene que pasar hasta que haya banner de consentimiento.
+  # Tiene que estar en BUILD: Next lo incrusta en el bundle al compilar.
+  - variable: NEXT_PUBLIC_META_PIXEL_ID
+    value: ""
+    availability: [BUILD, RUNTIME]
+
+  # La llave de /metricas. Va en Secret Manager y no aquí, así que este bloque
+  # está comentado a propósito: descoméntalo DESPUÉS de crear el secreto, o el
+  # despliegue falla por no encontrarlo.
+  #   firebase apphosting:secrets:set metricas-token --project divifriends-2964
+  # - variable: METRICAS_TOKEN
+  #   secret: metricas-token
+  #   availability: [RUNTIME]
+
   # --- Secretos -------------------------------------------------------------
   # Vive en Secret Manager, nunca en el repo. Sólo en RUNTIME: la clave no debe
   # quedar incrustada en el bundle compilado.

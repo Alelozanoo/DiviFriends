@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { EV, track } from "@/lib/track";
 import type { Participant } from "@/lib/types";
 import { Avatar, Sheet } from "./ui";
 
@@ -45,6 +46,7 @@ export default function TableSheet({
   async function copy() {
     try {
       await navigator.clipboard.writeText(url);
+      track(EV.comparte, { via: "copiar" });
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2200);
     } catch {
@@ -58,6 +60,7 @@ export default function TableSheet({
     if (navigator.share) {
       try {
         await navigator.share({ title: "Repartir la cuenta", text: `Comanda ${code}`, url });
+        track(EV.comparte, { via: "sistema" });
       } catch {
         // cancelado por quien comparte: no hay nada que hacer
       }
