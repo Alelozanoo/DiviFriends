@@ -39,11 +39,16 @@ env:
 
   # --- Medición ---------------------------------------------------------
   # El píxel de Meta. Es un identificador público, va en el HTML de todas
-  # formas. Vacío = no se carga el script de Facebook ni se mide nada, que es
-  # lo que tiene que pasar hasta que haya banner de consentimiento.
-  # Tiene que estar en BUILD: Next lo incrusta en el bundle al compilar.
+  # formas, así que se escribe aquí y no en Secret Manager.
+  #
+  # Tiene que estar en BUILD: Next lo incrusta en el bundle al compilar, así
+  # que cambiarlo no basta con reiniciar — hay que volver a desplegar.
+  #
+  # A propósito NO está en `.env.local`: en desarrollo se toca la app cien
+  # veces al día y cada toque mandaría un evento falso a este mismo píxel.
+  # Vacío en local significa que ni se descarga el script de Facebook.
   - variable: NEXT_PUBLIC_META_PIXEL_ID
-    value: ""
+    value: "1054021497541259"
     availability: [BUILD, RUNTIME]
 
   # La llave de /metricas. Va en Secret Manager y no aquí, así que este bloque

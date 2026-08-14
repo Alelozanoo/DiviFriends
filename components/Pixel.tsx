@@ -4,7 +4,7 @@ import Script from "next/script";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { EVENTO, leer } from "@/lib/consent";
-import { PIXEL_ID } from "@/lib/track";
+import { PIXEL_ID, vaciarCola } from "@/lib/track";
 
 /**
  * El código base de Meta. Si no hay píxel configurado no pinta nada, y ni
@@ -36,6 +36,28 @@ export default function Pixel() {
     window.addEventListener(EVENTO, mirar);
     return () => window.removeEventListener(EVENTO, mirar);
   }, []);
+
+  /*
+    Suelta los eventos que se dispararon antes de que existiera `fbq`.
+
+    Se espera mirando, y no con el `onReady` de `next/script`, porque con un
+    script en línea ese callback no llega a dispararse: se probó y «abre mesa»
+    seguía perdiéndose. El snippet define `fbq` en cuanto se ejecuta, así que
+    basta con mirar en cada fotograma hasta que aparezca.
+  */
+  useEffect(() => {
+    if (!PIXEL_ID || fuera || !permiso) return;
+    let cancelado = false;
+    const mirar = () => {
+      if (cancelado) return;
+      if (window.fbq) vaciarCola();
+      else requestAnimationFrame(mirar);
+    };
+    mirar();
+    return () => {
+      cancelado = true;
+    };
+  }, [fuera, permiso]);
 
   useEffect(() => {
     if (!PIXEL_ID || fuera || !permiso) return;

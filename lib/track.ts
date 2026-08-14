@@ -56,12 +56,48 @@ const ESTANDAR = new Set<string>([
   EV.creaDivi,
 ]);
 
+/**
+ * Los que llegaron antes de que existiera `fbq`.
+ *
+ * El script de Meta carga con `afterInteractive`, así que los efectos de
+ * montaje de React se ejecutan antes que él. Sin esta cola se perdía
+ * «abre mesa» en todas las visitas —el primer momento del embudo, y el que
+ * dice si alguien ha llegado por un anuncio—: `track` se iba de vacío porque
+ * `window.fbq` todavía no estaba puesto, y `trackOnce` ya lo había dado por
+ * enviado, así que no se reintentaba nunca.
+ *
+ * Con tope: si no llega el permiso, esto no se vacía jamás.
+ */
+let pendientes: [string, Params | undefined][] = [];
+
 export function track(event: string, params?: Params): void {
-  if (typeof window === "undefined" || !window.fbq) return;
+  if (typeof window === "undefined") return;
+  if (!window.fbq) {
+    if (pendientes.length < 20) pendientes.push([event, params]);
+    return;
+  }
+  enviar(event, params);
+}
+
+function enviar(event: string, params?: Params): void {
   // Si alguien cambia de idea a mitad de sesión, `fbq` sigue cargado en
-  // memoria: sin esto, seguiría midiendo a quien ya ha dicho que no.
+  // memoria: sin esto, seguiría midiendo a quien ya ha dicho que no. Va aquí
+  // dentro y no en `track` para que valga también al vaciar la cola.
   if (leer() !== "si") return;
-  window.fbq(ESTANDAR.has(event) ? "track" : "trackCustom", event, params);
+  window.fbq?.(ESTANDAR.has(event) ? "track" : "trackCustom", event, params);
+}
+
+/**
+ * Suelta lo acumulado. Lo llama el píxel en cuanto el script está puesto.
+ *
+ * Sin permiso no lo llama nadie: la cola se queda en memoria y muere con la
+ * página, así que decir que no sigue significando que no sale nada.
+ */
+export function vaciarCola(): void {
+  if (typeof window === "undefined" || !window.fbq) return;
+  const cola = pendientes;
+  pendientes = [];
+  for (const [event, params] of cola) enviar(event, params);
 }
 
 /**
