@@ -157,6 +157,38 @@ export default function SplitApp({
    * Por el camino de los claims eso no se podía, porque siempre arrastraba una
    * parte para quien pulsaba.
    */
+  /**
+   * Separa unas cuantas unidades de una línea a una línea propia y devuelve su
+   * ficha, para que la hoja del ÷ siga con ella.
+   *
+   * Es lo que permite «una carne entre cinco y la otra entre dos»: el reparto
+   * vive en la línea, así que dos repartos piden dos líneas.
+   */
+  async function splitUnits(itemId: string, qty: number): Promise<boolean> {
+    setError(null);
+    try {
+      const response = await fetch(`/api/tickets/${code}/items/${itemId}/split`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ qty }),
+      });
+      const data = (await response.json()) as TicketState & { error?: string };
+      if (!response.ok) {
+        setError(data.error ?? "No se han podido separar esas unidades.");
+        return false;
+      }
+      setServer(data);
+      const nuevo = response.headers.get("x-item-id");
+      // La hoja se queda con la línea nueva: se acaba de separar justo para
+      // repartirla, y buscarla a mano en la comanda sería absurdo.
+      if (nuevo) setEditing(nuevo);
+      return true;
+    } catch {
+      setError("Sin conexión. Los cambios no se están guardando.");
+      return false;
+    }
+  }
+
   const setSplitInto = (itemId: string, into: number) =>
     send(`/items/${itemId}`, { method: "PATCH", body: JSON.stringify({ splitInto: into }) });
 
@@ -444,6 +476,7 @@ export default function SplitApp({
             claim(editingItem.id, shares, into, participantId)
           }
           onAddPerson={addPerson}
+          onSplitUnits={(qty) => splitUnits(editingItem.id, qty)}
           onPick={(into) => {
             // Ya no cierra la hoja: elegir el número es sólo la primera mitad,
             // y cerrar aquí era lo que dejaba a la gente sin llegar nunca al

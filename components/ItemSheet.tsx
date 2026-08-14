@@ -7,8 +7,8 @@ import type { Item, ItemBreakdown, Participant } from "@/lib/types";
 import { Avatar, Sheet } from "./ui";
 
 /**
- * Repartir una línea, en dos preguntas y en este orden: entre cuántos va, y
- * con quién.
+ * Repartir una línea, en preguntas cortas y en este orden: cuántas unidades
+ * van a repartirse, entre cuántos, y con quién.
  *
  * Antes las dos vivían una debajo de la otra en la misma hoja y casi nadie
  * llegaba a la segunda: elegías «entre 4», la hoja se cerraba sola, y para
@@ -20,6 +20,13 @@ import { Avatar, Sheet } from "./ui";
  * de la mesa y un hueco para apuntar a quien falte. El nombre que se apunta
  * aquí es el mismo que esa persona se encontrará esperándola cuando entre por
  * el enlace, así que apuntar a Sofía ahora le ahorra escribirlo luego.
+ *
+ * La primera pregunta sólo sale cuando la línea trae varias unidades, y es la
+ * que faltaba: en un «Carne ×2», repartir entre cinco repartía las dos carnes
+ * entre cinco, y no había manera de decir que una fue entre cinco y la otra
+ * entre dos. Al elegir menos de las que hay, esas unidades se separan a su
+ * propia línea y la hoja sigue con ella. Cada línea lleva su reparto, así que
+ * no hace falta ningún concepto nuevo: son dos líneas normales.
  */
 export default function ItemSheet({
   item,
@@ -29,6 +36,7 @@ export default function ItemSheet({
   currency,
   onSetShares,
   onPick,
+  onSplitUnits,
   onUndoSplit,
   onAddPerson,
   onClose,
@@ -41,17 +49,37 @@ export default function ItemSheet({
   /** `into` parte la línea en un trozo más para hacer sitio a quien no cabía. */
   onSetShares: (participantId: string, shares: number, into?: number) => void;
   onPick: (into: number) => void;
+  /**
+   * Separa `qty` unidades a su propia línea. Devuelve si salió bien; la hoja
+   * se queda entonces con la línea nueva, que es la que se va a repartir.
+   */
+  onSplitUnits: (qty: number) => Promise<boolean>;
   /** Deshace el reparto: vuelve a las unidades que traía el ticket. */
   onUndoSplit: () => void;
   /** Apunta a alguien a la mesa y devuelve su ficha para darle su parte. */
   onAddPerson: (name: string) => Promise<string | null>;
   onClose: () => void;
 }) {
-  // Una línea ya repartida entra directamente por el «¿con quién?»: el número
-  // está decidido y lo que se viene a tocar aquí es la lista de nombres.
-  const [paso, setPaso] = useState<"cuantos" | "quienes">(
-    item.splitInto > 1 ? "quienes" : "cuantos",
-  );
+  /*
+    Varias unidades enteras: «Carne ×2», «Caña ×9». Un peso de carnicería
+    —1,025— no cuenta, porque ahí no hay unidades que separar.
+  */
+  const multiUnidad = Number.isInteger(item.qty) && item.qty > 1;
+  /*
+    Al separar unidades la hoja pasa a hablar de la línea nueva, que ya es de
+    una sola: sin esto el rótulo cantaba «paso 1 de 2» justo después de haber
+    hecho el 1 de 3, y parecía que el recorrido hubiera vuelto a empezar.
+  */
+  const [desdeUnidades, setDesdeUnidades] = useState(false);
+  const pasos = multiUnidad || desdeUnidades ? 3 : 2;
+
+  const [paso, setPaso] = useState<"unidades" | "cuantos" | "quienes">(() => {
+    // Una línea que ya se repartió a mano entra directamente por el «¿con
+    // quién?»: lo demás está decidido y lo que se viene a tocar es la lista.
+    if (item.manualSplit) return "quienes";
+    if (multiUnidad) return "unidades";
+    return item.splitInto > 1 ? "quienes" : "cuantos";
+  });
   const [custom, setCustom] = useState("");
   const [nuevo, setNuevo] = useState("");
   const [busy, setBusy] = useState(false);
@@ -66,6 +94,16 @@ export default function ItemSheet({
   // paella y ese contador sólo servía para duplicarte el precio sin querer.
   const porUnidades = item.qty > 1 && item.splitInto === item.qty;
 
+  /*
+    Los botones de «cuántas». Con muchas unidades no caben todas, así que a
+    partir de doce se ofrecen las primeras once y «las N»: quien tiene veinte
+    cañas o las reparte todas o separa unas pocas, no dieciséis.
+  */
+  const opcionesUnidades =
+    item.qty <= 12
+      ? Array.from({ length: item.qty }, (_, i) => i + 1)
+      : [...Array.from({ length: 11 }, (_, i) => i + 1), item.qty];
+
   const typed = Number.parseInt(custom, 10);
   const customValid =
     Number.isFinite(typed) && typed >= Math.max(2, repartidas) && typed <= LIMITS.splitInto;
@@ -73,6 +111,26 @@ export default function ItemSheet({
   function repartirEntre(n: number) {
     onPick(n);
     setPaso("quienes");
+  }
+
+  /**
+   * Cuántas de las que hay se van a repartir.
+   *
+   * Elegirlas todas no separa nada: la línea entera se reparte como siempre.
+   * Elegir menos las saca a una línea propia, y a partir de ahí la hoja habla
+   * de esa línea nueva —por eso no hace falta tocar `item` aquí: llega solo en
+   * el siguiente renderizado.
+   */
+  async function elegirUnidades(n: number) {
+    setDesdeUnidades(true);
+    if (n >= item.qty) {
+      setPaso("cuantos");
+      return;
+    }
+    setBusy(true);
+    const hecho = await onSplitUnits(n);
+    setBusy(false);
+    if (hecho) setPaso("cuantos");
   }
 
   /**
@@ -113,10 +171,54 @@ export default function ItemSheet({
         </button>
       </div>
 
-      {paso === "cuantos" ? (
-        /* ------------------------------------------- paso 1: entre cuántos */
+      {paso === "unidades" ? (
+        /* ------------------------------------------ paso 1: cuántas de ellas */
         <>
-          <p className="stamp mt-5 text-amber">Paso 1 de 2</p>
+          <p className="stamp mt-5 text-amber">Paso 1 de {pasos}</p>
+          <h3 className="mt-1 text-lg font-bold tracking-tight">
+            ¿Cuántas vas a repartir?
+          </h3>
+          <p className="mt-1 text-sm leading-relaxed text-ink-soft">
+            Hay {item.qty} en el ticket. Las que dejes fuera se quedan en su propia línea, para
+            repartirlas aparte o que se las quede alguien enteras.
+          </p>
+
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            {opcionesUnidades.map((n) => (
+              <button
+                key={n}
+                type="button"
+                disabled={busy}
+                onClick={() => void elegirUnidades(n)}
+                className="flex flex-col items-center gap-0.5 rounded-2xl border-2 border-line py-3 transition-colors hover:border-mint active:bg-paper-3 disabled:opacity-40"
+              >
+                <span className="tnum text-xl font-bold">
+                  {n === item.qty ? `las ${n}` : n}
+                </span>
+                <span className="tnum text-[0.7rem] text-ink-soft">
+                  {money(Math.round((item.totalCents * n) / item.qty), currency)}
+                </span>
+              </button>
+            ))}
+          </div>
+        </>
+      ) : paso === "cuantos" ? (
+        /* ------------------------------------------- paso 2: entre cuántos */
+        <>
+          {/* Volver a elegir cuántas: sólo si todavía queda más de una que
+              separar en esta línea. */}
+          {multiUnidad && (
+            <button
+              type="button"
+              onClick={() => setPaso("unidades")}
+              className="stamp mt-5 inline-flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1 text-ink-faint transition-colors hover:border-amber hover:text-amber"
+            >
+              ← {item.qty} unidades · cambiar
+            </button>
+          )}
+          <p className={`stamp text-amber ${multiUnidad ? "mt-3" : "mt-5"}`}>
+            Paso {pasos - 1} de {pasos}
+          </p>
           <h3 className="mt-1 text-lg font-bold tracking-tight">¿Entre cuántos se reparte?</h3>
           <p className="mt-1 text-sm text-ink-soft">
             Debajo de cada número, lo que costaría cada parte.
@@ -348,21 +450,34 @@ export default function ItemSheet({
         esquina de la burbuja.
       */}
       <div className="mt-4" />
-      {paso === "cuantos" && item.splitInto === 1 ? (
+      {/*
+        En los pasos de en medio la acción está arriba —elegir un número—, así
+        que abajo sólo hay una salida discreta. El botón grande aparece cuando
+        de verdad hay algo que empujar hacia adelante o que dar por terminado.
+      */}
+      {paso === "quienes" ? (
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-3 w-full rounded-xl bg-amber py-3 text-sm font-bold text-paper transition-transform active:scale-[0.98]"
+        >
+          Listo
+        </button>
+      ) : paso === "cuantos" && item.splitInto > 1 ? (
+        <button
+          type="button"
+          onClick={() => setPaso("quienes")}
+          className="mt-3 w-full rounded-xl bg-amber py-3 text-sm font-bold text-paper transition-transform active:scale-[0.98]"
+        >
+          Seguir · ¿con quién?
+        </button>
+      ) : (
         <button
           type="button"
           onClick={onClose}
           className="mt-3 w-full rounded-xl border border-line py-3 text-sm font-semibold text-ink-soft"
         >
           Cerrar
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={paso === "cuantos" ? () => setPaso("quienes") : onClose}
-          className="mt-3 w-full rounded-xl bg-amber py-3 text-sm font-bold text-paper transition-transform active:scale-[0.98]"
-        >
-          {paso === "cuantos" ? "Seguir · ¿con quién?" : "Listo"}
         </button>
       )}
     </Sheet>

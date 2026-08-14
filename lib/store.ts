@@ -355,6 +355,79 @@ function sharesOn(doc: TicketDoc, itemId: string, exceptParticipant?: string): n
     .reduce((a, c) => a + (c.shares ?? c.units ?? 1), 0);
 }
 
+/**
+ * Separa unas cuantas unidades de una línea a una línea propia.
+ *
+ * Es lo que hace falta para «de las dos carnes, ésta la partimos entre cinco y
+ * la otra entre dos»: el reparto vive en la línea, así que dos repartos
+ * distintos piden dos líneas. No hace falta ningún concepto nuevo — cada una
+ * sigue siendo una línea normal con su `splitInto`, y las cuentas, el ticket y
+ * el histórico funcionan sin enterarse.
+ *
+ * Devuelve la ficha de la nueva para que quien lo pidió siga con ella: la ha
+ * separado justo para repartirla.
+ */
+export async function splitOffUnits(
+  code: string,
+  itemId: string,
+  unidades: number,
+): Promise<{ state: TicketState; newItemId: string }> {
+  let newItemId = "";
+
+  const state = await mutate(code, (doc) => {
+    const item = doc.items.find((i) => i.id === itemId);
+    if (!item) throw new StoreError("Ese plato no está en esta comanda.", 404);
+
+    const total = Math.max(1, Math.round(item.qty || 1));
+    const corte = Math.round(unidades);
+    if (corte < 1 || corte >= total) {
+      throw new StoreError("No hay tantas unidades que separar.");
+    }
+    if (doc.items.length >= LIMITS.items) {
+      throw new StoreError("Demasiadas líneas en la comanda.");
+    }
+
+    // El importe se parte de forma que las dos mitades sumen exactamente lo que
+    // costaba la línea. Multiplicar por `unitCents` dejaría céntimos por el
+    // camino siempre que el ticket no cuadre al céntimo con el precio unitario,
+    // que es lo normal en cuanto hay IVA de por medio.
+    const centsCorte = Math.round((item.totalCents * corte) / total);
+
+    newItemId = id("itm");
+    const nueva: ItemDoc = {
+      id: newItemId,
+      name: item.name,
+      qty: corte,
+      unitCents: item.unitCents,
+      totalCents: centsCorte,
+      splitInto: corte,
+      manualSplit: false,
+      position: 0,
+      receiptId: item.receiptId,
+    };
+
+    item.qty = total - corte;
+    item.totalCents = item.totalCents - centsCorte;
+    // Lo que queda vuelve a su reparto natural. Quien tuviera más partes de las
+    // que ahora hay se queda con las que caben, y el resto sale sin dueño en la
+    // línea nueva, donde se ve y se puede volver a repartir.
+    item.splitInto = item.qty;
+    item.manualSplit = false;
+    clampShares(doc, item);
+
+    // La nueva va pegada a su hermana, y se renumeran todas: sumarle media
+    // posición chocaría consigo misma al separar dos veces la misma línea.
+    const ordenadas = [...doc.items].sort((a, b) => a.position - b.position);
+    ordenadas.splice(ordenadas.findIndex((i) => i.id === itemId) + 1, 0, nueva);
+    ordenadas.forEach((i, n) => {
+      i.position = n;
+    });
+    doc.items = ordenadas;
+  });
+
+  return { state, newItemId };
+}
+
 export function removeItem(
   code: string,
   itemId: string,
