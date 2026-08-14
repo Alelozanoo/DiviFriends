@@ -4,7 +4,12 @@ import type { Item, ItemBreakdown } from "@/lib/types";
 import { Sheet } from "./ui";
 
 /**
- * Confirmación para quitar una línea o reducir su cantidad.
+ * Confirmación para quitar una línea entera o bajarle la cantidad.
+ *
+ * Con una sola unidad no hay contador que enseñar —no hay nada que bajar— así
+ * que la hoja arranca ya en «eliminar». Antes arrancaba en 1 y el botón sólo
+ * se activaba al cambiar la cantidad: sin contador no había forma de cambiarla,
+ * y un plato suelto no se podía borrar de ninguna manera.
  */
 export default function RemoveItemSheet({
   item,
@@ -25,14 +30,26 @@ export default function RemoveItemSheet({
   onClose: () => void;
 }) {
   const personas = breakdown.shares.length;
-  const [qty, setQty] = useState(item.qty);
+  // Varias unidades: se empieza sin tocar nada y se decide con el contador.
+  // Una sola: lo único que se puede hacer es quitarla, así que ya está elegido.
+  const [qty, setQty] = useState(item.qty > 1 ? item.qty : 0);
 
   const removingAll = qty === 0;
-  
-  // Calculate new total based on how many units are removed
-  const unitsRemoved = item.qty - qty;
-  const diffCents = Math.round(item.unitCents * unitsRemoved);
-  const currentTotalAfter = ticketTotalCents - diffCents;
+  /** Todavía no se ha tocado el contador: no hay nada que prometer. */
+  const sinTocar = qty === item.qty;
+
+  /*
+    Con qué total se queda el ticket.
+
+    Quitar la línea entera trae su cuenta ya hecha desde fuera, que es la buena:
+    nunca baja el total por debajo de lo que suman las demás líneas. Para una
+    reducción se calcula por el precio unitario porque es exactamente lo que
+    hace el servidor al recalcular la línea, y así lo prometido coincide con lo
+    que pasa.
+  */
+  const currentTotalAfter = removingAll
+    ? totalAfterCents
+    : ticketTotalCents - Math.round(item.unitCents * (item.qty - qty));
 
   return (
     <Sheet onClose={onClose}>
@@ -41,27 +58,36 @@ export default function RemoveItemSheet({
       </h2>
 
       <p className="mt-2 text-sm leading-relaxed text-ink-soft">
-        {removingAll ? (
-          <>
-            Desaparece de la comanda
-            {personas > 0 &&
-              (personas === 1
-                ? " y quien la tenía marcada deja de pagarla"
-                : ` y las ${personas} personas que la tenían marcada dejan de pagarla`)}
-            .
-          </>
+        {sinTocar ? (
+          // Nada elegido todavía: se dice lo que se puede hacer, y ni una
+          // palabra del total. Antes cantaba «la cantidad bajará a 3» con el
+          // contador puesto en 3, que no significa nada.
+          <>Baja la cantidad con el contador, o quítalo entero de la comanda.</>
         ) : (
           <>
-            La cantidad bajará a {qty}.
-          </>
-        )}
-        {" "}
-        {currentTotalAfter === ticketTotalCents ? (
-          "El total del ticket no cambia."
-        ) : (
-          <>
-            El total baja a{" "}
-            <span className="tnum font-bold text-ink">{money(currentTotalAfter, currency)}</span>.
+            {removingAll ? (
+              <>
+                Desaparece de la comanda
+                {personas > 0 &&
+                  (personas === 1
+                    ? " y quien la tenía marcada deja de pagarla"
+                    : ` y las ${personas} personas que la tenían marcada dejan de pagarla`)}
+                .
+              </>
+            ) : (
+              <>Se queda en {qty}.</>
+            )}{" "}
+            {currentTotalAfter === ticketTotalCents ? (
+              "El total del ticket no cambia."
+            ) : (
+              <>
+                El total baja a{" "}
+                <span className="tnum font-bold text-ink">
+                  {money(currentTotalAfter, currency)}
+                </span>
+                .
+              </>
+            )}
           </>
         )}
       </p>
@@ -73,7 +99,8 @@ export default function RemoveItemSheet({
             <button
               type="button"
               onClick={() => setQty(Math.max(0, qty - 1))}
-              className="grid h-10 w-10 place-items-center rounded-lg bg-paper font-bold text-ink-soft shadow-sm active:scale-95"
+              disabled={qty === 0}
+              className="grid h-10 w-10 place-items-center rounded-lg bg-paper font-bold text-ink-soft shadow-sm active:scale-95 disabled:opacity-50"
             >
               −
             </button>
@@ -103,7 +130,7 @@ export default function RemoveItemSheet({
           disabled={qty === item.qty}
           className="flex-1 rounded-xl bg-clay py-3 text-sm font-bold text-paper transition-transform active:scale-[0.98] disabled:opacity-50"
         >
-          {removingAll ? "Sí, quitar" : "Reducir cantidad"}
+          {removingAll ? "Eliminar plato" : `Dejarlo en ${qty}`}
         </button>
         <button
           type="button"
