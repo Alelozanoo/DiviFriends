@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { computeSettlement, totalAfterRemoving } from "@/lib/settle";
 import { useStoredParticipant } from "@/lib/useStoredParticipant";
 import { useTicketSync } from "@/lib/useTicketSync";
@@ -41,6 +41,7 @@ export default function SplitApp({
   const [guiding, setGuiding] = useState(false);
   const [uploadingAnother, setUploadingAnother] = useState(false);
   const [activeReceiptId, setActiveReceiptId] = useState<string | null>(null);
+
   // Abrir una mesa es el primer momento medible: por el enlace del grupo,
   // por el QR del bar o tecleando el código.
   useEffect(() => {
@@ -56,6 +57,23 @@ export default function SplitApp({
   const { known, participantId: storedId, store } = useStoredParticipant(code);
   const meId = storedId && state.participants.some((p) => p.id === storedId) ? storedId : null;
   const showJoin = joinOverride ?? (known && !meId);
+
+  const [newFriend, setNewFriend] = useState<{ id: string, name: string, avatar?: string, color?: string, key: number } | null>(null);
+  const prevCount = useRef(initial.participants.length);
+
+  useEffect(() => {
+    if (state.participants.length > prevCount.current) {
+      const added = state.participants.slice(prevCount.current);
+      const latest = added[added.length - 1];
+      if (latest && latest.id !== meId) {
+        setNewFriend({ ...latest, key: Date.now() });
+        const timer = setTimeout(() => setNewFriend(null), 3500);
+        prevCount.current = state.participants.length;
+        return () => clearTimeout(timer);
+      }
+    }
+    prevCount.current = state.participants.length;
+  }, [state.participants, meId]);
 
   /* -------------------------------------------------------------- acciones */
 
@@ -581,6 +599,34 @@ export default function SplitApp({
 
       {showJoin && (
         <JoinSheet people={state.participants} onJoin={join} onClose={() => setJoinOverride(false)} />
+      )}
+
+      {/* Toast Animado: Alguien se ha unido */}
+      {newFriend && (
+        <div className="pointer-events-none fixed inset-x-0 top-20 z-50 flex justify-center">
+          <div 
+            key={newFriend.key}
+            className="pointer-events-auto flex w-max items-center gap-3 rounded-full border border-amber/40 bg-paper-2/95 px-5 py-2.5 shadow-[0_12px_36px_rgba(232,176,75,0.15)] backdrop-blur-md"
+            style={{
+              animation: "toast-slide-down 3.5s cubic-bezier(0.16, 1, 0.3, 1) forwards"
+            }}
+          >
+            <Avatar name={newFriend.name} avatar={newFriend.avatar} color={newFriend.color} size={36} />
+            <div className="flex flex-col">
+              <span className="text-sm font-bold leading-tight text-ink">{newFriend.name} se ha unido</span>
+              <span className="text-xs font-semibold text-amber">A la cuenta {state.ticket.place || "El Rincón"}</span>
+            </div>
+            <div className="ml-2 h-2.5 w-2.5 rounded-full bg-mint shadow-[0_0_12px_var(--color-mint)]" />
+            <style>{`
+              @keyframes toast-slide-down {
+                0% { transform: translateY(-150px); opacity: 0; }
+                10% { transform: translateY(0); opacity: 1; }
+                90% { transform: translateY(0); opacity: 1; }
+                100% { transform: translateY(-150px); opacity: 0; }
+              }
+            `}</style>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { EV, track } from "@/lib/track";
 import JoinByCode from "./JoinByCode";
@@ -37,11 +37,6 @@ async function toJpegBase64(
 
 type Phase = "idle" | "reading" | "parsing" | "error";
 
-const PHASE_COPY: Record<string, string> = {
-  reading: "Preparando la foto…",
-  parsing: "Leyendo el ticket…",
-};
-
 export default function TicketUploader({
   targetCode,
   onSuccess,
@@ -59,6 +54,40 @@ export default function TicketUploader({
   const [dragging, setDragging] = useState(false);
   const [vista, setVista] = useState<string | null>(null);
   const [pidiendoCodigo, setPidiendoCodigo] = useState(false);
+  const [progress, setProgress] = useState(0);
+
+  // Simula un progreso realista mientras la IA analiza la foto
+  useEffect(() => {
+    if (phase === "idle" || phase === "error") {
+      setProgress(0);
+      return;
+    }
+    if (phase === "reading") {
+      setProgress(5);
+      return;
+    }
+    if (phase === "parsing") {
+      setProgress(15);
+      let current = 15;
+      const interval = setInterval(() => {
+        // Incrementa de forma asintótica hacia el 95%
+        current += (96 - current) * 0.08;
+        setProgress(Math.floor(current));
+      }, 400);
+      return () => clearInterval(interval);
+    }
+  }, [phase]);
+
+  const getDynamicCopy = () => {
+    if (phase === "reading") return "Preparando la foto…";
+    if (phase === "parsing") {
+      if (progress < 35) return "Analizando foto…";
+      if (progress < 65) return "Leyendo comandas…";
+      if (progress < 85) return "Extrayendo precios…";
+      return "Finalizando…";
+    }
+    return "Sube la foto del ticket";
+  };
 
   const upload = useCallback(
     async (file: File) => {
@@ -138,14 +167,16 @@ export default function TicketUploader({
           )}
 
           <span className="text-xl font-semibold tracking-tight sm:text-2xl">
-            {busy ? PHASE_COPY[phase] : "Sube la foto del ticket"}
+            {busy ? getDynamicCopy() : "Sube la foto del ticket"}
           </span>
 
           {/* Sólo mientras trabaja: al empezar, la frase de apoyo repetía lo que
               ya dicen el título y los dos botones de debajo. */}
           {busy && (
             <span className="max-w-sm text-sm text-ink-soft">
-              Tardo unos segundos en reconocer cada línea.
+              {progress < 85 
+                ? "Tardo unos segundos en reconocer cada línea."
+                : "La IA está cuadrando los totales."}
             </span>
           )}
 
@@ -194,8 +225,17 @@ export default function TicketUploader({
         />
 
         {busy && (
-          <div className="absolute inset-x-2 bottom-2 h-1 overflow-hidden rounded-full bg-line">
-            <div className="h-full w-1/3 animate-[rise_1.2s_ease-in-out_infinite] rounded-full bg-amber" />
+          <div className="absolute inset-x-6 bottom-5">
+            <div className="mb-2 flex justify-between text-[10px] font-bold tracking-widest text-amber uppercase">
+              <span>Progreso</span>
+              <span>{progress}%</span>
+            </div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-line">
+              <div 
+                className="h-full rounded-full bg-amber shadow-[0_0_10px_rgba(232,176,75,0.8)] transition-all duration-300 ease-out" 
+                style={{ width: `${progress}%` }}
+              />
+            </div>
           </div>
         )}
       </div>

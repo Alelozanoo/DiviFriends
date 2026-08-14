@@ -51,55 +51,45 @@ export default function Home() {
           style={{ background: "radial-gradient(circle, var(--amber), transparent 65%)" }}
         />
 
-        {/* El aire de arriba y entre columnas se recorta en el móvil para que
-            el bloque de subir la foto siga entrando en la primera pantalla. */}
-        <div className="mx-auto flex max-w-6xl flex-col gap-10 px-5 pb-20 pt-6 lg:flex-row lg:items-center lg:gap-16 lg:pt-16">
-          <div className="flex-1">
+        <div className="mx-auto max-w-6xl px-5 pb-20 pt-6 lg:pt-16">
+          <header className="mb-8 flex justify-center lg:mb-12 lg:justify-start">
             <Link href="/" className="inline-flex items-center gap-2.5 lg:gap-4">
               <Logo size={128} priority className="h-11 w-11 lg:h-20 lg:w-20" />
               <Wordmark className="text-xl font-bold tracking-tight lg:text-3xl" />
             </Link>
+          </header>
 
-            <h1 className="mt-7 text-[2.6rem] font-bold leading-[1.02] tracking-[-0.03em] lg:mt-9 sm:text-6xl">
-              La cuenta se reparte
-              <br />
-              <span className="text-amber">antes de pedir la segunda</span>
-            </h1>
+          <div className="flex flex-col gap-10 lg:flex-row lg:items-center lg:gap-16">
+            <div className="w-full lg:max-w-md order-1 lg:order-2">
+              <div className="rounded-[1.75rem] border border-line bg-paper-2/60 p-4 shadow-2xl shadow-black/40 backdrop-blur">
+                <p className="stamp mb-3 px-2 text-ink-faint">Empieza aquí</p>
+                <TicketUploader />
+              </div>
+            </div>
 
-            <p className="mt-6 max-w-lg text-lg leading-relaxed text-ink-soft">
-              Cada uno marca lo que se ha comido desde su móvil, sobre la misma comanda. Sin
-              calculadoras, sin «yo solo tomé la caña», sin nadie poniendo de más.
-            </p>
+            <div className="flex-1 order-2 lg:order-1">
+              <h1 className="text-[2.6rem] font-bold leading-[1.02] tracking-[-0.03em] sm:text-6xl">
+                La cuenta se reparte
+                <br />
+                <span className="text-amber">antes de pedir la segunda</span>
+              </h1>
 
-            {/*
-              Lo que más frena a alguien que llega de un QR en un bar es pensar
-              que le van a pedir descargar algo o darse de alta.
+              <p className="mt-6 max-w-lg text-lg leading-relaxed text-ink-soft">
+                Cada uno marca lo que se ha comido desde su móvil, sobre la misma comanda. Sin
+                calculadoras, sin «yo solo tomé la caña», sin nadie poniendo de más.
+              </p>
 
-              Centradas y no a la izquierda: así se leen como un sello del
-              producto y no como la cuarta línea del párrafo. El tamaño va
-              ajustado porque en 360 px caben en una fila por poco, y con una
-              pizca más de relleno saltan a dos y empujan el bloque de subir la
-              foto fuera de la pantalla, que es lo que hay que proteger aquí.
-            */}
-            <ul className="mt-6 flex flex-wrap justify-center gap-1.5 lg:mt-8 lg:gap-2">
-              {/* «Sin instalar» y no «Sin instalar nada»: las dos sílabas de
-                  más partían la fila en pantallas de 360 px. */}
-              {["Gratis", "Sin registro", "Sin instalar"].map((texto) => (
-                <li
-                  key={texto}
-                  className="flex items-center gap-1.5 rounded-full border border-line bg-paper-2/70 py-1.5 pl-2.5 pr-3 text-xs font-semibold text-ink-soft lg:py-2 lg:pl-3 lg:pr-4 lg:text-sm"
-                >
-                  <CheckIcon />
-                  {texto}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="w-full lg:max-w-md">
-            <div className="rounded-[1.75rem] border border-line bg-paper-2/60 p-4 shadow-2xl shadow-black/40 backdrop-blur">
-              <p className="stamp mb-3 px-2 text-ink-faint">Empieza aquí</p>
-              <TicketUploader />
+              <ul className="mt-6 flex flex-wrap justify-start gap-1.5 lg:mt-8 lg:gap-2">
+                {["Gratis", "Sin registro", "Sin instalar"].map((texto) => (
+                  <li
+                    key={texto}
+                    className="flex items-center gap-1.5 rounded-full border border-line bg-paper-2/70 py-1.5 pl-2.5 pr-3 text-xs font-semibold text-ink-soft lg:py-2 lg:pl-3 lg:pr-4 lg:text-sm"
+                  >
+                    <CheckIcon />
+                    {texto}
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
         </div>
