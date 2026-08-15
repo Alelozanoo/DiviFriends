@@ -45,10 +45,11 @@ export default function Home() {
   return (
     <main className="flex flex-1 flex-col lg:block">
       {/* ---------------------------------------------------------------- hero */}
-      {/* En el móvil se estira para que el pie caiga abajo del todo. Sin esto
-          el pie quedaba pegado a la tarjeta con medio dedo de negro debajo, y
-          la pantalla parecía a medio cargar. */}
-      <section className="relative flex flex-1 flex-col overflow-hidden lg:block">
+      {/* En el móvil se estira para que el pie caiga abajo del todo, y lo de
+          dentro va centrado: a quien entra por primera vez, sin divis guardados,
+          le sobraban cuatro dedos de negro entre la tarjeta y el pie. Centrado,
+          ese aire se reparte arriba y abajo y deja de parecer un hueco. */}
+      <section className="relative flex flex-1 flex-col justify-center overflow-hidden lg:block">
         <div
           aria-hidden
           className="pointer-events-none absolute -top-40 left-1/2 h-[38rem] w-[38rem] -translate-x-1/2 rounded-full opacity-[0.14] blur-3xl"
@@ -160,18 +161,21 @@ export default function Home() {
         <Preguntas />
       </div>
 
+      {/*
+        En el móvil el pie va centrado y en dos líneas cortas. Antes tenía la
+        marca pegada a la izquierda y el enlace de cookies suelto a la derecha,
+        a otra altura y con la frase de en medio partiéndose en dos: la raya de
+        arriba cruzaba entera y debajo no había nada alineado con nada.
+
+        En pantalla ancha sí hay sitio para las dos puntas, y ahí se queda como
+        estaba.
+      */}
       <footer className="border-t border-line">
-        <div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-8 text-sm text-ink-faint sm:flex-row sm:items-center sm:justify-between">
-          <p>
+        <div className="mx-auto flex max-w-6xl flex-col items-center gap-1.5 px-5 py-6 text-sm text-ink-faint sm:flex-row sm:justify-between sm:gap-4 sm:py-8">
+          <p className="text-center sm:text-left">
             <Wordmark className="font-semibold" /> · reparte la cuenta sin discutir
           </p>
-          <p className="flex items-center gap-4">
-            {/* Antes ponía que los importes se calculan al céntimo: cierto, pero
-                es una garantía y no una invitación, y en el móvil ésta es de las
-                pocas frases que se leen. Ahora dice qué hay que hacer. */}
-            <span>Haz la foto y pasa el enlace.</span>
-            <CambiarCookies className="underline underline-offset-2 transition-colors hover:text-amber" />
-          </p>
+          <CambiarCookies className="underline underline-offset-2 transition-colors hover:text-amber" />
         </div>
       </footer>
     </main>
