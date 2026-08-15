@@ -52,13 +52,17 @@ export default function ComoFuncionaSheet() {
 
           <ol className="mt-4 space-y-6">
             {PASOS(t).map(({ n, title, foot, Pieza }) => (
-              <li key={n}>
-                <Pieza />
-                <p className="mt-3 flex items-baseline gap-2.5">
-                  <span className="tnum text-sm font-bold text-amber">{n}</span>
-                  <span className="text-lg font-semibold tracking-tight">{title}</span>
-                </p>
-                <p className="mt-1 text-sm leading-relaxed text-ink-soft">{foot}</p>
+              <li key={n} className="flex flex-col">
+                <div>
+                  <p className="flex items-baseline gap-2.5">
+                    <span className="tnum text-sm font-bold text-amber">{n}</span>
+                    <span className="text-lg font-semibold tracking-tight">{title}</span>
+                  </p>
+                  <p className="mt-1 text-sm leading-relaxed text-ink-soft">{foot}</p>
+                </div>
+                <div className="mt-4 flex-1">
+                  <Pieza />
+                </div>
               </li>
             ))}
           </ol>

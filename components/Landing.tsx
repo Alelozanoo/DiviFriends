@@ -128,13 +128,17 @@ function Cuerpo() {
               carrusel ni scroll lateral: se leen de arriba abajo, en orden. */}
           <ol className="mt-10 grid gap-8 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4">
             {PASOS(t).map(({ n, title, foot, Pieza }) => (
-              <li key={n}>
-                <Pieza />
-                <p className="mt-4 flex items-baseline gap-2.5">
-                  <span className="tnum text-sm font-bold text-amber">{n}</span>
-                  <span className="text-lg font-semibold tracking-tight">{title}</span>
-                </p>
-                <p className="mt-1 text-sm leading-relaxed text-ink-soft">{foot}</p>
+              <li key={n} className="flex flex-col">
+                <div>
+                  <p className="flex items-baseline gap-2.5">
+                    <span className="tnum text-sm font-bold text-amber">{n}</span>
+                    <span className="text-lg font-semibold tracking-tight">{title}</span>
+                  </p>
+                  <p className="mt-1 text-sm leading-relaxed text-ink-soft">{foot}</p>
+                </div>
+                <div className="mt-4 flex-1">
+                  <Pieza />
+                </div>
               </li>
             ))}
           </ol>
