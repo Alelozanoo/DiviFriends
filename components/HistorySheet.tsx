@@ -2,6 +2,7 @@
 
 import { money } from "@/lib/format";
 import type { ChangeEvent, Participant } from "@/lib/types";
+import { useT, rellena } from "@/lib/i18n";
 import { Avatar, Sheet } from "./ui";
 
 /**
@@ -29,6 +30,7 @@ export default function HistorySheet({
   meId: string | null;
   onClose: () => void;
 }) {
+  const t = useT();
   // El color de cada uno es su identidad en toda la app, así que aquí sale el
   // suyo y no uno según el tipo de cambio: pintando por acción, Álex salía
   // verde al añadir y rojo al quitar, como si fueran dos personas distintas.
@@ -37,15 +39,15 @@ export default function HistorySheet({
     <Sheet onClose={onClose}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold tracking-tight">Historial</h2>
+          <h2 className="text-xl font-bold tracking-tight">{t.historial.titulo}</h2>
           <p className="mt-1 text-sm text-ink-soft">
-            Todo lo que ha cambiado la cuenta, con quién lo hizo.
+            {t.historial.entradilla}
           </p>
         </div>
         <button
           type="button"
           onClick={onClose}
-          aria-label="Cerrar"
+          aria-label={t.historial.cerrar}
           className="-mr-1.5 shrink-0 rounded-lg px-2.5 py-1.5 text-lg leading-none text-ink-faint transition-colors hover:bg-paper-3 hover:text-ink active:bg-paper-3"
         >
           ✕
@@ -54,8 +56,7 @@ export default function HistorySheet({
 
       {events.length === 0 ? (
         <p className="mt-5 rounded-xl border border-line bg-paper px-4 py-5 text-center text-sm text-ink-faint">
-          Nadie ha quitado ni añadido nada todavía. La comanda está tal y como
-          se leyó del ticket.
+          {t.historial.vacio}
         </p>
       ) : (
         <ul className="mt-4 space-y-1.5">
@@ -68,6 +69,7 @@ export default function HistorySheet({
                  sigue contando y su nombre sigue aquí. */
               color={(event.participantId ? colorDe.get(event.participantId) : null) ?? "#776a5c"}
               mio={event.participantId !== null && event.participantId === meId}
+              t={t}
             />
           ))}
         </ul>
@@ -78,7 +80,7 @@ export default function HistorySheet({
         onClick={onClose}
         className="mt-4 w-full rounded-xl bg-amber py-3 text-sm font-bold text-paper transition-transform active:scale-[0.98]"
       >
-        Cerrar
+        {t.historial.cerrar}
       </button>
     </Sheet>
   );
@@ -89,11 +91,13 @@ function Fila({
   currency,
   color,
   mio,
+  t,
 }: {
   event: ChangeEvent;
   currency: string;
   color: string;
   mio: boolean;
+  t: ReturnType<typeof useT>;
 }) {
   const quitado = event.kind === "item.remove";
 
@@ -108,38 +112,37 @@ function Fila({
       <div className="min-w-0 flex-1">
         <p className="text-sm leading-snug">
           <b className="font-semibold">{event.by}</b>
-          {mio && <span className="ml-1 text-xs text-amber">(tú)</span>}{" "}
-          <Cuenta event={event} currency={currency} />
+          {mio && <span className="ml-1 text-xs text-amber">{t.mesa.tu}</span>}{" "}
+          <Cuenta event={event} currency={currency} t={t} />
         </p>
-        <p className="stamp mt-0.5 text-ink-faint">{cuando(event.at)}</p>
+        <p className="stamp mt-0.5 text-ink-faint">{cuando(event.at, t)}</p>
       </div>
     </li>
   );
 }
 
 /** La frase de cada tipo de cambio, con el importe siempre a la vista. */
-function Cuenta({ event, currency }: { event: ChangeEvent; currency: string }) {
+function Cuenta({ event, currency, t }: { event: ChangeEvent; currency: string; t: ReturnType<typeof useT> }) {
   const importe = <span className="tnum font-semibold">{money(event.cents, currency)}</span>;
 
   if (event.kind === "item.remove") {
     return (
       <span className="text-ink-soft">
-        quitó <b className="font-semibold text-clay">{event.what}</b>, de {importe}
+        {t.historial.quito} <b className="font-semibold text-clay">{event.what}</b>{t.historial.de} {importe}
       </span>
     );
   }
   if (event.kind === "item.add") {
     return (
       <span className="text-ink-soft">
-        añadió <b className="font-semibold text-ink">{event.what}</b>, de {importe}
+        {t.historial.anadio} <b className="font-semibold text-ink">{event.what}</b>{t.historial.de} {importe}
       </span>
     );
   }
   // `what` guarda el total viejo en céntimos; `cents`, el nuevo.
   return (
     <span className="text-ink-soft">
-      cambió el total de{" "}
-      <span className="tnum">{money(Number(event.what) || 0, currency)}</span> a {importe}
+      {t.historial.cambioTotal} <span className="tnum">{money(Number(event.what) || 0, currency)}</span> {t.historial.aTotal} {importe}
     </span>
   );
 }
@@ -151,12 +154,12 @@ function Cuenta({ event, currency }: { event: ChangeEvent; currency: string }) {
  * yo llegara?», y para eso el reloj de pared no sirve. A partir del día se pasa
  * a la fecha, que es cuando lo relativo deja de decir nada.
  */
-function cuando(iso: string): string {
+function cuando(iso: string, t: ReturnType<typeof useT>): string {
   const ms = Date.now() - new Date(iso).getTime();
   const min = Math.floor(ms / 60000);
-  if (min < 1) return "ahora mismo";
-  if (min < 60) return `hace ${min} min`;
+  if (min < 1) return t.misDivis.ahoraMismo;
+  if (min < 60) return rellena(t.misDivis.haceMin, { n: min });
   const horas = Math.floor(min / 60);
-  if (horas < 24) return `hace ${horas} h`;
+  if (horas < 24) return rellena(t.misDivis.haceH, { n: horas });
   return new Date(iso).toLocaleDateString("es-ES", { day: "numeric", month: "short" });
 }

@@ -20,6 +20,7 @@ import TableSheet from "./TableSheet";
 import GuideSheet from "./GuideSheet";
 import TicketUploader from "./TicketUploader";
 import { Avatar, Progress, Sheet } from "./ui";
+import { useT } from "@/lib/i18n";
 
 export default function SplitApp({
   initial,
@@ -31,6 +32,7 @@ export default function SplitApp({
   qrSvg: string;
 }) {
   const code = initial.ticket.id;
+  const t = useT();
   const [tab, setTab] = useState<"comanda" | "cuentas">("comanda");
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
@@ -93,13 +95,13 @@ export default function SplitApp({
       });
       const data = (await response.json()) as TicketState & { error?: string };
       if (!response.ok) {
-        setError(data.error ?? "No se ha podido guardar el cambio.");
+        setError(data.error ?? t.comanda.errorGuardar);
         return null;
       }
       setServer(data);
       return data;
     } catch {
-      setError("Sin conexión. Los cambios no se están guardando.");
+      setError(t.comanda.sinConexion);
       return null;
     }
   }
@@ -122,13 +124,13 @@ export default function SplitApp({
       });
       const data = (await response.json()) as TicketState & { error?: string };
       if (!response.ok) {
-        setError(data.error ?? "No se ha podido apuntar a nadie más.");
+        setError(data.error ?? t.comanda.errorApuntar);
         return null;
       }
       setServer(data);
       return response.headers.get("x-participant-id");
     } catch {
-      setError("Sin conexión. Los cambios no se están guardando.");
+      setError(t.comanda.sinConexion);
       return null;
     }
   }
@@ -199,7 +201,7 @@ export default function SplitApp({
       });
       const data = (await response.json()) as TicketState & { error?: string };
       if (!response.ok) {
-        setError(data.error ?? "No se han podido separar esas unidades.");
+        setError(data.error ?? t.comanda.errorSeparar);
         return false;
       }
       setServer(data);
@@ -209,7 +211,7 @@ export default function SplitApp({
       if (nuevo) setEditing(nuevo);
       return true;
     } catch {
-      setError("Sin conexión. Los cambios no se están guardando.");
+      setError(t.comanda.sinConexion);
       return false;
     }
   }
@@ -310,7 +312,7 @@ export default function SplitApp({
           </Link>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-bold leading-tight">
-              {state.ticket.place ?? "Comanda"}
+              {state.ticket.place ?? t.comanda.volverComanda}
             </p>
             <p className="stamp text-ink-faint">
               {state.ticket.tableLabel ? `${state.ticket.tableLabel} · ` : ""}
@@ -344,7 +346,7 @@ export default function SplitApp({
                 </span>
               )}
             </span>
-            <span className="text-xs font-bold text-amber">Compartir</span>
+            <span className="text-xs font-bold text-amber">{t.comanda.compartir}</span>
           </button>
 
           {/* La ayuda vive al lado de compartir porque es el mismo momento: te
@@ -352,7 +354,7 @@ export default function SplitApp({
           <button
             type="button"
             onClick={() => setGuiding(true)}
-            aria-label="Cómo funciona"
+            aria-label={t.comanda.comoFunciona}
             className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-line text-ink-faint transition-colors hover:border-amber hover:text-amber active:bg-paper-2"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
@@ -376,7 +378,7 @@ export default function SplitApp({
                     : "bg-paper-2 border border-line text-ink-soft hover:border-amber hover:text-amber"
                   }`}
               >
-                {state.ticket.place || "Ticket Original"}
+                {state.ticket.place || t.comanda.ticketOriginal}
               </button>
             )}
             {receipts.map((r) => (
@@ -397,7 +399,7 @@ export default function SplitApp({
               onClick={() => setUploadingAnother(true)}
               className="shrink-0 rounded-full border border-dashed border-line bg-paper px-3 py-1 text-xs font-bold text-ink-faint transition-colors hover:border-amber hover:text-amber active:bg-paper-2"
             >
-              + Añadir
+              {t.comanda.anadir}
             </button>
           </div>
         )}
@@ -420,10 +422,10 @@ export default function SplitApp({
               */}
               <p className="stamp min-w-0 truncate text-ink-faint">
                 {left <= 0
-                  ? "Todo repartido"
+                  ? t.comanda.todoRepartido
                   : meId
-                    ? `Faltan ${money(left, state.ticket.currency)}`
-                    : "Toca lo que has comido"}
+                    ? `${t.comanda.faltan} ${money(left, state.ticket.currency)}`
+                    : t.comanda.tocaLoQueHasComido}
               </p>
               <span className="flex shrink-0 items-center gap-1.5">
                 {/*
@@ -438,7 +440,7 @@ export default function SplitApp({
                     onClick={() => setShowingLog(true)}
                     className="stamp rounded-lg border border-clay/40 bg-clay/10 px-2 py-1 text-clay transition-colors active:bg-clay/20"
                   >
-                    Cambios {state.events.length}
+                    {t.comanda.cambios} {state.events.length}
                   </button>
                 )}
                 {/* A mitad de reparto siempre sale «¿qué ponía el ticket?». */}
@@ -447,7 +449,7 @@ export default function SplitApp({
                   onClick={() => setViewing(true)}
                   className="stamp rounded-lg border border-line px-2 py-1 text-ink-faint transition-colors hover:border-amber hover:text-amber active:bg-paper-2"
                 >
-                  Ver ticket
+                  {t.comanda.verTicket}
                 </button>
               </span>
             </div>
@@ -475,7 +477,7 @@ export default function SplitApp({
                 className="flex min-h-24 flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-line text-sm font-semibold text-ink-faint transition-colors active:bg-paper-2"
               >
                 <span className="text-xl leading-none">+</span>
-                Falta algo
+                {t.comanda.faltaAlgo}
               </button>
             </div>
           </div>
@@ -513,7 +515,7 @@ export default function SplitApp({
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-paper-2/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-3 py-2.5">
           <div className="min-w-0 flex-1">
-            <p className="stamp text-ink-faint">{meId ? "Lo tuyo" : "Sin repartir"}</p>
+            <p className="stamp text-ink-faint">{meId ? t.comanda.loTuyo : t.comanda.sinRepartir}</p>
             <p className="tnum text-2xl font-bold leading-tight">
               {money(
                 meId ? (myBalance?.owesCents ?? 0) : settlement.unassignedCents,
@@ -530,7 +532,7 @@ export default function SplitApp({
               }}
               className="shrink-0 rounded-xl bg-amber px-4 py-2.5 text-sm font-bold text-paper active:scale-95 transition-transform"
             >
-              {tab === "comanda" ? "Cuentas" : "Comanda"}
+              {tab === "comanda" ? t.comanda.cuentas : t.comanda.volverComanda}
             </button>
           ) : (
             <button
@@ -538,7 +540,7 @@ export default function SplitApp({
               onClick={() => setJoinOverride(true)}
               className="shrink-0 rounded-xl bg-amber px-4 py-2.5 text-sm font-bold text-paper"
             >
-              Unirme
+              {t.comanda.unirme}
             </button>
           )}
         </div>
@@ -648,7 +650,7 @@ export default function SplitApp({
 
       {uploadingAnother && (
         <Sheet onClose={() => setUploadingAnother(false)}>
-          <h2 className="mb-4 text-xl font-bold tracking-tight">Subir otro ticket</h2>
+          <h2 className="mb-4 text-xl font-bold tracking-tight">{t.subir.otroTicket}</h2>
           <TicketUploader
             targetCode={code}
             onSuccess={() => {
@@ -676,8 +678,8 @@ export default function SplitApp({
           >
             <Avatar name={newFriend.name} avatar={newFriend.avatar} color={newFriend.color} size={36} />
             <div className="flex flex-col">
-              <span className="text-sm font-bold leading-tight text-ink">{newFriend.name} se ha unido</span>
-              <span className="text-xs font-semibold text-amber">A la cuenta {state.ticket.place || "El Rincón"}</span>
+              <span className="text-sm font-bold leading-tight text-ink">{newFriend.name} {t.comanda.seHaUnido}</span>
+              <span className="text-xs font-semibold text-amber">{t.comanda.aLaCuenta} {state.ticket.place || t.comanda.ticketOriginal}</span>
             </div>
             <div className="ml-2 h-2.5 w-2.5 rounded-full bg-mint shadow-[0_0_12px_var(--color-mint)]" />
             <style>{`
@@ -715,6 +717,7 @@ function JoinSheet({
   onJoin: (name: string, avatar?: string) => Promise<void>;
   onClose: () => void;
 }) {
+  const t = useT();
   const [name, setName] = useState("");
   const [avatar, setAvatar] = useState("");
   const [busy, setBusy] = useState(false);
@@ -722,12 +725,12 @@ function JoinSheet({
 
   return (
     <Sheet onClose={onClose}>
-      <h2 className="text-xl font-bold tracking-tight">¿Quién eres?</h2>
-      <p className="mt-1 text-sm text-ink-soft">Para que la mesa sepa qué platos son tuyos.</p>
+      <h2 className="text-xl font-bold tracking-tight">{t.entrar.titulo}</h2>
+      <p className="mt-1 text-sm text-ink-soft">{t.entrar.entradilla}</p>
 
       {people.length > 0 && (
         <>
-          <p className="stamp mt-4 text-ink-faint">Toca tu nombre si ya estás en la lista</p>
+          <p className="stamp mt-4 text-ink-faint">{t.entrar.tocaTuNombre}</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {people.map((person) => (
               <button
@@ -743,7 +746,7 @@ function JoinSheet({
           </div>
 
           <div className="rule my-4" />
-          <p className="stamp text-ink-faint">¿No estás? Escríbelo</p>
+          <p className="stamp text-ink-faint">{t.entrar.noEstas}</p>
         </>
       )}
 
@@ -765,7 +768,7 @@ function JoinSheet({
             onChange={(event) => setName(event.target.value)}
             // Un nombre de ejemplo cantaba raro desde que la lista de arriba
             // lleva nombres de verdad: parecía que te sugería llamarte Álex.
-            placeholder="Tu nombre"
+            placeholder={t.entrar.tuNombre}
             maxLength={40}
             className="min-w-0 flex-1 rounded-xl border border-line bg-paper px-4 py-3 focus:border-amber focus:outline-none"
           />
@@ -774,7 +777,7 @@ function JoinSheet({
             disabled={busy || !name.trim()}
             className="shrink-0 rounded-xl bg-amber px-5 font-bold text-paper disabled:opacity-40"
           >
-            Entrar
+            {t.entrar.entrar}
           </button>
         </div>
 
@@ -798,7 +801,7 @@ function JoinSheet({
         onClick={onClose}
         className="mt-4 w-full rounded-xl py-2 text-sm text-ink-faint"
       >
-        Sólo estoy mirando
+        {t.entrar.soloMirando}
       </button>
     </Sheet>
   );
@@ -811,13 +814,14 @@ function AddItemSheet({
   onAdd: (name: string, qty: number, price: string) => Promise<void>;
   onClose: () => void;
 }) {
+  const t = useT();
   const [name, setName] = useState("");
   const [qty, setQty] = useState("1");
   const [price, setPrice] = useState("");
 
   return (
     <Sheet onClose={onClose}>
-      <h2 className="text-xl font-bold tracking-tight">Falta algo en la comanda</h2>
+      <h2 className="text-xl font-bold tracking-tight">{t.comanda.faltaAlgo}</h2>
       <form
         className="mt-4 space-y-3"
         onSubmit={async (event) => {
@@ -855,7 +859,7 @@ function AddItemSheet({
           disabled={!name.trim() || parseMoney(price) <= 0}
           className="w-full rounded-xl bg-amber py-3 font-bold text-paper disabled:opacity-40"
         >
-          Añadir
+          {t.comanda.anadir}
         </button>
       </form>
     </Sheet>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { EV, track } from "@/lib/track";
 import type { Participant } from "@/lib/types";
+import { useT, rellena } from "@/lib/i18n";
 import { Avatar, Sheet } from "./ui";
 
 /**
@@ -40,6 +41,7 @@ export default function TableSheet({
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
   const [editingAvatarId, setEditingAvatarId] = useState<string | null>(null);
+  const t = useT();
   
   const emojis = ["🐶", "🐱", "🦊", "🐼", "🐯", "🦁", "🐰", "🐸"];
 
@@ -71,9 +73,9 @@ export default function TableSheet({
 
   return (
     <Sheet onClose={onClose}>
-      <h2 className="text-xl font-bold tracking-tight">La mesa</h2>
+      <h2 className="text-xl font-bold tracking-tight">{t.mesa.titulo}</h2>
       <p className="mt-1 text-sm text-ink-soft">
-        Apunta a quien esté contigo y ve marcando lo que ha tomado cada uno.
+        {t.mesa.entradilla}
       </p>
 
       {participants.length > 0 && (
@@ -91,12 +93,12 @@ export default function TableSheet({
                 </button>
                 <span className="min-w-0 flex-1 truncate text-sm font-semibold">
                   {person.name}
-                  {person.id === meId && <span className="ml-1.5 text-xs text-amber">(tú)</span>}
+                  {person.id === meId && <span className="ml-1.5 text-xs text-amber">{t.mesa.tu}</span>}
                 </span>
                 <button
                   type="button"
                   onClick={() => onRemove(person.id)}
-                  aria-label={`Quitar a ${person.name} de la mesa`}
+                  aria-label={rellena(t.mesa.quitarDeLaMesa, { name: person.name })}
                   className="rounded-lg px-2 py-1 text-xs text-ink-faint transition-colors hover:text-clay"
                 >
                   ✕
@@ -155,7 +157,7 @@ export default function TableSheet({
           <input
             value={name}
             onChange={(event) => setName(event.target.value)}
-            placeholder="Añade a alguien"
+            placeholder={t.mesa.anadeAlguien}
             maxLength={40}
             aria-label="Nombre de quien se sienta en la mesa"
             className="min-w-0 flex-1 rounded-xl border border-line bg-paper px-4 py-2.5 focus:border-amber focus:outline-none"
@@ -165,7 +167,7 @@ export default function TableSheet({
             disabled={busy || !name.trim()}
             className="shrink-0 rounded-xl bg-amber px-5 text-sm font-bold text-paper disabled:opacity-30"
           >
-            Añadir
+            {t.mesa.anadir}
           </button>
         </div>
         {name.trim() && (
@@ -189,7 +191,7 @@ export default function TableSheet({
       <div className="rule my-5" />
 
       {/* ------------------------------------------------- que entren ellos */}
-      <p className="stamp text-ink-faint">O que se metan ellos</p>
+      <p className="stamp text-ink-faint">{t.mesa.oQueSeMetan}</p>
       <div className="mt-2.5 flex items-center gap-4 rounded-2xl bg-[#f4ece0] p-4">
         <div
           className="h-28 w-28 shrink-0 [&>svg]:h-full [&>svg]:w-full"
@@ -198,7 +200,7 @@ export default function TableSheet({
         <div className="min-w-0">
           <p className="tnum text-lg font-bold tracking-[0.2em] text-[#14100d]">{code}</p>
           <p className="mt-1 text-xs leading-snug text-[#776a5c]">
-            Escanean el QR y marcan lo suyo. No hace falta instalar nada.
+            {t.mesa.escanean}
           </p>
         </div>
       </div>
@@ -209,7 +211,7 @@ export default function TableSheet({
           onClick={() => void share()}
           className="flex-1 rounded-xl bg-mint py-3 font-bold text-paper active:scale-[0.98] transition-transform"
         >
-          Compartir enlace
+          {t.mesa.compartirEnlace}
         </button>
         <button
           type="button"
@@ -220,7 +222,7 @@ export default function TableSheet({
               : "border-line text-ink-soft hover:border-mint hover:text-mint"
           }`}
         >
-          {copied ? "Copiado ✓" : "Copiar"}
+          {copied ? t.mesa.copiado : t.mesa.copiar}
         </button>
       </div>
 
@@ -231,7 +233,7 @@ export default function TableSheet({
         onClick={onClose}
         className="mt-2 w-full rounded-xl py-2 text-sm text-ink-faint"
       >
-        Cerrar
+        {t.mesa.cerrar}
       </button>
     </Sheet>
   );

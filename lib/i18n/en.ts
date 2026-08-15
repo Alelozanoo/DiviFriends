@@ -1,0 +1,343 @@
+import type { Dict } from "./es";
+
+/**
+ * The same text in English.
+ *
+ * Typed against the Spanish original, so TypeScript complains the moment a key
+ * is missing or invented. Half a translation cannot ship without somebody
+ * noticing, which is how every half translation ends up shipping.
+ *
+ * It is written, not translated word for word. «Comanda» becomes "bill" and
+ * not "order" because that is what an English speaker calls the piece of paper
+ * you split at the end of dinner, and «divi» stays as it is: it is the name of
+ * the thing.
+ */
+export const en: Dict = {
+  home: {
+    claim: "Split the bill",
+    claimAmber: "by itself",
+    tituloLargo: "The bill is settled",
+    tituloLargoAmber: "before the next round arrives",
+    entradilla:
+      "Everyone taps what they had, from their own phone, on the same bill. No calculators, no «I only had a beer», nobody chipping in extra.",
+    sellos: ["Free", "No sign-up", "No install"],
+    empiezaAqui: "Start here",
+    pieLema: "split the bill without arguing",
+    comoFunciona: "How it works",
+  },
+
+  pasos: {
+    titulo: "How it works",
+    entradilla: "From the photo of the receipt to who pays whom.",
+    uno: {
+      title: "Take a photo",
+      foot: "The receipt turns into a list, dish by dish.",
+    },
+    dos: {
+      title: "Another place? Another receipt",
+      foot: "Meat from one shop and drinks from another, on the same bill.",
+    },
+    tres: {
+      title: "Tap what you had",
+      foot: "Anything shared splits itself between whoever ordered it.",
+    },
+    cuatro: {
+      title: "It works out who pays whom",
+      foot: "Even if a different person paid at each place.",
+    },
+    entendido: "Got it",
+    total: "Total",
+    totalMesa: "Table total",
+    pago: "paid by",
+    loTuyo: "Your share",
+    libre: "free",
+    entre: "between",
+    tu: "YOU",
+    faltaPorSaldar: "Still to settle",
+    recibeDe: "Gets it from",
+    a: "to",
+  },
+
+  subir: {
+    titulo: "Upload a photo of the receipt",
+    boton: "Upload photo",
+    conCodigo: "Join with a code",
+    preparando: "Getting the photo ready…",
+    analizando: "Looking at the photo…",
+    leyendo: "Reading the lines…",
+    extrayendo: "Pulling out the prices…",
+    finalizando: "Almost there…",
+    tardo: "It takes a few seconds to read every line.",
+    cuadrando: "Checking that the totals add up.",
+    progreso: "Progress",
+    codigoTitulo: "The table code",
+    codigoAyuda:
+      "Six characters. They are on the printed receipt, or whoever started the Divi can pass them to you.",
+    otroTicket: "Add another receipt",
+  },
+
+  misDivis: {
+    titulo: "Your divis",
+    donde: "on this phone",
+    verTodos: "See all",
+    teDeben: "you're owed",
+    loTuyo: "your share",
+    a: "to",
+    cuadrado: "settled ✓",
+    cerrarTitulo: "Close",
+    cerrarAviso:
+      "It goes off this list. The bill stays alive and you can come back to it with the link or the code.",
+    cerrarSi: "Yes, close it",
+    cerrarNo: "Keep it",
+    ahoraMismo: "just now",
+    haceMin: "{n} min ago",
+    haceH: "{n} h ago",
+    ayer: "yesterday",
+    haceDias: "{n} days ago",
+  },
+
+  comanda: {
+    tocaLoQueHasComido: "Tap what you had",
+    faltan: "Left",
+    todoRepartido: "All shared out",
+    verTicket: "See receipt",
+    cambios: "Changes",
+    faltaAlgo: "Something's missing",
+    compartir: "Share",
+    comoFunciona: "How it works",
+    cuentas: "Totals",
+    volverComanda: "Bill",
+    unirme: "Join",
+    sinRepartir: "Unassigned",
+    loTuyo: "Your share",
+    ticketOriginal: "First receipt",
+    anadir: "+ Add",
+    seHaUnido: "has joined",
+    aLaCuenta: "The bill at",
+    sinConexion: "You're offline. Changes aren't being saved.",
+    errorGuardar: "That change couldn't be saved.",
+    errorApuntar: "Nobody else could be added.",
+    errorSeparar: "Those units couldn't be split off.",
+  },
+
+  linea: {
+    dividir: "Split",
+    quedan: "left",
+    tus: "your",
+    de: "of",
+    entre: "between",
+    completo: "taken",
+    quitarUnidad: "Remove one",
+    anadirUnidad: "Add one",
+    repartirEntreVarios: "Share {name} between several people",
+    quitarDeLaComanda: "Remove {name} from the bill",
+  },
+
+  repartir: {
+    paso: "Step {n} of {total}",
+    cuantasUnidades: "How many are you sharing?",
+    cuantasAyuda:
+      "There are {n} on the receipt. The ones you leave out get their own line, so you can share them differently or let somebody take them whole.",
+    lasN: "all {n}",
+    entreCuantos: "Between how many?",
+    entreCuantosAyuda: "Under each number, what one share would cost.",
+    otroNumero: "another number",
+    repartirBoton: "Share",
+    unidadesCambiar: "{n} units · change",
+    volverAUnidades: "Back to {n} separate units",
+    dejarDeCompartir: "Stop sharing it",
+    conQuien: "Who are you sharing it with?",
+    conQuienAyuda:
+      "Tap the people at the table. Anyone missing, add them below: they'll find their name waiting when they open the link.",
+    entreCambiar: "Between {n} · change",
+    anadeAQuienFalte: "Add whoever's missing",
+    anadir: "Add",
+    quedanSinDueno: "{libres} of {total} still unclaimed: {dinero} nobody is paying yet.",
+    repartidasUnidades: "All {n} units shared · {dinero} each.",
+    repartidoEntre: "Shared between {n} · {dinero} each.",
+    seguirConQuien: "Next · who with?",
+    listo: "Done",
+    cerrar: "Close",
+    unidades: "units",
+    quitarleUnidad: "Take one away from",
+    darleUnidad: "Give another one to",
+  },
+
+  quitar: {
+    titulo: "Remove",
+    sinTocar: "Lower the count, or take it off the bill altogether.",
+    desaparece: "It disappears from the bill",
+    yQuienLaTenia: "and whoever had it stops paying for it",
+    yLasPersonas: "and the {n} people who had it stop paying for it",
+    seQuedaEn: "It goes down to {n}.",
+    totalNoCambia: "The receipt total doesn't change.",
+    totalBaja: "The total drops to",
+    cantidad: "How many",
+    anotado: "It goes in the table's history, with your name and the time.",
+    eliminar: "Remove dish",
+    dejarloEn: "Leave {n}",
+    dejarla: "Keep it",
+  },
+
+  cuentas: {
+    totalMesa: "Table total",
+    marcaPagador: "Mark below who put the card down and everyone's share will appear.",
+    todoCuadrado: "All square",
+    todosSaldados: "Everybody has settled up.",
+    faltaSaldar: "Still to settle",
+    faltaDevolver: "Still owed to {name}",
+    sinAsignar: "There's {dinero} unassigned on the bill",
+    yaHanSaldado: "{n} of {total} have settled up",
+    quienHaPagado: "Who paid {que}?",
+    laCuenta: "the bill",
+    nadieEnLaMesa: "Nobody at the table yet.",
+    ojoSinDueno:
+      "Careful: {dinero} has no owner. Go back to the bill and share it out, or the totals below fall short.",
+    ojoDeMas: "Careful: {dinero} has been shared out twice over. Check the total or the amounts.",
+    seLeDebe: "Is owed",
+    noDebeNada: "Owes nothing",
+    hePagado: "I've paid",
+    haPagado: "Has paid",
+    pagado: "Paid ✓",
+    recibe: "Gets",
+    de: "from",
+    totalDelTicket: "Receipt total",
+    historial: "Table history",
+    sinCambios: "Nobody has removed or added anything",
+    nCambios: "{n} changes to the bill",
+    unCambio: "1 change to the bill",
+    avisoCobrar: "When somebody hands you their share, tap «Has paid» on their row.",
+    extras: "of service or tax",
+    descuento: "of discount",
+    extrasNota:
+      "{dinero} {que} between the sum of the dishes and the total. It's shared out in proportion to what each person had.",
+  },
+
+  historial: {
+    titulo: "History",
+    entradilla: "Everything that changed the bill, and who did it.",
+    vacio:
+      "Nobody has removed or added anything yet. The bill is exactly as it was read off the receipt.",
+    quito: "removed",
+    anadio: "added",
+    de: ", worth",
+    cambioTotal: "changed the total from",
+    aTotal: "to",
+    cerrar: "Close",
+  },
+
+  entrar: {
+    titulo: "Who are you?",
+    entradilla: "So the table knows which dishes are yours.",
+    tocaTuNombre: "Tap your name if you're already on the list",
+    noEstas: "Not there? Type it in",
+    tuNombre: "Your name",
+    entrar: "Join",
+    soloMirando: "Just looking",
+  },
+
+  mesa: {
+    titulo: "The table",
+    entradilla: "Add whoever's with you and tick off what each person had.",
+    anadeAlguien: "Add someone",
+    anadir: "Add",
+    oQueSeMetan: "Or let them join",
+    escanean: "They scan the QR and tap their own. Nothing to install.",
+    compartirEnlace: "Share link",
+    copiar: "Copy",
+    copiado: "Copied ✓",
+    imprimir: "See the receipt with the QR to print",
+    cerrar: "Close",
+    tu: "(you)",
+    quitarDeLaMesa: "Remove {name} from the table",
+  },
+
+  ticket: {
+    titulo: "The receipt",
+    entradilla: "What was read off the paper. If something's off, fix it from the bill.",
+    compartir: "Share receipt",
+    imprimir: "Print it with the QR",
+    cerrar: "Close",
+    sinLineas: "No lines left.",
+    servicio: "Service / tax",
+    descuento: "Discount",
+    total: "Total",
+    repartidLaCuenta: "Split the bill",
+    escaneaOEntra: "Scan it, or go to divifriends and type the code",
+    mensaje:
+      "The bill {sitio}: {total}. Open it and tap what you had — it works out everyone's share on its own:",
+    deLaMesa: "for the table",
+    del: "at",
+    descargado: "Image downloaded and message copied.",
+    descargadoSolo: "Image downloaded.",
+    noSePudo: "Couldn't share. Copy the link from «Share».",
+  },
+
+  aMano: {
+    titulo: "New bill",
+    entradilla:
+      "Write down what's on the table. When you save it you get the QR and the code, so everyone can split the bill from their own phone.",
+    volver: "Back",
+  },
+
+  codigo: {
+    etiqueta: "Bill code",
+    entrar: "Join",
+    buscando: "Looking…",
+    noExiste: "That bill doesn't exist.",
+  },
+
+  cookies: {
+    cambiar: "Cookies",
+  },
+
+  guia: {
+    titulo: "How it works",
+    entradilla: "Tap a question to expand it.",
+    entendido: "Got it",
+    preguntas: [
+      {
+        pregunta: "How do I mark what I had?",
+        pasos: [
+          "Tap the item card. It turns amber and your avatar appears.",
+          "Tap it again to drop it if you made a mistake. At the bottom, <B>Your total</B> adds up in real-time.",
+          "If there were multiple units—like three beers—use the <B>+</B> to add yours one by one.",
+        ],
+      },
+      {
+        pregunta: "How do I split an item with others?",
+        pasos: [
+          "Tap <B>÷ Split</B> on the item card. Two questions will follow.",
+          "<B>Among how many.</B> Below each number you'll see what each share costs. Your share is secured right there, without waiting for anyone else.",
+          "<B>With whom.</B> Tap the people at the table, and if someone isn't there, add them by typing their name.",
+          "Whoever you add will have their name waiting for them when they join via the link: they just tap it and inherit what you marked for them.",
+        ],
+      },
+      {
+        pregunta: "Is something missing or extra?",
+        pasos: [
+          "To add a single item: use the dotted <B>+ Missing item</B> box at the end of the list.",
+          "To add another full receipt to the same bill: tap <B>+ Add</B> in the top bar.",
+          "To remove a line or reduce its quantity: use the <B>✕</B> in its corner. The receipt total decreases automatically, and it's recorded in the <B>history</B> with the name of who did it.",
+          "If the read total doesn't match the paper, correct it in <B>Accounts</B>, under <B>Receipt total</B>.",
+        ],
+      },
+      {
+        pregunta: "How do I invite the others?",
+        pasos: [
+          "Top right, <B>Share</B>. You'll see the QR code and the table link.",
+          "Each person joins from their phone, types their name, and marks their items on the same bill.",
+          "You can also add them yourself and mark what each person had.",
+        ],
+      },
+      {
+        pregunta: "And in the end, who pays?",
+        pasos: [
+          "In <B>Accounts</B>, mark who paid for each receipt on the list.",
+          "You'll see how much everyone owes them, from most to least. When you pay them back, tap <B>I paid</B>.",
+          "The person who paid sees everyone's balance: those who need to pay are in black and those with credit in their favor are in green.",
+        ],
+      },
+    ],
+  },
+};

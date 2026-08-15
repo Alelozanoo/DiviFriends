@@ -2,6 +2,7 @@
 
 import { money } from "@/lib/format";
 import type { Item, ItemBreakdown, Participant } from "@/lib/types";
+import { useT, rellena } from "@/lib/i18n";
 import { Avatar } from "./ui";
 
 interface Props {
@@ -36,6 +37,7 @@ export default function ItemBubble({
   onOpenOptions,
   onRemove,
 }: Props) {
+  const t = useT();
   const mine = breakdown.shares.find((s) => s.participantId === meId);
   const others = breakdown.shares.filter((s) => s.participantId !== meId);
   const byId = new Map(participants.map((p) => [p.id, p]));
@@ -74,7 +76,7 @@ export default function ItemBubble({
       <button
         type="button"
         onClick={onRemove}
-        aria-label={`Quitar ${item.name} de la comanda`}
+        aria-label={rellena(t.linea.quitarDeLaComanda, { name: item.name })}
         className="absolute right-1.5 top-1.5 z-10 grid h-7 w-7 place-items-center rounded-full border border-line bg-paper-3/70 text-[0.7rem] leading-none text-ink-faint transition-colors hover:border-clay hover:bg-clay/15 hover:text-clay active:bg-clay/25"
       >
         ✕
@@ -136,18 +138,18 @@ export default function ItemBubble({
         */}
         <span className={`stamp ${breakdown.freeShares > 0 ? "text-mint" : "text-ink-faint"}`}>
           {breakdown.freeShares > 0
-            ? `quedan ${breakdown.freeShares}`
+            ? `${t.linea.quedan} ${breakdown.freeShares}`
             : isMine && mine!.shares > 1
-              ? `tus ${mine!.shares} de ${item.splitInto}`
+              ? `${t.linea.tus} ${mine!.shares} ${t.linea.de} ${item.splitInto}`
               : sharedNow
-                ? `entre ${item.splitInto}`
-                : "completo"}
+                ? `${t.linea.entre} ${item.splitInto}`
+                : t.linea.completo}
         </span>
       </button>
 
       {/* quién lo lleva */}
       <div className="flex min-h-[26px] items-center gap-1 px-3 pb-2">
-        {mine && <Avatar name="tú" avatar={byId.get(meId!)?.avatar} color={byId.get(meId!)?.color ?? "#e8b04b"} size={22} />}
+        {mine && <Avatar name={t.mesa.tu} avatar={byId.get(meId!)?.avatar} color={byId.get(meId!)?.color ?? "#e8b04b"} size={22} />}
         {others.slice(0, 3).map((share) => {
           const person = byId.get(share.participantId);
           return person ? (
@@ -172,14 +174,14 @@ export default function ItemBubble({
           canStep ? (
             <span className="flex flex-1 items-center justify-center border-r border-line/60">
               <Step
-                label={`Quitar una unidad de ${item.name}`}
+                label={`${t.linea.quitarUnidad} ${item.name}`}
                 onClick={() => onSetShares(mine!.shares - 1)}
               >
                 −
               </Step>
               <span className="tnum w-6 text-center text-sm font-bold">{mine!.shares}</span>
               <Step
-                label={`Añadir una unidad de ${item.name}`}
+                label={`${t.linea.anadirUnidad} ${item.name}`}
                 disabled={full}
                 highlight={false}
                 onClick={() => onSetShares((mine?.shares ?? 0) + 1)}
@@ -193,7 +195,7 @@ export default function ItemBubble({
               onClick={() => onSetShares(0)}
               className="flex flex-1 items-center justify-center gap-0.5 border-r border-line/60 py-2 text-[0.6rem] font-bold uppercase text-ink-soft transition-colors hover:text-clay active:bg-paper-3"
             >
-              Quitar
+              {t.quitar.titulo.replace('¿', '').trim()}
             </button>
           )
         ) : (
@@ -203,17 +205,17 @@ export default function ItemBubble({
             onClick={() => onSetShares(1)}
             className="flex flex-1 items-center justify-center gap-0.5 border-r border-line/60 py-2 text-[0.6rem] font-bold uppercase text-ink-faint opacity-60 transition-all hover:opacity-100 hover:text-amber active:bg-paper-3 disabled:opacity-30"
           >
-            Añadir
+            {t.mesa.anadir}
           </button>
         )}
 
         <button
           type="button"
           onClick={onOpenOptions}
-          aria-label={`Repartir ${item.name} entre varios`}
+          aria-label={rellena(t.linea.repartirEntreVarios, { name: item.name })}
           className="flex flex-1 items-center justify-center gap-0.5 py-2 text-[0.6rem] font-bold uppercase text-ink-faint opacity-60 transition-all hover:opacity-100 hover:text-mint active:bg-paper-3"
         >
-          A medias
+          {t.linea.dividir}
         </button>
       </div>
     </div>

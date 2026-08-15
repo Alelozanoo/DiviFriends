@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { PASOS } from "./ComoVa";
+import { useT } from "@/lib/i18n";
 import { Sheet } from "./ui";
 
 /**
@@ -17,6 +18,7 @@ import { Sheet } from "./ui";
  * cuenta no se lo encuentra por delante.
  */
 export default function ComoFuncionaSheet() {
+  const t = useT();
   const [abierto, setAbierto] = useState(false);
 
   return (
@@ -26,7 +28,7 @@ export default function ComoFuncionaSheet() {
         onClick={() => setAbierto(true)}
         className="underline underline-offset-2 transition-colors hover:text-amber"
       >
-        ¿Cómo funciona?
+        {t.home.comoFunciona}
       </button>
 
       {abierto && (
@@ -35,10 +37,8 @@ export default function ComoFuncionaSheet() {
               dibujos— y un cierre al final obliga a bajarlo todo para salir. */}
           <div className="sticky -top-5 z-10 -mx-5 -mt-5 flex items-start justify-between gap-3 bg-paper-2/95 px-5 pb-3 pt-5 backdrop-blur">
             <div>
-              <h2 className="text-xl font-bold tracking-tight">Cómo funciona</h2>
-              <p className="mt-1 text-sm text-ink-soft">
-                De la foto del papel a quién le paga a quién.
-              </p>
+              <h2 className="text-xl font-bold tracking-tight">{t.pasos.titulo}</h2>
+              <p className="mt-1 text-sm text-ink-soft">{t.pasos.entradilla}</p>
             </div>
             <button
               type="button"
@@ -51,7 +51,7 @@ export default function ComoFuncionaSheet() {
           </div>
 
           <ol className="mt-4 space-y-6">
-            {PASOS.map(({ n, title, foot, Pieza }) => (
+            {PASOS(t).map(({ n, title, foot, Pieza }) => (
               <li key={n}>
                 <Pieza />
                 <p className="mt-3 flex items-baseline gap-2.5">
@@ -68,7 +68,7 @@ export default function ComoFuncionaSheet() {
             onClick={() => setAbierto(false)}
             className="mt-6 w-full rounded-xl bg-amber py-3 text-sm font-bold text-paper transition-transform active:scale-[0.98]"
           >
-            Entendido
+            {t.pasos.entendido}
           </button>
         </Sheet>
       )}

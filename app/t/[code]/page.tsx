@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import type { Metadata } from "next";
+import { COOKIE, I18nProvider, type Lang } from "@/lib/i18n";
 import { getTicketState } from "@/lib/store";
 import { ticketQrSvg, ticketUrl } from "@/lib/ticketUrl";
 import SplitApp from "@/components/SplitApp";
@@ -23,24 +25,40 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
+/**
+ * El idioma de la comanda sale de la cookie, leída en el servidor.
+ *
+ * Aquí sale gratis porque esta página ya se pinta a demanda, y así el HTML
+ * llega en el idioma bueno: decidirlo después de pintar dejaría un parpadeo en
+ * español a quien recibe el enlace desde fuera.
+ */
+async function idioma(): Promise<Lang> {
+  return (await cookies()).get(COOKIE)?.value === "en" ? "en" : "es";
+}
+
 export default async function TicketPage({ params }: Props) {
   const { code: raw } = await params;
   const code = raw.toUpperCase();
-  const state = await getTicketState(code);
+  const [state, lang] = await Promise.all([getTicketState(code), idioma()]);
 
   if (!state) {
+    const ingles = lang === "en";
     return (
       <main className="mx-auto flex max-w-md flex-1 flex-col justify-center px-6 py-20 text-center">
-        <p className="stamp text-ink-faint">Código {code}</p>
-        <h1 className="mt-4 text-3xl font-bold tracking-tight">Esta comanda no existe</h1>
+        <p className="stamp text-ink-faint">{ingles ? "Code" : "Código"} {code}</p>
+        <h1 className="mt-4 text-3xl font-bold tracking-tight">
+          {ingles ? "This bill doesn't exist" : "Esta comanda no existe"}
+        </h1>
         <p className="mt-3 text-ink-soft">
-          Puede que el código esté mal escrito o que la comanda ya se haya borrado.
+          {ingles
+            ? "The code may be mistyped, or the bill may already have been deleted."
+            : "Puede que el código esté mal escrito o que la comanda ya se haya borrado."}
         </p>
         <Link
           href="/"
           className="mt-8 rounded-xl bg-amber px-5 py-3 font-semibold text-paper transition-colors hover:bg-ink"
         >
-          Volver al inicio
+          {ingles ? "Back to the start" : "Volver al inicio"}
         </Link>
       </main>
     );
@@ -49,5 +67,9 @@ export default async function TicketPage({ params }: Props) {
   // El QR se pinta en el servidor y viaja con la página: así el «invita a la
   // mesa» abre al instante, sin descargar ningún generador en el móvil.
   const url = await ticketUrl(code);
-  return <SplitApp initial={state} shareUrl={url} qrSvg={await ticketQrSvg(url)} />;
+  return (
+    <I18nProvider lang={lang}>
+      <SplitApp initial={state} shareUrl={url} qrSvg={await ticketQrSvg(url)} />
+    </I18nProvider>
+  );
 }

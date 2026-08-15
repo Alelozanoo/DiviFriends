@@ -1,4 +1,5 @@
 "use client";
+import { rellena } from "./i18n";
 
 import { useCallback, useSyncExternalStore } from "react";
 
@@ -133,14 +134,14 @@ export function useMisDivis(): { divis: DiviGuardado[] | null; quitar: (code: st
  * Lo que se pregunta al mirar la lista es si esto es de hoy o de la semana
  * pasada, no la hora exacta. Pasado el día, lo relativo deja de decir nada.
  */
-export function cuando(iso: string): string {
+export function cuando(iso: string, t: any): string {
   const fecha = new Date(iso);
   if (Number.isNaN(fecha.getTime())) return "";
 
   const min = Math.floor((Date.now() - fecha.getTime()) / 60000);
-  if (min < 1) return "ahora mismo";
-  if (min < 60) return `hace ${min} min`;
-  if (min < 60 * 24) return `hace ${Math.floor(min / 60)} h`;
+  if (min < 1) return t.misDivis.ahoraMismo;
+  if (min < 60) return rellena(t.misDivis.haceMin, { n: min });
+  if (min < 60 * 24) return rellena(t.misDivis.haceH, { n: Math.floor(min / 60) });
 
   // Por días de calendario, no por horas: a las 2 de la mañana, lo de anoche
   // es «ayer» aunque hayan pasado cuatro horas.
@@ -150,7 +151,7 @@ export function cuando(iso: string): string {
       new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate()).getTime()) /
       86_400_000,
   );
-  if (dias === 1) return "ayer";
-  if (dias < 7) return `hace ${dias} días`;
+  if (dias === 1) return t.misDivis.ayer;
+  if (dias < 7) return rellena(t.misDivis.haceDias, { n: dias });
   return fecha.toLocaleDateString("es-ES", { day: "numeric", month: "short" });
 }

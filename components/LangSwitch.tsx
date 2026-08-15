@@ -1,0 +1,46 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { guardarIdioma, useLang, type Lang } from "@/lib/i18n";
+
+/**
+ * Cambiar de idioma, en dos letras.
+ *
+ * Guarda la elección en una cookie y recarga: la comanda se pinta en el
+ * servidor, así que el idioma tiene que llegar antes que el HTML o habría un
+ * parpadeo en español. En la portada, además, salta entre `/` y `/en`, que son
+ * dos páginas estáticas distintas.
+ *
+ * Sin banderas. Una bandera dice país y no idioma, y aquí sobra la discusión de
+ * cuál le toca al inglés.
+ */
+export default function LangSwitch({ enPortada = false }: { enPortada?: boolean }) {
+  const lang = useLang();
+  const router = useRouter();
+
+  function cambiar(nuevo: Lang) {
+    if (nuevo === lang) return;
+    guardarIdioma(nuevo);
+    if (enPortada) router.push(nuevo === "es" ? "/" : "/en");
+    else router.refresh();
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1.5 text-xs">
+      {(["es", "en"] as const).map((codigo) => (
+        <button
+          key={codigo}
+          type="button"
+          onClick={() => cambiar(codigo)}
+          aria-current={codigo === lang}
+          lang={codigo}
+          className={`uppercase tracking-wider transition-colors ${
+            codigo === lang ? "font-bold text-amber" : "text-ink-faint hover:text-ink"
+          }`}
+        >
+          {codigo}
+        </button>
+      ))}
+    </span>
+  );
+}

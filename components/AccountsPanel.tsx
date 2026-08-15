@@ -2,6 +2,7 @@
 
 import { money } from "@/lib/format";
 import type { ParticipantBalance, Settlement, TicketState } from "@/lib/types";
+import { useT, rellena } from "@/lib/i18n";
 import MoneyInput from "./MoneyInput";
 import { Avatar } from "./ui";
 
@@ -33,6 +34,7 @@ export default function AccountsPanel({
   onSetTotal,
   onOpenLog,
 }: Props) {
+  const t = useT();
   const { currency } = state.ticket;
   const people = settlement.byParticipant;
   
@@ -45,7 +47,7 @@ export default function AccountsPanel({
     const legacyPayer = state.participants.find((p) => p.isPayer)?.id ?? null;
     allTickets.push({
       id: null,
-      label: state.ticket.place || "Ticket Original",
+      label: state.ticket.place || t.comanda.ticketOriginal,
       totalCents: state.ticket.totalCents,
       payerId: state.ticket.payerId ?? legacyPayer,
     });
@@ -81,8 +83,8 @@ export default function AccountsPanel({
       {settlement.unassignedCents !== 0 && (
         <p className="rounded-xl border border-clay/30 bg-clay/10 px-4 py-3 text-sm text-clay">
           {settlement.unassignedCents > 0
-            ? `Ojo: quedan ${money(settlement.unassignedCents, currency)} sin dueño. Vuelve a la comanda y repártelos, o las cuentas de abajo se quedan cortas.`
-            : `Ojo: hay ${money(-settlement.unassignedCents, currency)} repartidos de más. Revisa el total o las cantidades.`}
+            ? rellena(t.cuentas.ojoSinDueno, { dinero: money(settlement.unassignedCents, currency) })
+            : rellena(t.cuentas.ojoDeMas, { dinero: money(-settlement.unassignedCents, currency) })}
         </p>
       )}
 
@@ -90,9 +92,11 @@ export default function AccountsPanel({
       <section className="rounded-2xl border border-line bg-paper-2 p-4">
         {allTickets.map((ticket, index) => (
           <div key={ticket.id ?? "legacy"} className={index > 0 ? "mt-6 border-t border-line/60 pt-6" : ""}>
-            <h3 className="font-bold tracking-tight">¿Quién ha pagado {allTickets.length > 1 ? <span className="text-amber">{ticket.label}</span> : "la cuenta"}?</h3>
+            <h3 className="font-bold tracking-tight">
+              {rellena(t.cuentas.quienHaPagado, { que: allTickets.length > 1 ? ticket.label : t.cuentas.laCuenta })}
+            </h3>
             {people.length === 0 ? (
-              <p className="mt-2 text-sm text-ink-faint">Todavía no hay nadie en la mesa.</p>
+              <p className="mt-2 text-sm text-ink-faint">{t.cuentas.nadieEnLaMesa}</p>
             ) : (
               <div className="mt-3 flex flex-wrap gap-2">
                 {people.map((person) => {
@@ -154,20 +158,21 @@ export default function AccountsPanel({
 
       {/* ------------------------------------------------------------- total */}
       <div className="flex items-center justify-between gap-3 px-1">
-        <span className="stamp text-ink-faint">Total del ticket</span>
+        <span className="stamp text-ink-faint">{t.cuentas.totalDelTicket}</span>
         <MoneyInput
           cents={state.ticket.totalCents}
           onCommit={onSetTotal}
-          ariaLabel="Total del ticket"
+          ariaLabel={t.cuentas.totalDelTicket}
           className="w-28"
         />
       </div>
 
       {settlement.extrasCents !== 0 && (
         <p className="px-1 text-xs leading-relaxed text-ink-faint">
-          {money(Math.abs(settlement.extrasCents), currency)}{" "}
-          {settlement.extrasCents > 0 ? "de servicio o impuestos" : "de descuento"} entre la suma de
-          los platos y el total. Se reparte entre todos en proporción a lo que ha tomado cada uno.
+          {rellena(t.cuentas.extrasNota, {
+            dinero: money(Math.abs(settlement.extrasCents), currency),
+            que: settlement.extrasCents > 0 ? t.cuentas.extras : t.cuentas.descuento
+          })}
         </p>
       )}
 
@@ -183,11 +188,11 @@ export default function AccountsPanel({
         className="flex w-full items-center justify-between gap-3 rounded-2xl border border-line bg-paper-2 px-4 py-3 text-left transition-colors active:bg-paper-3"
       >
         <span>
-          <span className="text-sm font-semibold">Historial de la mesa</span>
+          <span className="text-sm font-semibold">{t.cuentas.historial}</span>
           <span className="mt-0.5 block text-xs text-ink-faint">
             {changeCount === 0
-              ? "Nadie ha quitado ni añadido nada"
-              : `${changeCount} ${changeCount === 1 ? "cambio" : "cambios"} en la cuenta`}
+              ? t.cuentas.sinCambios
+              : changeCount === 1 ? t.cuentas.unCambio : rellena(t.cuentas.nCambios, { n: changeCount })}
           </span>
         </span>
         <span aria-hidden className="shrink-0 text-ink-faint">
@@ -198,7 +203,7 @@ export default function AccountsPanel({
       {/* Sólo si hay alguien que deba dinero y yo no debo, sugerimos cobrar */}
       {pending.length > 0 && (people.find(p => p.participantId === meId)?.owesCents ?? 0) <= 0 && (
         <p className="px-1 text-xs text-ink-faint">
-          Cuando alguien te dé su parte, toca «Ha pagado» en su fila.
+          {t.cuentas.avisoCobrar}
         </p>
       )}
     </div>
@@ -221,6 +226,7 @@ function Headline({
   isMultiPayer: boolean;
   unassignedCents: number;
 }) {
+  const t = useT();
   const settledCount = people.filter((p) => p.settled).length;
   const anyPayer = people.some(p => p.paidCents > 0);
   
@@ -230,9 +236,9 @@ function Headline({
   if (!anyPayer) {
     return (
       <Card
-        label="Total de la mesa"
+        label={t.cuentas.totalMesa}
         value={money(totalCents, currency)}
-        hint="Marca abajo quién puso la tarjeta y aparecerá lo que le debe cada uno."
+        hint={t.cuentas.marcaPagador}
       />
     );
   }
@@ -241,9 +247,9 @@ function Headline({
     return (
       <Card
         tone="good"
-        label="Cuentas"
-        value="Todo cuadrado"
-        hint={`Todos han saldado su deuda.`}
+        label={t.comanda.cuentas}
+        value={t.cuentas.todoCuadrado}
+        hint={t.cuentas.todosSaldados}
       />
     );
   }
@@ -252,12 +258,12 @@ function Headline({
 
   return (
     <Card
-      label={isMultiPayer || !firstPayer ? `Falta por saldar al bote` : `Falta por devolverle a ${firstPayer.name}`}
+      label={isMultiPayer || !firstPayer ? t.cuentas.faltaSaldar : rellena(t.cuentas.faltaDevolver, { name: firstPayer.name })}
       value={money(owedToPayers, currency)}
       hint={
         unassignedCents > 0 
-          ? `Hay ${money(unassignedCents, currency)} sin asignar en la comanda`
-          : `${settledCount} de ${people.length} ya han saldado su balance`
+          ? rellena(t.cuentas.sinAsignar, { dinero: money(unassignedCents, currency) })
+          : rellena(t.cuentas.yaHanSaldado, { n: settledCount, total: people.length })
       }
     />
   );
@@ -314,6 +320,7 @@ function PersonRow({
   first: boolean;
   onToggle: () => void;
 }) {
+  const t = useT();
   // owesCents > 0: debe poner dinero
   // owesCents < 0: se le debe dinero
   const mustPay = person.owesCents > 0;
@@ -337,7 +344,7 @@ function PersonRow({
           <div className="mt-0.5 text-xs font-normal text-ink-soft leading-tight">
             {transactions
               .filter(t => t.fromId === person.participantId)
-              .map(t => `${money(t.cents, currency)} a ${allPeople.find(p => p.participantId === t.toId)?.name}`)
+              .map(txn => `${money(txn.cents, currency)} ${t.pasos.a} ${allPeople.find(p => p.participantId === txn.toId)?.name}`)
               .join(" • ")}
           </div>
         )}
@@ -346,7 +353,7 @@ function PersonRow({
           <div className="mt-0.5 text-xs font-normal text-ink-soft leading-tight">
             {transactions
               .filter(t => t.toId === person.participantId)
-              .map(t => `Recibe ${money(t.cents, currency)} de ${allPeople.find(p => p.participantId === t.fromId)?.name}`)
+              .map(txn => `${t.cuentas.recibe} ${money(txn.cents, currency)} ${t.cuentas.de} ${allPeople.find(p => p.participantId === txn.fromId)?.name}`)
               .join(" • ")}
           </div>
         )}
@@ -357,9 +364,9 @@ function PersonRow({
       </span>
 
       {isOwed ? (
-        <span className="stamp shrink-0 text-mint">Se le debe</span>
+        <span className="stamp shrink-0 text-mint">{t.cuentas.seLeDebe}</span>
       ) : person.owesCents === 0 && person.paidCents === 0 ? (
-         <span className="stamp shrink-0 text-ink-faint">No debe nada</span>
+         <span className="stamp shrink-0 text-ink-faint">{t.cuentas.noDebeNada}</span>
       ) : (
         <button
           type="button"
@@ -374,10 +381,10 @@ function PersonRow({
           }`}
         >
           {person.settled 
-            ? "Saldado ✓" 
+            ? t.cuentas.pagado
             : isMe 
-              ? (payeeName ? `Pagar a ${payeeName}` : "He pagado") 
-              : (payeeName ? `Pagado a ${payeeName}` : "Ha pagado")}
+              ? (payeeName ? `${t.cuentas.hePagado} ${t.pasos.a} ${payeeName}` : t.cuentas.hePagado) 
+              : (payeeName ? `${t.cuentas.haPagado} ${t.pasos.a} ${payeeName}` : t.cuentas.haPagado)}
         </button>
       )}
     </li>

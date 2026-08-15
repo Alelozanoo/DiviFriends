@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { EV, track } from "@/lib/track";
+import { useT } from "@/lib/i18n";
 import JoinByCode from "./JoinByCode";
 import { Sheet } from "./ui";
 
@@ -45,6 +46,7 @@ export default function TicketUploader({
   onSuccess?: () => void;
 } = {}) {
   const router = useRouter();
+  const t = useT();
   /*
     Una sola entrada, sin `capture`.
 
@@ -84,14 +86,14 @@ export default function TicketUploader({
   }, [phase]);
 
   const getDynamicCopy = () => {
-    if (phase === "reading") return "Preparando la foto…";
+    if (phase === "reading") return t.subir.preparando;
     if (phase === "parsing") {
-      if (progress < 35) return "Analizando foto…";
-      if (progress < 65) return "Leyendo comandas…";
-      if (progress < 85) return "Extrayendo precios…";
-      return "Finalizando…";
+      if (progress < 35) return t.subir.analizando;
+      if (progress < 65) return t.subir.leyendo;
+      if (progress < 85) return t.subir.extrayendo;
+      return t.subir.finalizando;
     }
-    return "Sube la foto del ticket";
+    return t.subir.titulo;
   };
 
   const upload = useCallback(
@@ -172,7 +174,7 @@ export default function TicketUploader({
           )}
 
           <span className="text-xl font-semibold tracking-tight sm:text-2xl">
-            {busy ? getDynamicCopy() : "Sube la foto del ticket"}
+            {busy ? getDynamicCopy() : t.subir.titulo}
           </span>
 
           {/* Sólo mientras trabaja: al empezar, la frase de apoyo repetía lo que
@@ -180,20 +182,35 @@ export default function TicketUploader({
           {busy && (
             <span className="max-w-sm text-sm text-ink-soft">
               {progress < 85 
-                ? "Tardo unos segundos en reconocer cada línea."
-                : "La IA está cuadrando los totales."}
+                ? t.subir.tardo
+                : t.subir.cuadrando}
             </span>
           )}
 
-          <div className="mt-1 w-full max-w-xs">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => fileRef.current?.click()}
-              className="w-full rounded-xl bg-amber px-4 py-3.5 font-semibold text-paper transition-colors hover:bg-ink disabled:cursor-wait disabled:opacity-60"
-            >
-              Subir foto
-            </button>
+          <div className="mt-1 w-full max-w-xs min-h-[52px]">
+            {busy ? (
+              <div className="w-full text-left pt-2">
+                <div className="mb-2 flex justify-between text-[10px] font-bold tracking-widest text-amber uppercase">
+                  <span>{t.subir.progreso}</span>
+                  <span>{progress}%</span>
+                </div>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-line">
+                  <div 
+                    className="h-full rounded-full bg-amber shadow-[0_0_10px_rgba(232,176,75,0.8)] transition-all duration-300 ease-out" 
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => fileRef.current?.click()}
+                className="w-full rounded-xl bg-amber px-4 py-3.5 font-semibold text-paper transition-colors hover:bg-amber-deep disabled:cursor-wait disabled:opacity-60"
+              >
+                {t.subir.boton}
+              </button>
+            )}
           </div>
         </div>
 
@@ -209,20 +226,6 @@ export default function TicketUploader({
           }}
         />
 
-        {busy && (
-          <div className="absolute inset-x-6 bottom-5">
-            <div className="mb-2 flex justify-between text-[10px] font-bold tracking-widest text-amber uppercase">
-              <span>Progreso</span>
-              <span>{progress}%</span>
-            </div>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-line">
-              <div 
-                className="h-full rounded-full bg-amber shadow-[0_0_10px_rgba(232,176,75,0.8)] transition-all duration-300 ease-out" 
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </div>
-        )}
       </div>
 
       {error && (
@@ -258,15 +261,13 @@ export default function TicketUploader({
                 390 px y el botón perdía la forma de puerta. Y es un acto, no
                 una pregunta, igual que «Subir foto». */}
             <span aria-hidden className="text-amber">#</span>
-            Entrar con un código
+            {t.subir.conCodigo}
           </button>
 
           {pidiendoCodigo && (
             <Sheet onClose={() => setPidiendoCodigo(false)}>
-              <h2 className="text-xl font-bold tracking-tight">El código de la mesa</h2>
-              <p className="mt-1 text-sm text-ink-soft">
-                Seis caracteres. Están en el ticket impreso o te los pasa quien creó el Divi.
-              </p>
+              <h2 className="text-xl font-bold tracking-tight">{t.subir.codigoTitulo}</h2>
+              <p className="mt-1 text-sm text-ink-soft">{t.subir.codigoAyuda}</p>
               <div className="mt-4">
                 <JoinByCode />
               </div>

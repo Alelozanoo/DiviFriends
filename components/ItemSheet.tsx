@@ -4,6 +4,7 @@ import { useState } from "react";
 import { money } from "@/lib/format";
 import { LIMITS } from "@/lib/ticketDoc";
 import type { Item, ItemBreakdown, Participant } from "@/lib/types";
+import { useT, rellena } from "@/lib/i18n";
 import { Avatar, Sheet } from "./ui";
 
 /**
@@ -60,6 +61,7 @@ export default function ItemSheet({
   onAddPerson: (name: string) => Promise<string | null>;
   onClose: () => void;
 }) {
+  const t = useT();
   /*
     Varias unidades enteras: «Carne ×2», «Caña ×9». Un peso de carnicería
     —1,025— no cuenta, porque ahí no hay unidades que separar.
@@ -158,7 +160,7 @@ export default function ItemSheet({
           <p className="mt-0.5 text-sm text-ink-soft">
             {money(item.totalCents, currency)}
             {/* «1,025 unidades» no es una frase: eso es un peso, no unidades. */}
-            {Number.isInteger(item.qty) && item.qty > 1 && ` · ${item.qty} unidades`}
+            {Number.isInteger(item.qty) && item.qty > 1 && ` · ${item.qty} ${t.repartir.unidades}`}
           </p>
         </div>
         <button
@@ -174,13 +176,12 @@ export default function ItemSheet({
       {paso === "unidades" ? (
         /* ------------------------------------------ paso 1: cuántas de ellas */
         <>
-          <p className="stamp mt-5 text-amber">Paso 1 de {pasos}</p>
+          <p className="stamp mt-5 text-amber">{rellena(t.repartir.paso, { n: 1, total: pasos })}</p>
           <h3 className="mt-1 text-lg font-bold tracking-tight">
-            ¿Cuántas vas a repartir?
+            {t.repartir.cuantasUnidades}
           </h3>
           <p className="mt-1 text-sm leading-relaxed text-ink-soft">
-            Hay {item.qty} en el ticket. Las que dejes fuera se quedan en su propia línea, para
-            repartirlas aparte o que se las quede alguien enteras.
+            {rellena(t.repartir.cuantasAyuda, { n: item.qty })}
           </p>
 
           <div className="mt-3 grid grid-cols-3 gap-2">
@@ -193,7 +194,7 @@ export default function ItemSheet({
                 className="flex flex-col items-center gap-0.5 rounded-2xl border-2 border-line py-3 transition-colors hover:border-mint active:bg-paper-3 disabled:opacity-40"
               >
                 <span className="tnum text-xl font-bold">
-                  {n === item.qty ? `las ${n}` : n}
+                  {n === item.qty ? rellena(t.repartir.lasN, { n }) : n}
                 </span>
                 <span className="tnum text-[0.7rem] text-ink-soft">
                   {money(Math.round((item.totalCents * n) / item.qty), currency)}
@@ -213,15 +214,15 @@ export default function ItemSheet({
               onClick={() => setPaso("unidades")}
               className="stamp mt-5 inline-flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1 text-ink-faint transition-colors hover:border-amber hover:text-amber"
             >
-              ← {item.qty} unidades · cambiar
+              ← {rellena(t.repartir.unidadesCambiar, { n: item.qty })}
             </button>
           )}
           <p className={`stamp text-amber ${multiUnidad ? "mt-3" : "mt-5"}`}>
-            Paso {pasos - 1} de {pasos}
+            {rellena(t.repartir.paso, { n: pasos - 1, total: pasos })}
           </p>
-          <h3 className="mt-1 text-lg font-bold tracking-tight">¿Entre cuántos se reparte?</h3>
+          <h3 className="mt-1 text-lg font-bold tracking-tight">{t.repartir.entreCuantos}</h3>
           <p className="mt-1 text-sm text-ink-soft">
-            Debajo de cada número, lo que costaría cada parte.
+            {t.repartir.entreCuantosAyuda}
           </p>
 
           <div className="mt-3 grid grid-cols-3 gap-2">
@@ -261,8 +262,8 @@ export default function ItemSheet({
               value={custom}
               onChange={(event) => setCustom(event.target.value.replace(/\D/g, "").slice(0, 2))}
               inputMode="numeric"
-              placeholder="otro número"
-              aria-label="Entre cuántas personas se reparte"
+              placeholder={t.repartir.otroNumero}
+              aria-label={t.repartir.entreCuantos}
               className="tnum min-w-0 flex-1 rounded-xl border border-line bg-paper px-4 py-2.5 text-center focus:border-mint focus:outline-none"
             />
             <button
@@ -270,7 +271,7 @@ export default function ItemSheet({
               disabled={!customValid}
               className="shrink-0 rounded-xl bg-mint px-4 text-sm font-bold text-paper disabled:opacity-30"
             >
-              {customValid ? money(Math.round(item.totalCents / typed), currency) : "Repartir"}
+              {customValid ? money(Math.round(item.totalCents / typed), currency) : t.repartir.repartirBoton}
             </button>
           </form>
 
@@ -284,7 +285,7 @@ export default function ItemSheet({
               onClick={onUndoSplit}
               className="mt-3 w-full rounded-xl border border-line py-2.5 text-sm font-semibold text-ink-soft transition-colors hover:border-amber hover:text-amber"
             >
-              {natural > 1 ? `Volver a ${natural} unidades sueltas` : "Dejar de compartirlo"}
+              {natural > 1 ? rellena(t.repartir.volverAUnidades, { n: natural }) : t.repartir.dejarDeCompartir}
             </button>
           )}
         </>
@@ -298,13 +299,12 @@ export default function ItemSheet({
             onClick={() => setPaso("cuantos")}
             className="stamp mt-5 inline-flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1 text-ink-faint transition-colors hover:border-amber hover:text-amber"
           >
-            ← Entre {item.splitInto} · cambiar
+            ← {rellena(t.repartir.entreCambiar, { n: item.splitInto })}
           </button>
 
-          <h3 className="mt-3 text-lg font-bold tracking-tight">¿Con quién lo compartes?</h3>
+          <h3 className="mt-3 text-lg font-bold tracking-tight">{t.repartir.conQuien}</h3>
           <p className="mt-1 text-sm leading-relaxed text-ink-soft">
-            Toca a los de la mesa. A quien falte, apúntalo abajo: se encontrará su nombre esperándole
-            cuando entre por el enlace.
+            {t.repartir.conQuienAyuda}
           </p>
 
           {participants.length > 0 && (
@@ -328,7 +328,7 @@ export default function ItemSheet({
                       <span className="max-w-28 truncate text-sm font-semibold">
                         {person.name}
                         {person.id === meId && (
-                          <span className="ml-1 text-xs font-normal text-ink-faint">(tú)</span>
+                          <span className="ml-1 text-xs font-normal text-ink-faint">{t.mesa.tu}</span>
                         )}
                       </span>
                       <span
@@ -344,7 +344,7 @@ export default function ItemSheet({
                     {share && porUnidades && (
                       <span className="flex items-center pr-1">
                         <Step
-                          label={`Quitarle una unidad a ${person.name}`}
+                          label={rellena(t.repartir.quitarleUnidad, { name: person.name })}
                           onClick={() => onSetShares(person.id, share.shares - 1)}
                         >
                           −
@@ -353,7 +353,7 @@ export default function ItemSheet({
                           {share.shares}
                         </span>
                         <Step
-                          label={`Darle otra unidad a ${person.name}`}
+                          label={rellena(t.repartir.darleUnidad, { name: person.name })}
                           disabled={breakdown.freeShares === 0}
                           onClick={() => onSetShares(person.id, share.shares + 1)}
                         >
@@ -392,9 +392,9 @@ export default function ItemSheet({
             <input
               value={nuevo}
               onChange={(event) => setNuevo(event.target.value)}
-              placeholder="Añade a quien falte"
+              placeholder={t.repartir.anadeAQuienFalte}
               maxLength={40}
-              aria-label="Nombre de quien también lo ha compartido"
+              aria-label={t.repartir.anadeAQuienFalte}
               className="min-w-0 flex-1 rounded-xl border border-line bg-paper px-3.5 py-2.5 text-sm focus:border-amber focus:outline-none"
             />
             <button
@@ -402,38 +402,28 @@ export default function ItemSheet({
               disabled={busy || !nuevo.trim()}
               className="shrink-0 rounded-xl bg-amber px-4 text-sm font-bold text-paper disabled:opacity-30"
             >
-              Añadir
+              {t.repartir.anadir}
             </button>
           </form>
 
           {/* La cuenta de lo que queda: es lo único que dice si ya has terminado. */}
           <p className="mt-3 rounded-xl bg-paper px-3.5 py-2.5 text-sm leading-relaxed text-ink-soft">
             {breakdown.freeShares > 0 ? (
-              <>
-                Quedan{" "}
-                <b className="tnum font-bold text-ink">
-                  {breakdown.freeShares} de {item.splitInto}
-                </b>{" "}
-                sin dueño:{" "}
-                <span className="tnum">{money(breakdown.unassignedCents, currency)}</span> que
-                todavía no paga nadie.
-              </>
+              <span dangerouslySetInnerHTML={{ __html: rellena(t.repartir.quedanSinDueno, {
+                libres: `<b class="tnum font-bold text-ink">${breakdown.freeShares}`,
+                total: `${item.splitInto}</b>`,
+                dinero: `<span class="tnum">${money(breakdown.unassignedCents, currency)}</span>`
+              }) }} />
             ) : porUnidades ? (
-              <>
-                Repartidas las {item.qty} unidades ·{" "}
-                <span className="tnum font-bold text-mint">
-                  {money(breakdown.perShareCents, currency)}
-                </span>{" "}
-                cada una.
-              </>
+              <span dangerouslySetInnerHTML={{ __html: rellena(t.repartir.repartidasUnidades, {
+                n: item.qty,
+                dinero: `<span class="tnum font-bold text-mint">${money(breakdown.perShareCents, currency)}</span>`
+              }) }} />
             ) : (
-              <>
-                Repartido entre {item.splitInto} ·{" "}
-                <span className="tnum font-bold text-mint">
-                  {money(breakdown.perShareCents, currency)}
-                </span>{" "}
-                cada uno.
-              </>
+              <span dangerouslySetInnerHTML={{ __html: rellena(t.repartir.repartidoEntre, {
+                n: item.splitInto,
+                dinero: `<span class="tnum font-bold text-mint">${money(breakdown.perShareCents, currency)}</span>`
+              }) }} />
             )}
           </p>
         </>
@@ -461,7 +451,7 @@ export default function ItemSheet({
           onClick={onClose}
           className="mt-3 w-full rounded-xl bg-amber py-3 text-sm font-bold text-paper transition-transform active:scale-[0.98]"
         >
-          Listo
+          {t.repartir.listo}
         </button>
       ) : paso === "cuantos" && item.splitInto > 1 ? (
         <button
@@ -469,7 +459,7 @@ export default function ItemSheet({
           onClick={() => setPaso("quienes")}
           className="mt-3 w-full rounded-xl bg-amber py-3 text-sm font-bold text-paper transition-transform active:scale-[0.98]"
         >
-          Seguir · ¿con quién?
+          {t.repartir.seguirConQuien}
         </button>
       ) : (
         <button
@@ -477,7 +467,7 @@ export default function ItemSheet({
           onClick={onClose}
           className="mt-3 w-full rounded-xl border border-line py-3 text-sm font-semibold text-ink-soft"
         >
-          Cerrar
+          {t.repartir.cerrar}
         </button>
       )}
     </Sheet>

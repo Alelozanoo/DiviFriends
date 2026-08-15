@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { money } from "@/lib/format";
 import { cuando, useMisDivis, type DiviGuardado } from "@/lib/misDivis";
+import { useT, rellena } from "@/lib/i18n";
 import { Avatar } from "./ui";
 
 /**
@@ -18,6 +19,7 @@ import { Avatar } from "./ui";
  * portada exactamente igual que antes.
  */
 export default function MisDivis() {
+  const t = useT();
   const { divis, quitar } = useMisDivis();
   const [todos, setTodos] = useState(false);
 
@@ -32,13 +34,13 @@ export default function MisDivis() {
   return (
     <section className="mt-6">
       <div className="mb-2 flex items-baseline justify-between gap-3 px-1">
-        <p className="stamp text-ink-faint">Tus divis</p>
-        <p className="stamp text-ink-faint/70">en este móvil</p>
+        <p className="stamp text-ink-faint">{t.misDivis.titulo}</p>
+        <p className="stamp text-ink-faint/70">{t.misDivis.donde}</p>
       </div>
 
       <ul className="space-y-1.5">
         {lista.map((divi) => (
-          <Fila key={divi.code} divi={divi} onQuitar={() => quitar(divi.code)} />
+          <Fila key={divi.code} divi={divi} onQuitar={() => quitar(divi.code)} t={t} />
         ))}
       </ul>
 
@@ -48,14 +50,14 @@ export default function MisDivis() {
           onClick={() => setTodos(true)}
           className="stamp mt-2 w-full rounded-xl border border-line py-2 text-ink-faint transition-colors hover:border-amber hover:text-amber"
         >
-          Ver los {divis.length}
+          {t.misDivis.verTodos} {divis.length}
         </button>
       )}
     </section>
   );
 }
 
-function Fila({ divi, onQuitar }: { divi: DiviGuardado; onQuitar: () => void }) {
+function Fila({ divi, onQuitar, t }: { divi: DiviGuardado; onQuitar: () => void; t: ReturnType<typeof useT> }) {
   const cobra = !divi.saldado && divi.cents < 0;
   const [confirmando, setConfirmando] = useState(false);
 
@@ -70,10 +72,9 @@ function Fila({ divi, onQuitar }: { divi: DiviGuardado; onQuitar: () => void }) 
   if (confirmando) {
     return (
       <li className="rounded-2xl border border-clay/40 bg-clay/[0.07] px-3.5 py-3">
-        <p className="text-sm font-semibold">¿Cerrar {divi.place || divi.code}?</p>
+        <p className="text-sm font-semibold">{t.misDivis.cerrarTitulo} {divi.place || divi.code}?</p>
         <p className="mt-1 text-xs leading-relaxed text-ink-soft">
-          Se quita de esta lista. La comanda sigue viva y puedes volver a ella con el enlace o el
-          código.
+          {t.misDivis.cerrarAviso}
         </p>
         <div className="mt-2.5 flex gap-2">
           <button
@@ -81,14 +82,14 @@ function Fila({ divi, onQuitar }: { divi: DiviGuardado; onQuitar: () => void }) 
             onClick={onQuitar}
             className="flex-1 rounded-xl bg-clay py-2 text-xs font-bold text-paper transition-transform active:scale-[0.98]"
           >
-            Sí, cerrar
+            {t.misDivis.cerrarSi}
           </button>
           <button
             type="button"
             onClick={() => setConfirmando(false)}
             className="flex-1 rounded-xl border border-line py-2 text-xs font-semibold text-ink-soft"
           >
-            Dejarlo
+            {t.misDivis.cerrarNo}
           </button>
         </div>
       </li>
@@ -109,7 +110,7 @@ function Fila({ divi, onQuitar }: { divi: DiviGuardado; onQuitar: () => void }) 
           </span>
 
           <span className="mt-1 flex items-center gap-2">
-            <span className="stamp shrink-0 text-ink-faint">{cuando(divi.at)}</span>
+            <span className="stamp shrink-0 text-ink-faint">{cuando(divi.at, t)}</span>
             {divi.gente.length > 0 && (
               <span className="flex items-center -space-x-1.5">
                 {divi.gente.slice(0, 4).map((p, i) => (
@@ -129,7 +130,7 @@ function Fila({ divi, onQuitar }: { divi: DiviGuardado; onQuitar: () => void }) 
             estás sin tener que leer la línea de abajo. */}
         <span className="shrink-0 text-right">
           {divi.saldado || divi.cents === 0 ? (
-            <span className="stamp block text-mint">cuadrado ✓</span>
+            <span className="stamp block text-mint">{t.misDivis.cuadrado}</span>
           ) : (
             <>
               <span
@@ -143,7 +144,7 @@ function Fila({ divi, onQuitar }: { divi: DiviGuardado; onQuitar: () => void }) 
                   quién puso la tarjeta no le debes nada a nadie todavía, eso
                   es sólo tu parte de la cuenta. */}
               <span className="stamp block text-ink-faint">
-                {cobra ? "te deben" : divi.aQuien ? `a ${divi.aQuien}` : "lo tuyo"}
+                {cobra ? t.misDivis.teDeben : divi.aQuien ? `${t.misDivis.a} ${divi.aQuien}` : t.misDivis.loTuyo}
               </span>
             </>
           )}

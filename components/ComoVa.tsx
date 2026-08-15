@@ -1,3 +1,8 @@
+"use client";
+
+import { useT } from "@/lib/i18n";
+import type { Dict } from "@/lib/i18n/es";
+
 /**
  * Los cuatro pasos, dibujados en vez de fotografiados.
  *
@@ -15,6 +20,7 @@
 /* -------------------------------------------------------------------------- */
 
 export function PasoFoto() {
+  const t = useT();
   return (
     <Marco>
       {/* el papel */}
@@ -33,7 +39,7 @@ export function PasoFoto() {
           ))}
           <div className="rule opacity-40" />
           <div className="flex items-baseline justify-between">
-            <span className="stamp text-[0.45rem] text-[#776a5c]">Total</span>
+            <span className="stamp text-[0.45rem] text-[#776a5c]">{t.pasos.total}</span>
             <span className="tnum text-[0.6rem] font-bold text-[#14100d]">54,70</span>
           </div>
         </div>
@@ -68,6 +74,7 @@ export function PasoFoto() {
 /* -------------------------------------------------------------------------- */
 
 export function PasoTickets() {
+  const t = useT();
   const tickets = [
     { sitio: "Casa Paco", total: "54,70", quien: "Álex", color: "#5ec5c0" },
     { sitio: "Bodega Luis", total: "18,20", quien: "Marta", color: "#e0705f" },
@@ -91,32 +98,32 @@ export function PasoTickets() {
       </div>
 
       <div className="w-full max-w-[15rem] space-y-1.5">
-        {tickets.map((t) => (
+        {tickets.map((recibo) => (
           <div
-            key={t.sitio}
+            key={recibo.sitio}
             className="flex items-center gap-2 rounded-xl border border-line bg-paper-2 px-2.5 py-2"
           >
             <span
-              style={{ background: t.color }}
+              style={{ background: recibo.color }}
               className="grid h-5 w-5 shrink-0 place-items-center rounded-full text-[0.5rem] font-bold text-paper"
             >
-              {t.quien.slice(0, 2).toUpperCase()}
+              {recibo.quien.slice(0, 2).toUpperCase()}
             </span>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[0.7rem] font-semibold leading-tight">
-                {t.sitio}
+                {recibo.sitio}
               </span>
               {/* Que cada ticket lo pague otro es justo lo que hay que contar:
                   es la mitad del porqué de la pantalla siguiente. */}
-              <span className="stamp block text-[0.5rem] text-ink-faint">pagó {t.quien}</span>
+              <span className="stamp block text-[0.5rem] text-ink-faint">{t.pasos.pago} {recibo.quien}</span>
             </span>
-            <span className="tnum shrink-0 whitespace-nowrap text-xs font-bold">{t.total} €</span>
+            <span className="tnum shrink-0 whitespace-nowrap text-xs font-bold">{recibo.total} €</span>
           </div>
         ))}
       </div>
 
       <div className="flex w-full max-w-[15rem] items-baseline justify-between border-t border-line pt-2.5">
-        <span className="stamp text-ink-faint">Total de la mesa</span>
+        <span className="stamp text-ink-faint">{t.pasos.totalMesa}</span>
         <span className="tnum whitespace-nowrap text-lg font-bold">72,90 €</span>
       </div>
     </Marco>
@@ -128,6 +135,7 @@ export function PasoTickets() {
 /* -------------------------------------------------------------------------- */
 
 export function PasoMarcar() {
+  const t = useT();
   return (
     <Marco>
       <div className="grid w-full max-w-[15rem] grid-cols-2 gap-2.5">
@@ -136,12 +144,12 @@ export function PasoMarcar() {
             lo que ve la mesa al tocar, sin nada alrededor que distraiga. */}
         <Linea nombre="Pulpo" precio="18,90" mia />
         <Linea nombre="Croquetas" precio="4,90" />
-        <Linea nombre="Caña" precio="2,50" mia entre="entre 3" />
+        <Linea nombre="Caña" precio="2,50" mia entre={`${t.pasos.entre} 3`} />
       </div>
 
       {/* la barra de abajo, que es donde se mira */}
       <div className="mt-4 flex w-full max-w-[15rem] items-center justify-between rounded-xl border border-line bg-paper-2 px-3 py-2">
-        <span className="stamp text-ink-faint">Lo tuyo</span>
+        <span className="stamp text-ink-faint">{t.pasos.loTuyo}</span>
         <span className="tnum text-lg font-bold">21,40 €</span>
       </div>
     </Marco>
@@ -159,6 +167,7 @@ function Linea({
   mia?: boolean;
   entre?: string;
 }) {
+  const t = useT();
   return (
     <div
       className={`rounded-xl border-2 p-2 ${
@@ -171,10 +180,10 @@ function Linea({
       </p>
       {mia ? (
         <span className="mt-1 inline-grid h-4 w-4 place-items-center rounded-full bg-mint text-[0.45rem] font-bold leading-none text-paper">
-          TÚ
+          {t.pasos.tu}
         </span>
       ) : (
-        <span className="stamp mt-1 block text-[0.5rem] text-mint">{entre ?? "libre"}</span>
+        <span className="stamp mt-1 block text-[0.5rem] text-mint">{entre ?? t.pasos.libre}</span>
       )}
     </div>
   );
@@ -194,6 +203,7 @@ function Linea({
  * la app que cualquier eslogan.
  */
 export function PasoCuentas() {
+  const t = useT();
   const gente: {
     nombre: string;
     inicial: string;
@@ -209,14 +219,14 @@ export function PasoCuentas() {
       importe: "34,90",
       color: "#e0705f",
       // Dos pagos porque pagaron dos: es justo lo que la app resuelve sola.
-      notas: ["24,70 € a Álex", "10,20 € a Marta"],
+      notas: [`24,70 € ${t.pasos.a} Álex`, `10,20 € ${t.pasos.a} Marta`],
     },
     {
       nombre: "Álex",
       inicial: "ÁL",
       importe: "24,70",
       color: "#5ec5c0",
-      notas: ["Recibe de Leo"],
+      notas: [`${t.pasos.recibeDe} Leo`],
       cobra: true,
       yo: true,
     },
@@ -225,7 +235,7 @@ export function PasoCuentas() {
       inicial: "MA",
       importe: "10,20",
       color: "#8b8bf0",
-      notas: ["Recibe de Leo"],
+      notas: [`${t.pasos.recibeDe} Leo`],
       cobra: true,
     },
   ];
@@ -236,7 +246,7 @@ export function PasoCuentas() {
         <div className="rounded-xl border border-line bg-paper-2 px-3 py-2.5">
           {/* Corto a propósito: en una columna estrecha, la frase entera de la
               app se parte en dos líneas y estropea la cifra de debajo. */}
-          <p className="stamp text-ink-faint">Falta por saldar</p>
+          <p className="stamp text-ink-faint">{t.pasos.faltaPorSaldar}</p>
           <p className="tnum mt-1 text-2xl font-bold leading-none">34,90 €</p>
         </div>
 
@@ -327,29 +337,9 @@ function Flecha() {
  * paso sólo necesita una de esas piezas. Dibujadas se recortan a lo justo, se
  * ven nítidas en cualquier pantalla y no cuestan una sola petición.
  */
-export const PASOS = [
-  {
-    n: "01",
-    title: "Le haces una foto",
-    foot: "El ticket se convierte en la lista, plato a plato.",
-    Pieza: PasoFoto,
-  },
-  {
-    n: "02",
-    title: "¿Otro sitio? Otro ticket",
-    foot: "La carne de una tienda y las bebidas de otra, en la misma cuenta.",
-    Pieza: PasoTickets,
-  },
-  {
-    n: "03",
-    title: "Tocas lo que has tomado",
-    foot: "Lo compartido se parte solo entre quienes lo pidieron.",
-    Pieza: PasoMarcar,
-  },
-  {
-    n: "04",
-    title: "Sale quién le paga a quién",
-    foot: "Aunque haya puesto la tarjeta uno distinto en cada sitio.",
-    Pieza: PasoCuentas,
-  },
+export const PASOS = (t: Dict) => [
+  { n: "01", title: t.pasos.uno.title, foot: t.pasos.uno.foot, Pieza: PasoFoto },
+  { n: "02", title: t.pasos.dos.title, foot: t.pasos.dos.foot, Pieza: PasoTickets },
+  { n: "03", title: t.pasos.tres.title, foot: t.pasos.tres.foot, Pieza: PasoMarcar },
+  { n: "04", title: t.pasos.cuatro.title, foot: t.pasos.cuatro.foot, Pieza: PasoCuentas },
 ];

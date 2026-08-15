@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { TicketState } from "@/lib/types";
+import { useT } from "@/lib/i18n";
 import PaperTicket from "./PaperTicket";
 import ShareTicketButton from "./ShareTicketButton";
 import { Sheet } from "./ui";
@@ -25,11 +26,12 @@ export default function TicketSheet({
   qrSvg: string;
   onClose: () => void;
 }) {
+  const t = useT();
   return (
     <Sheet onClose={onClose}>
-      <h2 className="text-xl font-bold tracking-tight">El ticket</h2>
+      <h2 className="text-xl font-bold tracking-tight">{t.ticket.titulo}</h2>
       <p className="mt-1 text-sm text-ink-soft">
-        Lo que se leyó del papel. Si algo no cuadra, se corrige desde la comanda.
+        {t.ticket.entradilla}
       </p>
 
       <div className="mt-4 flex flex-col gap-6">
@@ -45,7 +47,7 @@ export default function TicketSheet({
                 <PaperTicket 
                   ticket={{
                     ...state.ticket, 
-                    place: state.ticket.place || "Ticket Original",
+                    place: state.ticket.place || t.comanda.ticketOriginal,
                     totalCents: state.ticket.totalCents - state.receipts.reduce((a, r) => a + r.totalCents, 0)
                   }} 
                   items={state.items.filter(i => !i.receiptId)} 
@@ -83,7 +85,7 @@ export default function TicketSheet({
         onClick={onClose}
         className="mt-2 w-full rounded-xl py-2 text-sm text-ink-faint"
       >
-        Cerrar
+        {t.ticket.cerrar}
       </button>
     </Sheet>
   );

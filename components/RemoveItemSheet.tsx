@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { money } from "@/lib/format";
 import type { Item, ItemBreakdown } from "@/lib/types";
+import { useT, rellena } from "@/lib/i18n";
 import { Sheet } from "./ui";
 
 /**
@@ -29,6 +30,7 @@ export default function RemoveItemSheet({
   onConfirm: (newQty: number) => void;
   onClose: () => void;
 }) {
+  const t = useT();
   const personas = breakdown.shares.length;
   // Varias unidades: se empieza sin tocar nada y se decide con el contador.
   // Una sola: lo único que se puede hacer es quitarla, así que ya está elegido.
@@ -54,7 +56,7 @@ export default function RemoveItemSheet({
   return (
     <Sheet onClose={onClose}>
       <h2 className="text-xl font-bold tracking-tight">
-        ¿Quitar <span className="text-clay">{item.name}</span>?
+        {t.quitar.titulo} <span className="text-clay">{item.name}</span>?
       </h2>
 
       <p className="mt-2 text-sm leading-relaxed text-ink-soft">
@@ -62,26 +64,26 @@ export default function RemoveItemSheet({
           // Nada elegido todavía: se dice lo que se puede hacer, y ni una
           // palabra del total. Antes cantaba «la cantidad bajará a 3» con el
           // contador puesto en 3, que no significa nada.
-          <>Baja la cantidad con el contador, o quítalo entero de la comanda.</>
+          <>{t.quitar.sinTocar}</>
         ) : (
           <>
             {removingAll ? (
               <>
-                Desaparece de la comanda
+                {t.quitar.desaparece}
                 {personas > 0 &&
                   (personas === 1
-                    ? " y quien la tenía marcada deja de pagarla"
-                    : ` y las ${personas} personas que la tenían marcada dejan de pagarla`)}
+                    ? ` ${t.quitar.yQuienLaTenia}`
+                    : ` ${rellena(t.quitar.yLasPersonas, { n: personas })}`)}
                 .
               </>
             ) : (
-              <>Se queda en {qty}.</>
+              <>{rellena(t.quitar.seQuedaEn, { n: qty })}</>
             )}{" "}
             {currentTotalAfter === ticketTotalCents ? (
-              "El total del ticket no cambia."
+              t.quitar.totalNoCambia
             ) : (
               <>
-                El total baja a{" "}
+                {t.quitar.totalBaja}{" "}
                 <span className="tnum font-bold text-ink">
                   {money(currentTotalAfter, currency)}
                 </span>
@@ -94,7 +96,7 @@ export default function RemoveItemSheet({
 
       {item.qty > 1 && (
         <div className="mt-6 flex items-center justify-between rounded-xl border border-line bg-paper-2 p-2">
-          <span className="pl-2 text-sm font-semibold text-ink-soft">Cantidad</span>
+          <span className="pl-2 text-sm font-semibold text-ink-soft">{t.quitar.cantidad}</span>
           <div className="flex items-center gap-4 pr-1">
             <button
               type="button"
@@ -120,7 +122,7 @@ export default function RemoveItemSheet({
       {/* Que se sepa antes de pulsar, no después: es media razón de que exista
           el historial. Quitar algo aquí no es un gesto anónimo. */}
       <p className="mt-5 rounded-xl border border-line bg-paper px-3.5 py-2.5 text-xs leading-relaxed text-ink-faint">
-        Queda anotado en el historial de la mesa, con tu nombre y la hora.
+        {t.quitar.anotado}
       </p>
 
       <div className="mt-4 flex gap-2">
@@ -130,14 +132,14 @@ export default function RemoveItemSheet({
           disabled={qty === item.qty}
           className="flex-1 rounded-xl bg-clay py-3 text-sm font-bold text-paper transition-transform active:scale-[0.98] disabled:opacity-50"
         >
-          {removingAll ? "Eliminar plato" : `Dejarlo en ${qty}`}
+          {removingAll ? t.quitar.eliminar : rellena(t.quitar.dejarloEn, { n: qty })}
         </button>
         <button
           type="button"
           onClick={onClose}
           className="flex-1 rounded-xl border border-line py-3 text-sm font-semibold text-ink-soft"
         >
-          Dejarla
+          {t.quitar.dejarla}
         </button>
       </div>
     </Sheet>
