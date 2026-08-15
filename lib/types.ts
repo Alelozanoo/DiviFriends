@@ -45,6 +45,17 @@ export interface Participant {
   /** Quien puso la tarjeta. Sólo puede haber uno. */
   isPayer: boolean;
   /**
+   * Cómo quiere que le devuelvan lo suyo.
+   *
+   * Cuelga de la persona y no del papel de «el que pagó» a propósito: con
+   * varios tickets puede haber dos cobrando a la vez, y así cada uno pone el
+   * suyo y nadie tiene que poder tocar el de otro. Es la respuesta entera a
+   * quién tiene permiso para esto.
+   */
+  revolut?: string;
+  /** El móvil del Bizum, en nueve dígitos y sin prefijo. */
+  bizum?: string;
+  /**
    * true cuando ya le ha devuelto su parte a quien pagó.
    *
    * Es un sí o un no, no un importe: lo que la mesa necesita saber es quién
@@ -73,7 +84,7 @@ export interface Claim {
 export interface ChangeEvent {
   /** ISO. Sirve además de clave: dos cambios no caen en el mismo milisegundo. */
   at: string;
-  kind: "item.remove" | "item.add" | "total.edit";
+  kind: "item.remove" | "item.add" | "total.edit" | "payer.set" | "pago.ok";
   participantId: string | null;
   /**
    * El nombre congelado en el momento del cambio. Guardarlo duplicado es a
@@ -86,6 +97,31 @@ export interface ChangeEvent {
   /** Lo que la línea costaba, o el total nuevo. */
   cents: number;
 }
+
+/**
+ * Un pago entre dos personas de la mesa, con sus dos mitades.
+ *
+ * Dos mitades porque el dinero sale de un sitio y entra en otro, y entre las
+ * dos cosas pasa un rato: quien paga lo dice al volver de su banco, y hasta que
+ * el otro no lo ve en su cuenta no está cobrado. Dar por hecho lo segundo al
+ * ocurrir lo primero llenaría de pagos falsos la lista de quien adelantó la
+ * cena, que es exactamente la persona a la que esto tiene que servirle.
+ *
+ * Un registro por pareja: `fromId` le debe a `toId`, y esa deuda es una sola.
+ */
+export interface Pago {
+  fromId: string;
+  toId: string;
+  cents: number;
+  via: Via;
+  /** «dice» = lo ha enviado y falta que el otro lo vea. «ok» = cobrado. */
+  estado: "dice" | "ok";
+  /** ISO del último cambio de estado. */
+  at: string;
+}
+
+/** Por dónde ha ido el dinero. «mano» es efectivo o cualquier otra cosa. */
+export type Via = "revolut" | "bizum" | "mano";
 
 export interface Receipt {
   id: string;
@@ -102,6 +138,7 @@ export interface TicketState {
   claims: Claim[];
   /** Del más reciente al más viejo. */
   events: ChangeEvent[];
+  pagos: Pago[];
 }
 
 export interface ItemShare {

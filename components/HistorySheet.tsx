@@ -125,6 +125,39 @@ function Fila({
 function Cuenta({ event, currency, t }: { event: ChangeEvent; currency: string; t: ReturnType<typeof useT> }) {
   const importe = <span className="tnum font-semibold">{money(event.cents, currency)}</span>;
 
+  /*
+    Quién puso el dinero manda sobre toda la pantalla de cuentas, así que
+    cambiarlo mueve dinero de sitio igual que quitar una línea. Aquí no hay
+    contraseñas: lo que frena a quien fuera a apuntarse los cobros de otro es
+    que se vea, exactamente igual que con el chuletón.
+  */
+  if (event.kind === "payer.set") {
+    // `what` trae el nombre de quien queda como pagador. Cuando coincide con
+    // quien lo hizo, la frase se dice en reflexivo y no repite el nombre.
+    const aSiMismo = event.what === event.by;
+    return (
+      <span className="text-ink-soft">
+        {aSiMismo ? (
+          <>{t.historial.sePuso} </>
+        ) : (
+          <>
+            {t.historial.puso} <b className="font-semibold text-ink">{event.what}</b>{" "}
+            {t.historial.comoPagador}{" "}
+          </>
+        )}
+        {importe}
+      </span>
+    );
+  }
+
+  if (event.kind === "pago.ok") {
+    return (
+      <span className="text-ink-soft">
+        {t.historial.pago} <b className="font-semibold text-ink">{event.what}</b> {importe}
+      </span>
+    );
+  }
+
   if (event.kind === "item.remove") {
     return (
       <span className="text-ink-soft">

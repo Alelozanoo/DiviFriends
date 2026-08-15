@@ -47,6 +47,7 @@ function base(items: Item[]): TicketState {
     })),
     claims: [],
     events: [],
+    pagos: [],
   };
 }
 

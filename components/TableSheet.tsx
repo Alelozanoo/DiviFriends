@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { EV, track } from "@/lib/track";
 import type { Participant } from "@/lib/types";

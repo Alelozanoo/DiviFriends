@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import type { Metadata } from "next";
 // `COOKIE` y `Lang` se piden a `config`, que no lleva "use client": pedírselos
 // a `index` los convertía en una referencia de cliente y la cookie no se leía.
-import { COOKIE, idiomaDe, type Lang } from "@/lib/i18n/config";
+import { COOKIE, idiomaDe, inicio, type Lang } from "@/lib/i18n/config";
 import { I18nProvider } from "@/lib/i18n";
 import { getTicketState } from "@/lib/store";
 import { ticketQrSvg, ticketUrl } from "@/lib/ticketUrl";
@@ -58,7 +58,7 @@ export default async function TicketPage({ params }: Props) {
             : "Puede que el código esté mal escrito o que la comanda ya se haya borrado."}
         </p>
         <Link
-          href="/"
+          href={inicio(lang)}
           className="mt-8 rounded-xl bg-amber px-5 py-3 font-semibold text-paper transition-colors hover:bg-ink"
         >
           {ingles ? "Back to the start" : "Volver al inicio"}

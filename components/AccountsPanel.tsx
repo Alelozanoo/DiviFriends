@@ -1,7 +1,7 @@
 "use client";
 
 import { money } from "@/lib/format";
-import type { ParticipantBalance, Settlement, TicketState } from "@/lib/types";
+import type { Pago, Participant, ParticipantBalance, Settlement, TicketState } from "@/lib/types";
 import { useT, rellena } from "@/lib/i18n";
 import MoneyInput from "./MoneyInput";
 import { Avatar } from "./ui";
@@ -14,6 +14,12 @@ interface Props {
   onSetSettled: (participantId: string, settled: boolean) => void;
   onSetTotal: (cents: number) => void;
   onOpenLog: () => void;
+  /** Abre la hoja de pagar a alguien con el importe ya calculado. */
+  onPagar: (toId: string, cents: number) => void;
+  /** «Sí, me ha llegado» o «todavía no», que lo dice quien cobra. */
+  onResolver: (fromId: string, ok: boolean) => void;
+  /** Abre la hoja de poner Revolut o Bizum. */
+  onPonerCobro: () => void;
 }
 
 /**
@@ -33,10 +39,18 @@ export default function AccountsPanel({
   onSetSettled,
   onSetTotal,
   onOpenLog,
+  onPagar,
+  onResolver,
+  onPonerCobro,
 }: Props) {
   const t = useT();
   const { currency } = state.ticket;
   const people = settlement.byParticipant;
+  const porId = new Map(state.participants.map((p) => [p.id, p]));
+  const yo = meId ? porId.get(meId) : null;
+  const miSaldo = people.find((p) => p.participantId === meId) ?? null;
+  // Lo que me han dicho que me han pagado y todavía no he confirmado.
+  const porConfirmar = state.pagos.filter((p) => p.toId === meId && p.estado === "dice");
   
   // Normalizar los tickets para la UI
   const hasLegacyItems = state.items.some(i => !i.receiptId);
@@ -74,7 +88,6 @@ export default function AccountsPanel({
       <Headline
         currency={currency}
         people={people}
-        pendingCents={settlement.pendingCents}
         totalCents={settlement.grandTotalCents}
         isMultiPayer={isMultiPayer}
         unassignedCents={settlement.unassignedCents}
@@ -86,6 +99,82 @@ export default function AccountsPanel({
             ? rellena(t.cuentas.ojoSinDueno, { dinero: money(settlement.unassignedCents, currency) })
             : rellena(t.cuentas.ojoDeMas, { dinero: money(-settlement.unassignedCents, currency) })}
         </p>
+      )}
+
+      {/*
+        Lo que hay que responder, arriba del todo.
+
+        Que alguien diga que te ha pagado es lo único de esta pantalla que pide
+        algo de ti en ese momento; escondido en su fila se quedaría sin
+        contestar, y el que pagó se quedaría sin saber si le han devuelto.
+      */}
+      {porConfirmar.map((pago) => {
+        const quien = porId.get(pago.fromId);
+        if (!quien) return null;
+        return (
+          <section
+            key={pago.fromId}
+            className="rounded-2xl border border-mint/40 bg-mint/[0.08] p-4"
+          >
+            <div className="flex items-center gap-3">
+              <Avatar name={quien.name} avatar={quien.avatar} color={quien.color} size={34} />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold leading-tight">
+                  {rellena(t.cobro.diceQuePago, { name: quien.name })}
+                </p>
+                <p className="tnum text-lg font-bold leading-tight">
+                  {money(pago.cents, currency)}{" "}
+                  <span className="text-xs font-normal text-ink-faint">{comoLoMando(pago.via, t)}</span>
+                </p>
+              </div>
+            </div>
+            <p className="mt-2 text-sm text-ink-soft">{t.cobro.teHaLlegado}</p>
+            <div className="mt-2 flex gap-2">
+              <button
+                type="button"
+                onClick={() => onResolver(pago.fromId, true)}
+                className="flex-1 rounded-xl bg-mint py-2.5 text-sm font-bold text-paper transition-transform active:scale-[0.98]"
+              >
+                {t.cobro.siLlego}
+              </button>
+              {/*
+                Decir que no vuelve a dejarlo pendiente y no se lo cuenta a
+                nadie más. Puede ser verdad y estar el dinero de camino —una
+                transferencia tarda hasta un día— y anunciarle a ocho personas
+                que fulano no ha pagado, por diez euros y pudiendo ser mentira,
+                hace más daño que bien.
+              */}
+              <button
+                type="button"
+                onClick={() => onResolver(pago.fromId, false)}
+                className="flex-1 rounded-xl border border-line bg-paper py-2.5 text-sm font-semibold text-ink-soft transition-colors active:bg-paper-3"
+              >
+                {t.cobro.noLlego}
+              </button>
+            </div>
+          </section>
+        );
+      })}
+
+      {/*
+        Si te deben dinero y no has dicho cómo cobrarlo, nadie puede pagarte de
+        un toque. Se ofrece aquí y no antes: al crear la comanda todavía no le
+        debe nada a nadie, y un formulario en ese momento sólo estorba.
+      */}
+      {yo && miSaldo && miSaldo.owesCents < 0 && !yo.revolut && !yo.bizum && (
+        <button
+          type="button"
+          onClick={onPonerCobro}
+          className="flex w-full items-center justify-between gap-3 rounded-2xl border border-amber/40 bg-amber/[0.08] px-4 py-3 text-left transition-colors active:bg-amber/15"
+        >
+          <span>
+            <span className="text-sm font-bold">{t.cobro.faltaTitulo}</span>
+            <span className="mt-0.5 block text-xs text-ink-soft">{t.cobro.faltaAviso}</span>
+          </span>
+          <span className="shrink-0 rounded-lg bg-amber px-3 py-1.5 text-xs font-bold text-paper">
+            {t.cobro.ponerlo}
+          </span>
+        </button>
       )}
 
       {/* --------------------------------------------------------- quién pagó */}
@@ -144,6 +233,9 @@ export default function AccountsPanel({
                   payeeName={payeeName}
                   transactions={settlement.transactions}
                   allPeople={people}
+                  porId={porId}
+                  pagos={state.pagos}
+                  onPagar={onPagar}
                   /* La raya separa lo pendiente de lo cobrado sin necesidad de
                      dos listas ni de un título encima de cada una. */
                   divider={index > 0 && person.settled && !people[index - 1].settled}
@@ -210,18 +302,23 @@ export default function AccountsPanel({
   );
 }
 
+/** Por dónde dice que lo ha mandado, para que quien cobra sepa dónde mirar. */
+function comoLoMando(via: Pago["via"], t: ReturnType<typeof useT>): string {
+  if (via === "revolut") return t.cobro.porRevolut;
+  if (via === "bizum") return t.cobro.porBizum;
+  return t.cobro.enMano;
+}
+
 /** El número grande: lo único que hay que leer al llegar a esta pantalla. */
 function Headline({
   currency,
   people,
-  pendingCents,
   totalCents,
   isMultiPayer,
   unassignedCents,
 }: {
   currency: string;
   people: ParticipantBalance[];
-  pendingCents: number;
   totalCents: number;
   isMultiPayer: boolean;
   unassignedCents: number;
@@ -306,6 +403,9 @@ function PersonRow({
   payeeName,
   transactions,
   allPeople,
+  porId,
+  pagos,
+  onPagar,
   divider,
   first,
   onToggle,
@@ -316,6 +416,9 @@ function PersonRow({
   payeeName: string | null;
   transactions: import("@/lib/types").Transaction[];
   allPeople: ParticipantBalance[];
+  porId: Map<string, Participant>;
+  pagos: Pago[];
+  onPagar: (toId: string, cents: number) => void;
   divider: boolean;
   first: boolean;
   onToggle: () => void;
@@ -325,7 +428,15 @@ function PersonRow({
   // owesCents < 0: se le debe dinero
   const mustPay = person.owesCents > 0;
   const isOwed = person.owesCents < 0;
-  
+  const misDeudas = transactions.filter((txn) => txn.fromId === person.participantId);
+  const puedePagarEnLaApp =
+    isMe &&
+    mustPay &&
+    misDeudas.some((txn) => {
+      const cobra = porId.get(txn.toId);
+      return Boolean(cobra?.revolut || cobra?.bizum);
+    });
+
   return (
     <li
       className={`flex items-center gap-3 px-4 py-3 ${first ? "" : "border-t border-line/60"} ${
@@ -339,16 +450,51 @@ function PersonRow({
           {person.name}
           {isMe && <span className="ml-1.5 text-xs text-amber">{t.mesa.tu}</span>}
         </div>
-        
+
         {!person.settled && mustPay && (
           <div className="mt-0.5 text-xs font-normal text-ink-soft leading-tight">
-            {transactions
-              .filter(t => t.fromId === person.participantId)
+            {misDeudas
               .map(txn => `${money(txn.cents, currency)} ${t.pasos.a} ${allPeople.find(p => p.participantId === txn.toId)?.name}`)
               .join(" • ")}
           </div>
         )}
-        
+
+        {/*
+          El botón de pagar, sólo en tu propia fila y sólo si el otro ha dicho
+          cómo quiere cobrar. Uno por deuda: con dos tickets puedes deberle a
+          dos personas distintas y cada una cobra por su lado.
+        */}
+        {isMe && !person.settled && mustPay && (
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {misDeudas.map((txn) => {
+              const cobra = porId.get(txn.toId);
+              if (!cobra || (!cobra.revolut && !cobra.bizum)) return null;
+              const dicho = pagos.find(
+                (p) => p.fromId === person.participantId && p.toId === txn.toId,
+              );
+              if (dicho?.estado === "ok") return null;
+              if (dicho) {
+                return (
+                  <span key={txn.toId} className="stamp text-mint">
+                    {rellena(t.cobro.esperando, { name: cobra.name })}
+                  </span>
+                );
+              }
+              return (
+                <button
+                  key={txn.toId}
+                  type="button"
+                  onClick={() => onPagar(txn.toId, txn.cents)}
+                  className="rounded-lg bg-amber px-3 py-1.5 text-xs font-bold text-paper transition-transform active:scale-95"
+                >
+                  {t.cobro.pagar} {money(txn.cents, currency)}
+                  {misDeudas.length > 1 ? ` ${t.pasos.a} ${cobra.name}` : ""}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {!person.settled && isOwed && (
           <div className="mt-0.5 text-xs font-normal text-ink-soft leading-tight">
             {transactions
@@ -367,7 +513,13 @@ function PersonRow({
         <span className="stamp shrink-0 text-mint">{t.cuentas.seLeDebe}</span>
       ) : person.owesCents === 0 && person.paidCents === 0 ? (
          <span className="stamp shrink-0 text-ink-faint">{t.cuentas.noDebeNada}</span>
-      ) : (
+      ) : /*
+           Con el botón de pagar arriba sobra el «He pagado» de aquí: son dos
+           formas de decir lo mismo pegadas, y la de arriba lleva además el
+           efectivo dentro. Se queda para las filas de los demás, que es como
+           quien cobra marca a mano a quien le dio el dinero en la mesa.
+         */
+      puedePagarEnLaApp && !person.settled ? null : (
         <button
           type="button"
           onClick={onToggle}

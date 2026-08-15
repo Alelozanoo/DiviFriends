@@ -14,19 +14,28 @@ const DICCIONARIOS: Record<Lang, Dict> = { es, en };
 const Ctx = createContext<{ lang: Lang; t: Dict }>({ lang: "es", t: es });
 
 /**
- * Pone el idioma en el árbol y lo deja escrito en `<html lang>`.
+ * Pone el idioma en el árbol, lo deja escrito en `<html lang>` y lo recuerda.
  *
- * El idioma se decide fuera de aquí y llega ya resuelto: en la portada por la
- * ruta —`/` es español y `/en` inglés, las dos estáticas—, y en la comanda por
- * una cookie que lee el servidor. En ninguno de los dos casos hay un parpadeo
- * de español antes de cambiar a inglés, que es lo que pasa cuando el idioma se
- * decide después de pintar.
+ * El idioma se decide fuera de aquí y llega ya resuelto, pero por dos caminos
+ * distintos: en la portada lo dice la ruta —`/` es español y `/en` inglés, las
+ * dos estáticas— y en la comanda lo dice la cookie, que lee el servidor. Así
+ * ninguna de las dos parpadea en español antes de cambiar a inglés.
+ *
+ * Dos caminos es justo lo que hay que vigilar: si se separan, la portada sale
+ * en un idioma y la comanda en otro. Pasaba, y encima sin salida — la portada
+ * en `/` se creía en español, el selector marcaba ES, y pulsar ES no hacía nada
+ * porque ya se creía ahí. Se quedaba uno en inglés para siempre.
+ *
+ * Por eso la cookie se escribe aquí: lo que estás viendo manda sobre lo que
+ * dijera antes. En las páginas que salen de la cookie es escribir lo mismo que
+ * ya ponía, y en la portada la corrige.
  */
 export function I18nProvider({ lang, children }: { lang: Lang; children: React.ReactNode }) {
   useEffect(() => {
     // `<html>` lo pinta el layout, que es común a las dos rutas y estático: la
     // única forma de que diga la verdad en /en es corregirlo aquí.
     document.documentElement.lang = lang;
+    guardarIdioma(lang);
   }, [lang]);
 
   return <Ctx.Provider value={{ lang, t: DICCIONARIOS[lang] }}>{children}</Ctx.Provider>;

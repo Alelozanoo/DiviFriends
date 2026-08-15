@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Wordmark } from "@/components/Logo";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { COOKIE, idiomaDe } from "@/lib/i18n/config";
+import { COOKIE, idiomaDe, inicio } from "@/lib/i18n/config";
 import { I18nProvider } from "@/lib/i18n";
 import ManualTicketForm from "@/components/ManualTicketForm";
 
@@ -22,7 +22,7 @@ export default async function NuevaPage({ searchParams }: Props) {
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8">
       {/* La marca lleva sus colores fijos, así que `hover:text-amber` ya no
           teñía nada: la respuesta al pasar por encima va en la opacidad. */}
-      <Link href="/" className="stamp text-ink-faint transition-opacity hover:opacity-75">
+      <Link href={inicio(lang)} className="stamp text-ink-faint transition-opacity hover:opacity-75">
         ← <Wordmark />
       </Link>
 

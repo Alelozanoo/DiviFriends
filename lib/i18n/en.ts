@@ -224,6 +224,10 @@ export const en: Dict = {
     cambioTotal: "changed the total from",
     aTotal: "to",
     cerrar: "Close",
+    puso: "set",
+    comoPagador: "as the one who paid the bill, worth",
+    sePuso: "marked themselves as the one who paid the bill, worth",
+    pago: "paid",
   },
 
   entrar: {
@@ -305,6 +309,59 @@ export const en: Dict = {
 
   cookies: {
     cambiar: "Cookies",
+  },
+
+  cobro: {
+    pagasteTitulo: "Did you pay the whole bill?",
+    pagasteAviso: "Card or cash, doesn't matter: whoever put the money down at the restaurant.",
+    pagueYo: "Yes, I paid",
+    pagoOtro: "No, someone else did",
+
+    comoTitulo: "How do you want to get paid back?",
+    comoAviso:
+      "Everyone gets a button with their own amount already filled in. DiviFriends never touches the money: it just opens your app.",
+    tuRevolut: "Your username",
+    tuBizum: "Your mobile",
+    ejemploRevolut: "your-username",
+    guardar: "Save",
+    ahoraNo: "Not now",
+    listo: "Done",
+    cambiar: "Change how I get paid",
+    malRevolut: "That username won't work. It's the one in revolut.me/your-username, no @.",
+    malBizum: "Enter a nine-digit Spanish mobile.",
+    algunoAlMenos: "Fill in at least one of the two.",
+    avisoCompartido: "Anyone with the link to this bill can see it.",
+
+    faltaTitulo: "Say how you want to get paid",
+    faltaAviso: "Then everyone gets a one-tap button to pay you.",
+    ponerlo: "Set it up",
+
+    pagar: "Pay",
+    pagarA: "Pay {name}",
+    conRevolut: "Pay with",
+    conBizum: "Pay by",
+    aMano: "I gave it to them in cash",
+    pasosBizum: "Bizum has no link. Open your bank app, go to Bizum and paste this:",
+    movil: "Mobile",
+    concepto: "Reference",
+    importe: "Amount",
+    copiar: "Copy",
+    copiado: "Copied ✓",
+    seAbre: "Revolut opens with the amount and the reference already filled in.",
+
+    enviadoTitulo: "Have you sent it?",
+    enviadoAviso: "If you say yes, {name} will be asked to confirm it arrived.",
+    siEnviado: "Yes, sent",
+    todaviaNo: "Not yet",
+
+    diceQuePago: "{name} says they've paid you",
+    teHaLlegado: "Has it arrived?",
+    siLlego: "Yes, it's in",
+    noLlego: "Not yet",
+    esperando: "Waiting for {name} to confirm",
+    porRevolut: "by Revolut",
+    porBizum: "by Bizum",
+    enMano: "in cash",
   },
 
   guia: {

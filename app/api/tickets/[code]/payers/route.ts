@@ -11,10 +11,11 @@ export async function PATCH(request: Request, { params }: Ctx) {
   const body = (await request.json()) as {
     participantId: string | null;
     receiptId: string | null;
+    by?: string | null;
   };
 
   try {
-    return ok(await setPayer(code.toUpperCase(), body.participantId, body.receiptId));
+    return ok(await setPayer(code.toUpperCase(), body.participantId, body.receiptId, body.by));
   } catch (error) {
     return fail(error);
   }

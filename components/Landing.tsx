@@ -9,7 +9,8 @@ import Preguntas from "@/components/Preguntas";
 import MisDivis from "@/components/MisDivis";
 import ComoFuncionaSheet from "@/components/ComoFuncionaSheet";
 import LangSwitch from "@/components/LangSwitch";
-import { I18nProvider, useT, type Lang } from "@/lib/i18n";
+import { I18nProvider, useT, useLang, type Lang } from "@/lib/i18n";
+import { inicio } from "@/lib/i18n/config";
 
 /**
  * La portada, en el idioma que le digan.
@@ -29,6 +30,7 @@ export default function Landing({ lang }: { lang: Lang }) {
 
 function Cuerpo() {
   const t = useT();
+  const lang = useLang();
   return (
     <main className="flex flex-1 flex-col lg:block">
       {/* ---------------------------------------------------------------- hero */}
@@ -45,7 +47,7 @@ function Cuerpo() {
 
         <div className="mx-auto max-w-6xl px-5 pb-8 pt-6 lg:pb-20 lg:pt-16">
           <header className="mb-5 flex justify-center lg:mb-12 lg:justify-start">
-            <Link href="/" className="inline-flex items-center gap-2.5 lg:gap-4">
+            <Link href={inicio(lang)} className="inline-flex items-center gap-2.5 lg:gap-4">
               <Logo size={128} priority className="h-11 w-11 lg:h-20 lg:w-20" />
               <Wordmark className="text-xl font-bold tracking-tight lg:text-3xl" />
             </Link>

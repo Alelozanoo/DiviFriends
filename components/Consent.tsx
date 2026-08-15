@@ -21,6 +21,7 @@ export default function Consent() {
 
   useEffect(() => {
     if (!PIXEL_ID) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAbierto(leer() === null);
     const alCambiar = () => setAbierto(leer() === null);
     window.addEventListener(EVENTO, alCambiar);
@@ -73,6 +74,7 @@ export function CambiarCookies({ className }: { className?: string }) {
   const [hay, setHay] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHay(Boolean(PIXEL_ID));
   }, []);
 

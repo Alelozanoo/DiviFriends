@@ -1,4 +1,4 @@
-import type { ChangeEvent, Claim, Item, Participant, TicketState } from "./types";
+import type { ChangeEvent, Claim, Item, Pago, Participant, TicketState, Via } from "./types";
 
 /**
  * Una comanda entera vive en un solo documento de Firestore (`tickets/{CODE}`).
@@ -42,6 +42,21 @@ export interface TicketDoc {
    * cambiado nada.
    */
   events?: EventDoc[];
+  /**
+   * Opcional igual que `events`: una comanda sin pagos anunciados es lo normal
+   * hasta que alguien vuelve de su banco, y las que están abiertas ahora mismo
+   * en algún móvil no traen el campo.
+   */
+  pagos?: PagoDoc[];
+}
+
+export interface PagoDoc {
+  fromId: string;
+  toId: string;
+  cents: number;
+  via: Via;
+  estado: Pago["estado"];
+  at: string;
 }
 
 export interface EventDoc {
@@ -82,12 +97,14 @@ export interface ParticipantDoc {
   color: string;
   isPayer: boolean;
   settled?: boolean;
+  revolut?: string;
+  bizum?: string;
   /** @deprecated Antes se guardaba cuánto puso cada uno; ahora es un sí o un no. */
   paidCents?: number;
 }
 
 /** Topes para que el documento no pueda crecer sin control. */
-export const LIMITS = { items: 200, participants: 25, splitInto: 50, events: 80 } as const;
+export const LIMITS = { items: 200, participants: 25, splitInto: 50, events: 80, pagos: 100 } as const;
 
 export function docToState(code: string, doc: TicketDoc): TicketState {
   const rawClaims = doc.claims ?? [];
@@ -117,6 +134,8 @@ export function docToState(code: string, doc: TicketDoc): TicketState {
     // Comandas abiertas ahora mismo en algún móvil guardan un importe en vez de
     // un sí/no. Haber puesto algo equivale a estar saldado.
     settled: person.settled ?? (person.paidCents ?? 0) > 0,
+    revolut: person.revolut,
+    bizum: person.bizum,
   }));
 
   const claims: Claim[] = rawClaims
@@ -163,6 +182,13 @@ export function docToState(code: string, doc: TicketDoc): TicketState {
     participants,
     claims,
     events,
+    // Un pago cuyo deudor o acreedor ya no está en la mesa no le sirve a nadie
+    // y descuadraría la fila que lo enseña, igual que pasa con los claims.
+    pagos: (doc.pagos ?? []).filter(
+      (pago) =>
+        participants.some((p) => p.id === pago.fromId) &&
+        participants.some((p) => p.id === pago.toId),
+    ),
   };
 }
 

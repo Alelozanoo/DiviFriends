@@ -19,3 +19,15 @@ export const COOKIE = "divi.lang";
 export function idiomaDe(valor: string | undefined): Lang {
   return valor === "en" ? "en" : "es";
 }
+
+/**
+ * La portada que le toca a cada idioma.
+ *
+ * Hay dos, una por ruta, y volver siempre a la española echaba al inglés de su
+ * mitad del sitio: pulsaba el logo desde su comanda y se encontraba la portada
+ * en español, que además le cambia la cookie. Todo enlace de «volver al
+ * inicio» pasa por aquí.
+ */
+export function inicio(lang: Lang): string {
+  return lang === "en" ? "/en" : "/";
+}

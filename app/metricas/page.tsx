@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { firestore, TICKETS } from "@/lib/firebaseAdmin";
-import { resumen, type Metricas } from "@/lib/metricas";
+import { resumen } from "@/lib/metricas";
 import type { TicketDoc } from "@/lib/ticketDoc";
 
 /**

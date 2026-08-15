@@ -66,6 +66,7 @@ export default function TicketUploader({
   // Simula un progreso realista mientras la IA analiza la foto
   useEffect(() => {
     if (phase === "idle" || phase === "error") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setProgress(0);
       return;
     }
@@ -130,6 +131,7 @@ export default function TicketUploader({
         setError(cause instanceof Error ? cause.message : "Algo ha ido mal.");
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [router],
   );
 

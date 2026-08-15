@@ -1,5 +1,6 @@
 "use client";
 import { rellena } from "./i18n";
+import type { Dict } from "./i18n/es";
 
 import { useCallback, useSyncExternalStore } from "react";
 
@@ -134,7 +135,7 @@ export function useMisDivis(): { divis: DiviGuardado[] | null; quitar: (code: st
  * Lo que se pregunta al mirar la lista es si esto es de hoy o de la semana
  * pasada, no la hora exacta. Pasado el día, lo relativo deja de decir nada.
  */
-export function cuando(iso: string, t: any): string {
+export function cuando(iso: string, t: Dict): string {
   const fecha = new Date(iso);
   if (Number.isNaN(fecha.getTime())) return "";
 

@@ -8,8 +8,10 @@ import { useTicketSync } from "@/lib/useTicketSync";
 import { money, parseMoney } from "@/lib/format";
 import { EV, track, trackOnce } from "@/lib/track";
 import { olvidar, recordar } from "@/lib/misDivis";
-import type { Participant, TicketState } from "@/lib/types";
+import type { Participant, TicketState, Via } from "@/lib/types";
 import AccountsPanel from "./AccountsPanel";
+import { CobroSheet, PagadorSheet } from "./CobroSheet";
+import PagarSheet from "./PagarSheet";
 import ItemBubble from "./ItemBubble";
 import ItemSheet from "./ItemSheet";
 import RemoveItemSheet from "./RemoveItemSheet";
@@ -20,7 +22,8 @@ import TableSheet from "./TableSheet";
 import GuideSheet from "./GuideSheet";
 import TicketUploader from "./TicketUploader";
 import { Avatar, Progress, Sheet } from "./ui";
-import { useT } from "@/lib/i18n";
+import { useT, useLang } from "@/lib/i18n";
+import { inicio } from "@/lib/i18n/config";
 
 export default function SplitApp({
   initial,
@@ -33,6 +36,7 @@ export default function SplitApp({
 }) {
   const code = initial.ticket.id;
   const t = useT();
+  const lang = useLang();
   const [tab, setTab] = useState<"comanda" | "cuentas">("comanda");
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
@@ -44,6 +48,10 @@ export default function SplitApp({
   const [guiding, setGuiding] = useState(false);
   const [uploadingAnother, setUploadingAnother] = useState(false);
   const [activeReceiptId, setActiveReceiptId] = useState<string | null>(null);
+  // A quién le voy a pagar y cuánto, mientras la hoja está abierta.
+  const [pagando, setPagando] = useState<{ toId: string; cents: number } | null>(null);
+  const [cobrando, setCobrando] = useState(false);
+  const [preguntandoPagador, setPreguntandoPagador] = useState(false);
 
   // Abrir una mesa es el primer momento medible: por el enlace del grupo,
   // por el QR del bar o tecleando el código.
@@ -141,7 +149,31 @@ export default function SplitApp({
     track(EV.seApunta, { con_avatar: Boolean(avatar) });
     store(participantId);
     setJoinOverride(null);
+    /*
+      Lo primero que hace falta saber de una mesa es quién puso el dinero: sin
+      eso la pantalla de cuentas no puede decir nada, y el que llega no sabe a
+      quién devolverle lo suyo.
+
+      Se pregunta sólo cuando no lo ha dicho nadie todavía. Preguntárselo a
+      cada uno que entra tiene un coste peor que el de no preguntar: alguien
+      acaba marcándose sin querer y el reparto sale al revés.
+    */
+    if (!hayPagador) setPreguntandoPagador(true);
   }
+
+  /* -------------------------------------------------------------- cobrar */
+
+  const declararPago = (toId: string, cents: number, via: Via) =>
+    send("/pagos", {
+      method: "POST",
+      body: JSON.stringify({ fromId: meId, toId, cents, via }),
+    });
+
+  const resolverPago = (fromId: string, ok: boolean) =>
+    send("/pagos", { method: "PATCH", body: JSON.stringify({ fromId, toId: meId, ok }) });
+
+  const guardarCobro = (datos: { revolut: string | null; bizum: string | null }) =>
+    meId ? patchParticipant(meId, datos) : Promise.resolve(null);
 
   /**
    * Un toque: se lo queda o lo suelta. Se pinta antes de salir la petición.
@@ -222,6 +254,17 @@ export default function SplitApp({
   /* ----------------------------------------------------------------- vista */
 
   const myBalance = settlement.byParticipant.find((b) => b.participantId === meId) ?? null;
+
+  // Quién puso el dinero, mirando las tres formas en que ha vivido ese dato:
+  // el ticket principal, cada recibo suyo, y el `isPayer` de las comandas
+  // viejas que siguen abiertas en algún móvil.
+  const hayPagador = Boolean(
+    state.ticket.payerId ||
+      state.participants.some((p) => p.isPayer) ||
+      (state.receipts ?? []).some((r) => r.payerId),
+  );
+  const yo = meId ? state.participants.find((p) => p.id === meId) ?? null : null;
+  const cobrandoA = pagando ? state.participants.find((p) => p.id === pagando.toId) ?? null : null;
 
   /*
     Deja apuntada esta comanda en el móvil, con el saldo ya calculado.
@@ -307,7 +350,7 @@ export default function SplitApp({
       {/* ------------------------------------------------------------ cabecera */}
       <header className="sticky top-0 z-20 border-b border-line bg-paper/95 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center gap-2 px-3 py-2.5">
-          <Link href="/" aria-label="DiviFriends" className="shrink-0">
+          <Link href={inicio(lang)} aria-label="DiviFriends" className="shrink-0">
             <Logo size={64} className="h-8 w-8" />
           </Link>
           <div className="min-w-0 flex-1">
@@ -499,7 +542,7 @@ export default function SplitApp({
               }
               await send("/payers", {
                 method: "PATCH",
-                body: JSON.stringify({ participantId: finalParticipantId, receiptId }),
+                body: JSON.stringify({ participantId: finalParticipantId, receiptId, by: meId }),
               });
             }}
             onSetSettled={(participantId, settled) =>
@@ -507,6 +550,9 @@ export default function SplitApp({
             }
             onSetTotal={(cents) => void patchTicket({ totalCents: cents })}
             onOpenLog={() => setShowingLog(true)}
+            onPagar={(toId, cents) => setPagando({ toId, cents })}
+            onResolver={(fromId, ok) => void resolverPago(fromId, ok)}
+            onPonerCobro={() => setCobrando(true)}
           />
         )}
       </main>
@@ -664,6 +710,39 @@ export default function SplitApp({
 
       {showJoin && (
         <JoinSheet people={state.participants} onJoin={join} onClose={() => setJoinOverride(false)} />
+      )}
+
+      {preguntandoPagador && meId && (
+        <PagadorSheet
+          onPagueYo={() =>
+            send("/payers", {
+              method: "PATCH",
+              body: JSON.stringify({ participantId: meId, receiptId: null, by: meId }),
+            })
+          }
+          onSave={guardarCobro}
+          onClose={() => setPreguntandoPagador(false)}
+        />
+      )}
+
+      {cobrando && yo && (
+        <CobroSheet
+          revolut={yo.revolut}
+          bizum={yo.bizum}
+          onSave={guardarCobro}
+          onClose={() => setCobrando(false)}
+        />
+      )}
+
+      {pagando && cobrandoA && (
+        <PagarSheet
+          a={cobrandoA}
+          cents={pagando.cents}
+          currency={state.ticket.currency}
+          place={state.ticket.place}
+          onEnviado={(via) => declararPago(pagando.toId, pagando.cents, via)}
+          onClose={() => setPagando(null)}
+        />
       )}
 
       {/* Toast Animado: Alguien se ha unido */}

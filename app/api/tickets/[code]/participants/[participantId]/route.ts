@@ -12,6 +12,8 @@ export async function PATCH(request: Request, { params }: Ctx) {
     avatar?: string;
     settled?: boolean;
     isPayer?: boolean;
+    revolut?: string | null;
+    bizum?: string | null;
   };
 
   try {

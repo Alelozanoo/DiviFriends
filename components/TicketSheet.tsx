@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import type { TicketState } from "@/lib/types";
 import { useT } from "@/lib/i18n";
 import PaperTicket from "./PaperTicket";

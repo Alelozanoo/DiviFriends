@@ -19,8 +19,12 @@ export default function LangSwitch({ enPortada = false }: { enPortada?: boolean 
   const router = useRouter();
 
   function cambiar(nuevo: Lang) {
-    if (nuevo === lang) return;
+    // La cookie se escribe siempre, incluso al pulsar el idioma que ya está
+    // marcado. Salir antes de escribirla dejaba el botón muerto justo en el
+    // caso en que hacía falta: con la portada en español y la cookie en inglés,
+    // pulsar ES no hacía nada y no había manera de volver.
     guardarIdioma(nuevo);
+    if (nuevo === lang) return;
     if (enPortada) router.push(nuevo === "es" ? "/" : "/en");
     else router.refresh();
   }

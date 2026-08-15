@@ -236,6 +236,10 @@ export const es = {
     cambioTotal: "cambió el total de",
     aTotal: "a",
     cerrar: "Cerrar",
+    puso: "puso a",
+    comoPagador: "como quien pagó la cuenta de",
+    sePuso: "se puso como quien pagó la cuenta de",
+    pago: "le pagó a",
   },
 
   /* --------------------------------------------------------- quién eres */
@@ -325,6 +329,67 @@ export const es = {
   /* --------------------------------------------------- enlace de cookies */
   cookies: {
     cambiar: "Cookies",
+  },
+
+  /* ------------------------------------------------------------- cobrar */
+  cobro: {
+    // La pregunta de quién puso el dinero. «Entera» es la palabra que hace
+    // falta: sin ella se confunde con «¿has pagado ya tu parte?».
+    pagasteTitulo: "¿Pagaste tú toda la cuenta?",
+    pagasteAviso: "Tarjeta o efectivo, da igual: quien puso el dinero en el restaurante.",
+    pagueYo: "Sí, pagué yo",
+    pagoOtro: "No, pagó otro",
+
+    // Cómo quiere que se lo devuelvan.
+    comoTitulo: "¿Cómo quieres que te lo devuelvan?",
+    comoAviso:
+      "A cada uno le saldrá un botón con su importe ya puesto. DiviFriends no toca el dinero: se abre tu app y ya está.",
+    tuRevolut: "Tu usuario",
+    tuBizum: "Tu móvil",
+    ejemploRevolut: "tu-usuario",
+    guardar: "Guardar",
+    ahoraNo: "Ahora no",
+    listo: "Listo",
+    cambiar: "Cambiar cómo cobro",
+    malRevolut: "Ese usuario no vale. Es el de revolut.me/tu-usuario, sin la arroba.",
+    malBizum: "Escribe un móvil de nueve cifras.",
+    algunoAlMenos: "Pon al menos uno de los dos.",
+    avisoCompartido: "Lo verá quien tenga el enlace de esta comanda.",
+
+    // Cuando te deben dinero y no has puesto cómo cobrar.
+    faltaTitulo: "Di cómo quieres cobrar",
+    faltaAviso: "Y a los demás les sale el botón para pagarte de un toque.",
+    ponerlo: "Ponerlo",
+
+    // Pagar.
+    pagar: "Pagar",
+    pagarA: "Pagarle a {name}",
+    conRevolut: "Pagar con",
+    conBizum: "Pagar por",
+    aMano: "Se lo he dado en mano",
+    pasosBizum: "Bizum no tiene enlace. Abre tu banco, entra en Bizum y pega esto:",
+    movil: "Móvil",
+    concepto: "Concepto",
+    importe: "Importe",
+    copiar: "Copiar",
+    copiado: "Copiado ✓",
+    seAbre: "Se abre Revolut con el importe y el concepto ya escritos.",
+
+    // Al volver del banco.
+    enviadoTitulo: "¿Lo has enviado?",
+    enviadoAviso: "Si dices que sí, a {name} le saldrá para confirmar que le ha llegado.",
+    siEnviado: "Sí, ya está",
+    todaviaNo: "Todavía no",
+
+    // Lo que ve quien cobra.
+    diceQuePago: "{name} dice que te ha pagado",
+    teHaLlegado: "¿Te ha llegado?",
+    siLlego: "Sí, ya está",
+    noLlego: "Todavía no",
+    esperando: "Esperando a que {name} lo confirme",
+    porRevolut: "por Revolut",
+    porBizum: "por Bizum",
+    enMano: "en mano",
   },
 
   /* --------------------------------------------------------------- guia */

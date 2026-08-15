@@ -1,8 +1,9 @@
 import { firestore, TICKETS } from "./firebaseAdmin";
 import { docToState, LIMITS, type EventDoc, type ItemDoc, type TicketDoc } from "./ticketDoc";
 import { colorFor, id, ticketCode } from "./format";
-import { totalAfterRemoving } from "./settle";
-import type { TicketState } from "./types";
+import { computeSettlement, totalAfterRemoving } from "./settle";
+import { limpiaRevolut, limpiaTelefono } from "./cobro";
+import type { TicketState, Via } from "./types";
 
 export class StoreError extends Error {
   constructor(
@@ -185,7 +186,14 @@ export async function addParticipant(
 export function patchParticipant(
   code: string,
   participantId: string,
-  patch: { name?: string; avatar?: string; settled?: boolean; isPayer?: boolean },
+  patch: {
+    name?: string;
+    avatar?: string;
+    settled?: boolean;
+    isPayer?: boolean;
+    revolut?: string | null;
+    bizum?: string | null;
+  },
 ): Promise<TicketState> {
   return mutate(code, (doc) => {
     const person = doc.participants.find((p) => p.id === participantId);
@@ -198,6 +206,31 @@ export function patchParticipant(
     }
     if (patch.avatar !== undefined) person.avatar = patch.avatar;
     if (patch.settled !== undefined) person.settled = patch.settled;
+
+    /*
+      La forma de cobrar se valida también aquí y no sólo en la pantalla.
+
+      Un usuario mal escrito no da un error: da un botón de pagar que lleva a
+      una página vacía, y quien lo pulsa se cree que la culpa es suya. Vale más
+      no guardarlo. Firestore no admite `undefined`, así que borrar es borrar
+      la clave, no ponerla a nada.
+    */
+    if (patch.revolut !== undefined) {
+      if (patch.revolut === null || patch.revolut.trim() === "") delete person.revolut;
+      else {
+        const user = limpiaRevolut(patch.revolut);
+        if (!user) throw new StoreError("Ese usuario de Revolut no parece válido.");
+        person.revolut = user;
+      }
+    }
+    if (patch.bizum !== undefined) {
+      if (patch.bizum === null || patch.bizum.trim() === "") delete person.bizum;
+      else {
+        const tel = limpiaTelefono(patch.bizum);
+        if (!tel) throw new StoreError("Ese móvil no parece válido.");
+        person.bizum = tel;
+      }
+    }
     if (patch.isPayer !== undefined) {
       // (Legacy) Sólo puede haber un pagador original
       if (patch.isPayer) for (const other of doc.participants) other.isPayer = false;
@@ -210,6 +243,7 @@ export function setPayer(
   code: string,
   participantId: string | null,
   receiptId: string | null,
+  by?: string | null,
 ): Promise<TicketState> {
   return mutate(code, (doc) => {
     // Si payerId no es null, asegurarse de que el participante existe
@@ -229,6 +263,131 @@ export function setPayer(
         for (const p of doc.participants) p.isPayer = false;
       }
     }
+
+    /*
+      Quién puso el dinero es el dato del que cuelga toda la pantalla de
+      cuentas, así que cambiarlo mueve dinero de sitio igual que quitar una
+      línea, y va al historial por la misma razón: aquí no hay contraseñas, y
+      lo que frena a quien fuera a apuntarse los cobros de otro es que se vea.
+
+      No se apunta al quitarlo, que es casi siempre corregir un toque mal dado.
+    */
+    if (participantId) {
+      const quien = doc.participants.find((p) => p.id === participantId);
+      const recibo = receiptId ? doc.receipts?.find((r) => r.id === receiptId) : null;
+      log(
+        doc,
+        "payer.set",
+        by,
+        quien?.name ?? "",
+        recibo ? recibo.totalCents : doc.totalCents,
+      );
+    }
+  });
+}
+
+/* ------------------------------------------------------------------- pagos */
+
+/**
+ * «Ya te lo he mandado», que es la mitad del deudor.
+ *
+ * No lo damos por cobrado: hasta aquí lo único que ha pasado es que alguien ha
+ * vuelto de su banco y dice que lo ha enviado. Un Bizum tarda segundos pero una
+ * transferencia puede tardar un día, así que la otra mitad la pone quien lo
+ * recibe cuando lo ve en su cuenta.
+ *
+ * Hay un solo registro por pareja: volver a decirlo pisa el anterior en vez de
+ * apilar avisos, que es lo que pasaría con quien toque el botón dos veces.
+ */
+export function declararPago(
+  code: string,
+  fromId: string,
+  toId: string,
+  cents: number,
+  via: Via,
+): Promise<TicketState> {
+  return mutate(code, (doc) => {
+    if (fromId === toId) throw new StoreError("Nadie se paga a sí mismo.");
+    for (const quien of [fromId, toId]) {
+      if (!doc.participants.some((p) => p.id === quien)) {
+        throw new StoreError("Ese comensal no está en la comanda.", 404);
+      }
+    }
+
+    const pagos = doc.pagos ?? (doc.pagos = []);
+    const ya = pagos.find((p) => p.fromId === fromId && p.toId === toId);
+    // Lo ya cobrado no se reabre desde el lado del que paga: eso sólo puede
+    // hacerlo quien tiene el dinero delante.
+    if (ya?.estado === "ok") return;
+
+    const nuevo = {
+      fromId,
+      toId,
+      cents: Math.max(0, Math.round(cents)),
+      via,
+      estado: "dice" as const,
+      at: new Date().toISOString(),
+    };
+    if (ya) Object.assign(ya, nuevo);
+    else {
+      if (pagos.length >= LIMITS.pagos) throw new StoreError("Demasiados pagos en esta comanda.");
+      pagos.push(nuevo);
+    }
+  });
+}
+
+/**
+ * «Sí, me ha llegado» o «todavía no», que es la mitad de quien cobra.
+ *
+ * Que no haya llegado no se anuncia a nadie: el aviso vuelve a desaparecer y
+ * se queda entre los dos. Puede ser verdad y estar el dinero de camino —una
+ * transferencia tarda hasta un día— y decirle a ocho personas que fulano no ha
+ * pagado, por diez euros y pudiendo ser mentira, hace más daño que bien.
+ *
+ * Lo bueno sí se anuncia: eso es lo que la mesa quiere saber.
+ */
+export function resolverPago(
+  code: string,
+  fromId: string,
+  toId: string,
+  ok: boolean,
+): Promise<TicketState> {
+  return mutate(code, (doc) => {
+    const pagos = doc.pagos ?? (doc.pagos = []);
+    const pago = pagos.find((p) => p.fromId === fromId && p.toId === toId);
+    if (!pago) throw new StoreError("Ese pago ya no está.", 404);
+
+    if (!ok) {
+      doc.pagos = pagos.filter((p) => p !== pago);
+      const deudor = doc.participants.find((p) => p.id === fromId);
+      // Si se había dado por saldado, deja de estarlo: el dinero no está.
+      if (deudor) deudor.settled = false;
+      return;
+    }
+
+    pago.estado = "ok";
+    pago.at = new Date().toISOString();
+    log(doc, "pago.ok", fromId, doc.participants.find((p) => p.id === toId)?.name ?? "", pago.cents);
+
+    /*
+      Saldar a alguien es cosa de todas sus deudas, no de ésta.
+
+      Con un solo pagador —el caso de siempre— confirmar es saldar y ya está.
+      Pero si la mesa pagó entre dos, uno puede deberle a los dos, y dar por
+      saldado con la primera confirmación le borraría la otra deuda de encima.
+      Por eso se mira el reparto entero antes de decidir.
+    */
+    const settlement = computeSettlement(docToState(code, doc));
+    const suyas = settlement.transactions.filter((t) => t.fromId === fromId);
+    const todasOk =
+      suyas.length > 0 &&
+      suyas.every((t) =>
+        (doc.pagos ?? []).some(
+          (p) => p.fromId === t.fromId && p.toId === t.toId && p.estado === "ok",
+        ),
+      );
+    const deudor = doc.participants.find((p) => p.id === fromId);
+    if (deudor && todasOk) deudor.settled = true;
   });
 }
 
@@ -241,6 +400,11 @@ export function removeParticipant(code: string, participantId: string): Promise<
     }
     // Al irse, sus platos vuelven a quedar libres.
     doc.claims = doc.claims.filter((c) => c.participantId !== participantId);
+    if (doc.pagos) {
+      doc.pagos = doc.pagos.filter(
+        (p) => p.fromId !== participantId && p.toId !== participantId,
+      );
+    }
   });
 }
 

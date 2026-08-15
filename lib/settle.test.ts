@@ -35,6 +35,7 @@ function state(
     participants,
     claims,
     events: [],
+    pagos: [],
   };
 }
 

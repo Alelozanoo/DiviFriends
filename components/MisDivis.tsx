@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { money } from "@/lib/format";
 import { cuando, useMisDivis, type DiviGuardado } from "@/lib/misDivis";
-import { useT, rellena } from "@/lib/i18n";
+import { useT } from "@/lib/i18n";
 import { Avatar } from "./ui";
 
 /**

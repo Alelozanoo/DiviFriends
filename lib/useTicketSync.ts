@@ -115,6 +115,7 @@ function pick(state: TicketState): TicketState {
     participants: state.participants,
     claims: state.claims,
     events: state.events,
+    pagos: state.pagos || [],
   };
 }
 
