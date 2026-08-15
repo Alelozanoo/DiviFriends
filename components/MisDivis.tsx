@@ -17,7 +17,7 @@ import { Avatar } from "./ui";
  * No se pinta nada si no hay divis guardados: quien llega por primera vez ve la
  * portada exactamente igual que antes.
  */
-export default function MisDivis({ compacto = false }: { compacto?: boolean }) {
+export default function MisDivis() {
   const { divis, quitar } = useMisDivis();
   const [todos, setTodos] = useState(false);
 
@@ -30,7 +30,7 @@ export default function MisDivis({ compacto = false }: { compacto?: boolean }) {
   const ocultos = divis.length - lista.length;
 
   return (
-    <section className={compacto ? "" : "mt-6"}>
+    <section className="mt-6">
       <div className="mb-2 flex items-baseline justify-between gap-3 px-1">
         <p className="stamp text-ink-faint">Tus divis</p>
         <p className="stamp text-ink-faint/70">en este móvil</p>
@@ -57,6 +57,43 @@ export default function MisDivis({ compacto = false }: { compacto?: boolean }) {
 
 function Fila({ divi, onQuitar }: { divi: DiviGuardado; onQuitar: () => void }) {
   const cobra = !divi.saldado && divi.cents < 0;
+  const [confirmando, setConfirmando] = useState(false);
+
+  /*
+    Cerrar pide confirmación, y la confirmación dice qué pasa de verdad.
+
+    Es importante que no se lea como «borrar la comanda»: esto sólo la quita de
+    la lista de este móvil. La comanda sigue viva para los demás y se vuelve con
+    el enlace o el código. Sin esa frase, quien lo pulse puede creer que acaba
+    de cargarse la cuenta de la cena de todos.
+  */
+  if (confirmando) {
+    return (
+      <li className="rounded-2xl border border-clay/40 bg-clay/[0.07] px-3.5 py-3">
+        <p className="text-sm font-semibold">¿Cerrar {divi.place || divi.code}?</p>
+        <p className="mt-1 text-xs leading-relaxed text-ink-soft">
+          Se quita de esta lista. La comanda sigue viva y puedes volver a ella con el enlace o el
+          código.
+        </p>
+        <div className="mt-2.5 flex gap-2">
+          <button
+            type="button"
+            onClick={onQuitar}
+            className="flex-1 rounded-xl bg-clay py-2 text-xs font-bold text-paper transition-transform active:scale-[0.98]"
+          >
+            Sí, cerrar
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfirmando(false)}
+            className="flex-1 rounded-xl border border-line py-2 text-xs font-semibold text-ink-soft"
+          >
+            Dejarlo
+          </button>
+        </div>
+      </li>
+    );
+  }
 
   return (
     <li className="relative">
@@ -117,8 +154,8 @@ function Fila({ divi, onQuitar }: { divi: DiviGuardado; onQuitar: () => void }) 
           falta, porque esta lista cuenta dónde has comido y el móvil se presta. */}
       <button
         type="button"
-        onClick={onQuitar}
-        aria-label={`Quitar ${divi.place || divi.code} de la lista`}
+        onClick={() => setConfirmando(true)}
+        aria-label={`Cerrar ${divi.place || divi.code}`}
         className="absolute right-1 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full text-[0.7rem] text-ink-faint/60 transition-colors hover:bg-clay/15 hover:text-clay"
       >
         ✕

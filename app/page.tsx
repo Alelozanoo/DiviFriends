@@ -4,6 +4,7 @@ import TicketUploader from "@/components/TicketUploader";
 import { CambiarCookies } from "@/components/Consent";
 import { PasoCuentas, PasoFoto, PasoMarcar, PasoTickets } from "@/components/ComoVa";
 import Preguntas from "@/components/Preguntas";
+import MisDivis from "@/components/MisDivis";
 
 /**
  * Los cuatro pasos, dibujados con las piezas de la propia app.
@@ -65,6 +66,17 @@ export default function Home() {
                 <p className="stamp mb-3 px-2 text-ink-faint">Empieza aquí</p>
                 <TicketUploader />
               </div>
+
+              {/*
+                Debajo de la tarjeta y no encima: quien vuelve baja el pulgar un
+                centímetro y ya está, y quien llega por primera vez no se
+                encuentra un muro antes de poder hacer la foto — que costó lo
+                suyo que entrara en la primera pantalla.
+
+                No pinta nada si no hay divis guardados, así que para quien
+                llega nuevo la portada es exactamente la de antes.
+              */}
+              <MisDivis />
             </div>
 
             <div className="flex-1 order-2 lg:order-1">
