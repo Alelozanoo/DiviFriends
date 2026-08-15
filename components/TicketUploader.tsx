@@ -242,16 +242,24 @@ export default function TicketUploader({
       */}
       {!targetCode && (
         <>
-          <p className="mt-4 text-center text-sm text-ink-soft">
-            ¿Ya tienes un Divi?{" "}
-            <button
-              type="button"
-              onClick={() => setPidiendoCodigo(true)}
-              className="text-amber underline underline-offset-4 hover:text-ink"
-            >
-              Introduce el código
-            </button>
-          </p>
+          {/*
+            En el móvil es una tarjeta con el mismo peso visual que la de la
+            foto —sin ser tan grande—, porque ahí sólo hay dos maneras de
+            empezar y las dos tienen que verse como tales. Un enlace subrayado
+            al pie no se lee como una puerta. En el ordenador se queda como
+            estaba: una línea discreta debajo de la tarjeta.
+          */}
+          <button
+            type="button"
+            onClick={() => setPidiendoCodigo(true)}
+            className="mt-3 flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-2xl border border-line bg-paper-2/60 px-4 py-3.5 text-sm font-semibold text-ink-soft transition-colors active:bg-paper-3 lg:mt-4 lg:border-0 lg:bg-transparent lg:py-0 lg:font-normal lg:active:bg-transparent"
+          >
+            {/* Una sola línea: la pregunta más el enlace se partían en dos en
+                390 px y el botón perdía la forma de puerta. Y es un acto, no
+                una pregunta, igual que «Subir foto». */}
+            <span aria-hidden className="text-amber">#</span>
+            Entrar con un código
+          </button>
 
           {pidiendoCodigo && (
             <Sheet onClose={() => setPidiendoCodigo(false)}>

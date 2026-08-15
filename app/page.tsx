@@ -43,9 +43,12 @@ const PASOS = [
 
 export default function Home() {
   return (
-    <main className="flex-1">
+    <main className="flex flex-1 flex-col lg:block">
       {/* ---------------------------------------------------------------- hero */}
-      <section className="relative overflow-hidden">
+      {/* En el móvil se estira para que el pie caiga abajo del todo. Sin esto
+          el pie quedaba pegado a la tarjeta con medio dedo de negro debajo, y
+          la pantalla parecía a medio cargar. */}
+      <section className="relative flex flex-1 flex-col overflow-hidden lg:block">
         <div
           aria-hidden
           className="pointer-events-none absolute -top-40 left-1/2 h-[38rem] w-[38rem] -translate-x-1/2 rounded-full opacity-[0.14] blur-3xl"
@@ -53,12 +56,22 @@ export default function Home() {
         />
 
         <div className="mx-auto max-w-6xl px-5 pb-8 pt-6 lg:pb-20 lg:pt-16">
-          <header className="mb-8 flex justify-center lg:mb-12 lg:justify-start">
+          <header className="mb-5 flex justify-center lg:mb-12 lg:justify-start">
             <Link href="/" className="inline-flex items-center gap-2.5 lg:gap-4">
               <Logo size={128} priority className="h-11 w-11 lg:h-20 lg:w-20" />
               <Wordmark className="text-xl font-bold tracking-tight lg:text-3xl" />
             </Link>
           </header>
+
+          {/*
+            Una línea, sólo en el móvil. El titular grande y el párrafo se
+            quedan para el ordenador, pero sin nada la pantalla no decía qué es
+            esto: era una tarjeta suelta en un hueco negro. Una frase corta da
+            identidad sin robarle sitio a lo que se viene a hacer.
+          */}
+          <p className="mb-4 text-center text-lg font-semibold tracking-tight text-ink-soft lg:hidden">
+            La cuenta se reparte <span className="text-amber">sola</span>
+          </p>
 
           <div className="flex flex-col gap-10 lg:flex-row lg:items-center lg:gap-16">
             <div className="w-full lg:max-w-md order-1 lg:order-2">
