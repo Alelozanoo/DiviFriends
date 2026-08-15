@@ -52,7 +52,7 @@ export default function Home() {
           style={{ background: "radial-gradient(circle, var(--amber), transparent 65%)" }}
         />
 
-        <div className="mx-auto max-w-6xl px-5 pb-20 pt-6 lg:pt-16">
+        <div className="mx-auto max-w-6xl px-5 pb-8 pt-6 lg:pb-20 lg:pt-16">
           <header className="mb-8 flex justify-center lg:mb-12 lg:justify-start">
             <Link href="/" className="inline-flex items-center gap-2.5 lg:gap-4">
               <Logo size={128} priority className="h-11 w-11 lg:h-20 lg:w-20" />
@@ -79,7 +79,16 @@ export default function Home() {
               <MisDivis />
             </div>
 
-            <div className="flex-1 order-2 lg:order-1">
+            {/*
+              En el móvil esto no se ve.
+
+              Quien entra desde el teléfono viene a repartir una cuenta, no a
+              leer de qué va: el titular, el párrafo y los sellos le empujaban
+              la app fuera de la pantalla. Se oculta por CSS y no se borra, así
+              que sigue en el HTML para los buscadores —que indexan con
+              navegador móvil— y para quien abra la web en un ordenador.
+            */}
+            <div className="hidden flex-1 lg:block order-2 lg:order-1">
               <h1 className="text-[2.6rem] font-bold leading-[1.02] tracking-[-0.03em] sm:text-6xl">
                 La cuenta se reparte
                 <br />
@@ -108,7 +117,9 @@ export default function Home() {
       </section>
 
       {/* ------------------------------------------------------------- proceso */}
-      <section className="border-y border-line bg-paper-2/40">
+      {/* Igual que el texto del hero: escondido en el móvil, intacto en el
+          HTML. Es casi todo lo que esta web tiene para posicionar. */}
+      <section className="hidden border-y border-line bg-paper-2/40 lg:block">
         <div className="mx-auto max-w-6xl px-5 py-16 sm:py-20">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Cómo funciona</h2>
           <p className="mt-3 max-w-md text-ink-soft">
@@ -132,7 +143,9 @@ export default function Home() {
         </div>
       </section>
 
-      <Preguntas />
+      <div className="hidden lg:block">
+        <Preguntas />
+      </div>
 
       <footer className="border-t border-line">
         <div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-8 text-sm text-ink-faint sm:flex-row sm:items-center sm:justify-between">

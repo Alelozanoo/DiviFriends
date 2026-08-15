@@ -45,10 +45,15 @@ export default function TicketUploader({
   onSuccess?: () => void;
 } = {}) {
   const router = useRouter();
-  // Dos entradas separadas: `capture` abre la cámara directamente, y sin él el
-  // sistema enseña el carrete. Con una sola no se puede tener ambas cosas.
-  const cameraRef = useRef<HTMLInputElement>(null);
-  const galleryRef = useRef<HTMLInputElement>(null);
+  /*
+    Una sola entrada, sin `capture`.
+
+    Con `capture` el móvil abre la cámara y punto; sin él enseña su propio menú
+    —«Hacer foto», «Fototeca», «Archivos»—, que es justo lo que hacían los dos
+    botones que había aquí. Dejar que lo ponga el sistema quita un botón de la
+    pantalla y encima ofrece más sitios de donde sacar la foto.
+  */
+  const fileRef = useRef<HTMLInputElement>(null);
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -180,40 +185,20 @@ export default function TicketUploader({
             </span>
           )}
 
-          <div className="mt-1 flex w-full max-w-xs flex-col gap-2 sm:flex-row">
+          <div className="mt-1 w-full max-w-xs">
             <button
               type="button"
               disabled={busy}
-              onClick={() => cameraRef.current?.click()}
-              className="flex-1 rounded-xl bg-amber px-4 py-3 font-semibold text-paper transition-colors hover:bg-ink disabled:cursor-wait disabled:opacity-60"
+              onClick={() => fileRef.current?.click()}
+              className="w-full rounded-xl bg-amber px-4 py-3.5 font-semibold text-paper transition-colors hover:bg-ink disabled:cursor-wait disabled:opacity-60"
             >
-              Hacer foto
-            </button>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => galleryRef.current?.click()}
-              className="flex-1 rounded-xl border border-line px-4 py-3 font-semibold text-ink-soft transition-colors hover:border-amber hover:text-amber disabled:cursor-wait disabled:opacity-60"
-            >
-              De la galería
+              Subir foto
             </button>
           </div>
         </div>
 
         <input
-          ref={cameraRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          className="sr-only"
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            event.target.value = "";
-            if (file) void upload(file);
-          }}
-        />
-        <input
-          ref={galleryRef}
+          ref={fileRef}
           type="file"
           accept="image/*"
           className="sr-only"
