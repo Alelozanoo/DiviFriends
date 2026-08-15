@@ -127,7 +127,7 @@ export default function ItemBubble({
           </span>
           {item.splitInto > 1 && (
             <span className="tnum text-[0.68rem] leading-none text-ink-faint">
-              de {money(item.totalCents, currency)}
+              {t.linea.de} {money(item.totalCents, currency)}
             </span>
           )}
         </span>

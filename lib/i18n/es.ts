@@ -305,6 +305,24 @@ export const es = {
   },
 
   /* ------------------------------------------------------------ cookies */
+  consent: {
+    aviso: "Una sola cosa: usamos una cookie de Meta para saber si los anuncios que ponemos sirven de algo.",
+    igualSiNo: "Repartir la cuenta funciona igual si dices que no.",
+    queGuarda: "Qué guarda",
+    no: "No, gracias",
+    si: "Aceptar",
+  },
+
+  /* ------------------------------------------------------- avatar y varios */
+  varios: {
+    eligeAvatar: "Elige tu foto de perfil",
+    otraCana: "Otra caña",
+    comanda: "Comanda",
+    codigoCorto: "El código tiene al menos 4 caracteres.",
+    codigoNoExiste: "No encuentro esa comanda. Revisa el código del ticket.",
+  },
+
+  /* --------------------------------------------------- enlace de cookies */
   cookies: {
     cambiar: "Cookies",
   },

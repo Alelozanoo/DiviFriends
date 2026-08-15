@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { EVENTO, guardar, leer, olvidar } from "@/lib/consent";
 import { PIXEL_ID } from "@/lib/track";
+import { useT } from "@/lib/i18n";
 
 /**
  * El cartel de la cookie.
@@ -26,6 +27,8 @@ export default function Consent() {
     return () => window.removeEventListener(EVENTO, alCambiar);
   }, []);
 
+  const t = useT();
+
   if (!PIXEL_ID || !abierto) return null;
 
   return (
@@ -36,10 +39,9 @@ export default function Consent() {
     >
       <div className="mx-auto flex max-w-2xl flex-col gap-3 rounded-2xl border border-line bg-paper-2 p-4 shadow-[0_24px_60px_-20px_rgba(0,0,0,0.9)]">
         <p className="text-sm leading-relaxed text-ink-soft">
-          Una sola cosa: usamos una cookie de Meta para saber si los anuncios que ponemos sirven de
-          algo. <span className="text-ink">Repartir la cuenta funciona igual si dices que no.</span>{" "}
+          {t.consent.aviso} <span className="text-ink">{t.consent.igualSiNo}</span>{" "}
           <Link href="/cookies" className="text-amber underline underline-offset-2">
-            Qué guarda
+            {t.consent.queGuarda}
           </Link>
         </p>
         <div className="flex gap-2">
@@ -48,14 +50,14 @@ export default function Consent() {
             onClick={() => guardar("no")}
             className="flex-1 rounded-xl border border-line px-4 py-3 text-sm font-bold text-ink-soft transition-colors active:bg-paper-3"
           >
-            No, gracias
+            {t.consent.no}
           </button>
           <button
             type="button"
             onClick={() => guardar("si")}
             className="flex-1 rounded-xl bg-amber px-4 py-3 text-sm font-bold text-paper transition-transform active:scale-[0.98]"
           >
-            Aceptar
+            {t.consent.si}
           </button>
         </div>
       </div>

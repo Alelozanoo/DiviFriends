@@ -750,7 +750,7 @@ function JoinSheet({
         </>
       )}
 
-      <p className="stamp mt-4 text-ink-faint">Elige tu foto de perfil</p>
+      <p className="stamp mt-4 text-ink-faint">{t.varios.eligeAvatar}</p>
       <form
         className={`flex flex-col gap-4 ${people.length > 0 ? "mt-2" : "mt-4"}`}
         onSubmit={async (event) => {
@@ -834,7 +834,7 @@ function AddItemSheet({
           autoFocus
           value={name}
           onChange={(event) => setName(event.target.value)}
-          placeholder="Otra caña"
+          placeholder={t.varios.otraCana}
           className="w-full rounded-xl border border-line bg-paper px-4 py-3 focus:border-amber focus:outline-none"
         />
         <div className="flex gap-2">

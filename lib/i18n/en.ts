@@ -287,6 +287,22 @@ export const en: Dict = {
     noExiste: "That bill doesn't exist.",
   },
 
+  consent: {
+    aviso: "Just one thing: we use a Meta cookie to see whether the ads we run are doing anything.",
+    igualSiNo: "Splitting the bill works exactly the same if you say no.",
+    queGuarda: "What it stores",
+    no: "No thanks",
+    si: "Accept",
+  },
+
+  varios: {
+    eligeAvatar: "Pick your picture",
+    otraCana: "Another beer",
+    comanda: "Bill",
+    codigoCorto: "The code is at least 4 characters.",
+    codigoNoExiste: "Can't find that bill. Check the code on the receipt.",
+  },
+
   cookies: {
     cambiar: "Cookies",
   },

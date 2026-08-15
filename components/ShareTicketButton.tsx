@@ -5,6 +5,7 @@ import { money } from "@/lib/format";
 import { ticketPng } from "@/lib/ticketImage";
 import { EV, track } from "@/lib/track";
 import type { TicketState } from "@/lib/types";
+import { rellena, useT } from "@/lib/i18n";
 
 /**
  * Mandar el ticket por WhatsApp: la foto de la cuenta, el mensaje y el enlace.
@@ -30,14 +31,16 @@ export default function ShareTicketButton({
   qrSvg: string;
   onDone?: () => void;
 }) {
+  const t = useT();
   const [imagen, setImagen] = useState<File | null>(null);
   const [nota, setNota] = useState<string | null>(null);
 
   const { ticket } = state;
-  const sitio = ticket.place ? `de ${ticket.place}` : "de la mesa";
-  const mensaje =
-    `La cuenta ${sitio}: ${money(ticket.totalCents, ticket.currency)}. ` +
-    `Entra y marca lo que has tomado tú, que sale solo lo que le toca a cada uno:\n${url}`;
+  const sitio = ticket.place ? `${t.ticket.del} ${ticket.place}` : t.ticket.deLaMesa;
+  const mensaje = `${rellena(t.ticket.mensaje, {
+    sitio,
+    total: money(ticket.totalCents, ticket.currency),
+  })}\n${url}`;
 
   /*
     La imagen se dibuja al abrir la hoja, no al pulsar.
@@ -95,7 +98,7 @@ export default function ShareTicketButton({
         onClick={compartir}
         className="mt-4 w-full rounded-xl bg-mint py-3 font-bold text-paper transition-transform active:scale-[0.98]"
       >
-        Compartir ticket
+        {t.ticket.compartir}
       </button>
       {nota && <p className="mt-2 text-center text-xs text-ink-faint">{nota}</p>}
     </>

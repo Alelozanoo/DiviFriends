@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import type { Metadata } from "next";
-import { COOKIE, I18nProvider, type Lang } from "@/lib/i18n";
+// `COOKIE` y `Lang` se piden a `config`, que no lleva "use client": pedírselos
+// a `index` los convertía en una referencia de cliente y la cookie no se leía.
+import { COOKIE, idiomaDe, type Lang } from "@/lib/i18n/config";
+import { I18nProvider } from "@/lib/i18n";
 import { getTicketState } from "@/lib/store";
 import { ticketQrSvg, ticketUrl } from "@/lib/ticketUrl";
 import SplitApp from "@/components/SplitApp";
@@ -33,7 +36,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
  * español a quien recibe el enlace desde fuera.
  */
 async function idioma(): Promise<Lang> {
-  return (await cookies()).get(COOKIE)?.value === "en" ? "en" : "es";
+  return idiomaDe((await cookies()).get(COOKIE)?.value);
 }
 
 export default async function TicketPage({ params }: Props) {

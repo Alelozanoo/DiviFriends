@@ -337,7 +337,7 @@ function PersonRow({
       <div className="min-w-0 flex-1 font-medium py-1">
         <div className="truncate">
           {person.name}
-          {isMe && <span className="ml-1.5 text-xs text-amber">(tú)</span>}
+          {isMe && <span className="ml-1.5 text-xs text-amber">{t.mesa.tu}</span>}
         </div>
         
         {!person.settled && mustPay && (

@@ -4,12 +4,12 @@ import { createContext, useContext, useEffect } from "react";
 import { es, type Dict } from "./es";
 import { en } from "./en";
 
-export type Lang = "es" | "en";
+import { COOKIE, type Lang } from "./config";
+
+export { COOKIE };
+export type { Lang };
 
 const DICCIONARIOS: Record<Lang, Dict> = { es, en };
-
-/** La cookie la lee el servidor en la comanda, que ya se pinta a demanda. */
-export const COOKIE = "divi.lang";
 
 const Ctx = createContext<{ lang: Lang; t: Dict }>({ lang: "es", t: es });
 

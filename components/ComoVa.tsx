@@ -268,7 +268,7 @@ export function PasoCuentas() {
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-xs font-medium leading-tight">
                   {p.nombre}
-                  {p.yo && <span className="ml-1 text-[0.55rem] text-amber">(tú)</span>}
+                  {p.yo && <span className="ml-1 text-[0.55rem] text-amber">{t.mesa.tu}</span>}
                 </span>
                 {p.notas.map((nota) => (
                   <span key={nota} className="block truncate text-[0.55rem] leading-tight text-ink-faint">
