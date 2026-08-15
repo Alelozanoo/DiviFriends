@@ -316,3 +316,40 @@ function Flecha() {
     </svg>
   );
 }
+
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Los cuatro pasos, dibujados con las piezas de la propia app.
+ *
+ * Se probó con capturas de pantalla y pesaban medio mega para acabar
+ * enseñando la app entera —cabecera, barra de abajo, diez líneas— cuando cada
+ * paso sólo necesita una de esas piezas. Dibujadas se recortan a lo justo, se
+ * ven nítidas en cualquier pantalla y no cuestan una sola petición.
+ */
+export const PASOS = [
+  {
+    n: "01",
+    title: "Le haces una foto",
+    foot: "El ticket se convierte en la lista, plato a plato.",
+    Pieza: PasoFoto,
+  },
+  {
+    n: "02",
+    title: "¿Otro sitio? Otro ticket",
+    foot: "La carne de una tienda y las bebidas de otra, en la misma cuenta.",
+    Pieza: PasoTickets,
+  },
+  {
+    n: "03",
+    title: "Tocas lo que has tomado",
+    foot: "Lo compartido se parte solo entre quienes lo pidieron.",
+    Pieza: PasoMarcar,
+  },
+  {
+    n: "04",
+    title: "Sale quién le paga a quién",
+    foot: "Aunque haya puesto la tarjeta uno distinto en cada sitio.",
+    Pieza: PasoCuentas,
+  },
+];
