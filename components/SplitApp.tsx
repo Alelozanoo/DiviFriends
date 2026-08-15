@@ -58,7 +58,13 @@ export default function SplitApp({
   const meId = storedId && state.participants.some((p) => p.id === storedId) ? storedId : null;
   const showJoin = joinOverride ?? (known && !meId);
 
-  const [newFriend, setNewFriend] = useState<{ id: string, name: string, avatar?: string, color?: string, key: number } | null>(null);
+  // `color` va obligatorio, como en `Participant`: el toast siempre se rellena
+  // desde uno de la mesa, así que nunca falta. Declararlo opcional no cubría
+  // ningún caso real y en cambio rompía la compilación contra `Avatar`, que lo
+  // pide siempre — y con ella el despliegue entero.
+  const [newFriend, setNewFriend] = useState<
+    { id: string; name: string; avatar?: string; color: string; key: number } | null
+  >(null);
   const prevCount = useRef(initial.participants.length);
 
   useEffect(() => {
