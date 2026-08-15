@@ -166,7 +166,10 @@ export default function Home() {
             <Wordmark className="font-semibold" /> · reparte la cuenta sin discutir
           </p>
           <p className="flex items-center gap-4">
-            <span className="tnum">Los importes se calculan al céntimo.</span>
+            {/* Antes ponía que los importes se calculan al céntimo: cierto, pero
+                es una garantía y no una invitación, y en el móvil ésta es de las
+                pocas frases que se leen. Ahora dice qué hay que hacer. */}
+            <span>Haz la foto y pasa el enlace.</span>
             <CambiarCookies className="underline underline-offset-2 transition-colors hover:text-amber" />
           </p>
         </div>
