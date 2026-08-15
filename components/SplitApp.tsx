@@ -7,6 +7,7 @@ import { useStoredParticipant } from "@/lib/useStoredParticipant";
 import { useTicketSync } from "@/lib/useTicketSync";
 import { money, parseMoney } from "@/lib/format";
 import { EV, track, trackOnce } from "@/lib/track";
+import { recordar } from "@/lib/misDivis";
 import type { Participant, TicketState } from "@/lib/types";
 import AccountsPanel from "./AccountsPanel";
 import ItemBubble from "./ItemBubble";
@@ -219,6 +220,51 @@ export default function SplitApp({
   /* ----------------------------------------------------------------- vista */
 
   const myBalance = settlement.byParticipant.find((b) => b.participantId === meId) ?? null;
+
+  /*
+    Deja apuntada esta comanda en el móvil, con el saldo ya calculado.
+
+    Se guarda desde aquí y no desde la portada porque éste es el único momento
+    en que el dato es fresco y no cuesta nada: el reparto ya está hecho en
+    memoria. La portada se limita a leerlo, y así sigue cargando sin pedirle
+    nada al servidor.
+
+    Sólo cuando te has unido: mirar una comanda de paso no la convierte en tuya.
+  */
+  const aQuien = meId
+    ? (settlement.transactions ?? []).find((t) => t.fromId === meId)?.toId
+    : undefined;
+  const huella = [
+    code,
+    meId ?? "",
+    myBalance?.owesCents ?? 0,
+    myBalance?.settled ?? false,
+    state.ticket.place ?? "",
+    state.participants.map((p) => p.id).join(","),
+    aQuien ?? "",
+  ].join("|");
+
+  useEffect(() => {
+    if (!meId || !myBalance) return;
+    recordar({
+      code,
+      place: state.ticket.place,
+      at: new Date().toISOString(),
+      currency: state.ticket.currency,
+      cents: myBalance.owesCents,
+      aQuien: settlement.byParticipant.find((p) => p.participantId === aQuien)?.name ?? null,
+      saldado: myBalance.settled,
+      gente: state.participants.map((p) => ({
+        name: p.name,
+        color: p.color,
+        avatar: p.avatar,
+      })),
+    });
+    // Se apunta cuando cambia algo que la lista enseña, no en cada repintado:
+    // `huella` resume justo eso.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [huella]);
+
   const progress =
     settlement.grandTotalCents > 0 ? settlement.assignedCents / settlement.grandTotalCents : 0;
   const editingItem = state.items.find((i) => i.id === editing) ?? null;
