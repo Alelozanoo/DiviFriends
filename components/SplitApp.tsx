@@ -7,7 +7,7 @@ import { useStoredParticipant } from "@/lib/useStoredParticipant";
 import { useTicketSync } from "@/lib/useTicketSync";
 import { money, parseMoney } from "@/lib/format";
 import { EV, track, trackOnce } from "@/lib/track";
-import { recordar } from "@/lib/misDivis";
+import { olvidar, recordar } from "@/lib/misDivis";
 import type { Participant, TicketState } from "@/lib/types";
 import AccountsPanel from "./AccountsPanel";
 import ItemBubble from "./ItemBubble";
@@ -229,8 +229,12 @@ export default function SplitApp({
     memoria. La portada se limita a leerlo, y así sigue cargando sin pedirle
     nada al servidor.
 
-    Sólo cuando te has unido: mirar una comanda de paso no la convierte en tuya.
+    Y sólo si la comanda es tuya de verdad: haber marcado algo, o haber puesto
+    el dinero. Unirse y mirar no cuenta, o la lista se llenaría de mesas en las
+    que sólo asomaste la cabeza. Quien pagó entra aunque no haya marcado nada
+    suyo todavía: es el que más falta le hace volver, para ver quién le debe.
   */
+  const esMia = Boolean(myBalance && (myBalance.itemsCents > 0 || myBalance.paidCents > 0));
   const aQuien = meId
     ? (settlement.transactions ?? []).find((t) => t.fromId === meId)?.toId
     : undefined;
@@ -242,10 +246,17 @@ export default function SplitApp({
     state.ticket.place ?? "",
     state.participants.map((p) => p.id).join(","),
     aQuien ?? "",
+    esMia,
   ].join("|");
 
   useEffect(() => {
     if (!meId || !myBalance) return;
+    // Si sueltas lo que habías marcado, se cae de la lista igual que entró:
+    // la regla vale en los dos sentidos o acabaría habiendo mesas fantasma.
+    if (!esMia) {
+      olvidar(code);
+      return;
+    }
     recordar({
       code,
       place: state.ticket.place,
