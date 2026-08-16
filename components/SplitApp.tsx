@@ -951,6 +951,7 @@ export default function SplitApp({
           ticket={state.ticket}
           receipts={state.receipts || []}
           people={settlement.byParticipant}
+          meId={meId}
           onSetPayer={async (participantId, receiptId) => {
             let finalParticipantId: string | null = participantId;
             if (receiptId) {

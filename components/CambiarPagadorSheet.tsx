@@ -4,36 +4,53 @@ import { useT, rellena } from "@/lib/i18n";
 import { Avatar, Sheet } from "./ui";
 import type { ParticipantBalance, Receipt, Ticket } from "@/lib/types";
 
+/**
+ * Pasarle a otro un ticket que pusiste tú.
+ *
+ * Sólo salen los tuyos. Una mesa puede llevar tres papeles y tres pagadores
+ * distintos —uno paga la comida y otro las copas—, así que enseñarlos todos
+ * daba a entender que aquí manda uno solo sobre el dinero de los demás. Y el
+ * caso de verdad es siempre el mismo: «esto lo puse yo y me he equivocado».
+ *
+ * Asignar pagador a un ticket que no tiene no se hace aquí, sino desde su
+ * propia pestaña, que es donde se ve de cuál se está hablando.
+ */
 export function CambiarPagadorSheet({
   ticket,
   receipts,
   people,
+  meId,
   onSetPayer,
   onClose,
 }: {
   ticket: Ticket;
   receipts: Receipt[];
   people: ParticipantBalance[];
+  meId: string | null;
   onSetPayer: (participantId: string, receiptId: string | null) => void;
   onClose: () => void;
 }) {
   const t = useT();
 
-  // Compatibilidad: el ticket original más todos los recibos extras
-  const allTickets = [
-    { id: null, label: ticket.tableLabel ?? t.cuentas.laCuenta, payerId: ticket.payerId },
-    ...receipts.map(r => ({ id: r.id, label: r.label, payerId: r.payerId }))
+  // El ticket original más los recibos, y de todos ellos sólo los que puse yo.
+  const enLaMesa = [
+    { id: null, label: ticket.place ?? t.comanda.ticketOriginal, payerId: ticket.payerId },
+    ...receipts.map((r) => ({ id: r.id, label: r.label, payerId: r.payerId })),
   ];
+  const mios = enLaMesa.filter((tkt) => tkt.payerId && tkt.payerId === meId);
+  // Con varios papeles en la mesa hay que decir de cuál se habla, aunque a mí
+  // sólo me toque uno: «la cuenta» a secas ya no identifica nada.
+  const variosEnLaMesa = enLaMesa.length > 1;
 
   return (
     <Sheet onClose={onClose}>
       <h2 className="text-xl font-bold tracking-tight mb-6">{t.menu.cambiarPagador}</h2>
-      
+
       <div className="flex flex-col gap-6">
-        {allTickets.map((tkt, index) => (
+        {mios.map((tkt, index) => (
           <div key={tkt.id ?? "legacy"} className={index > 0 ? "border-t border-line/60 pt-6" : ""}>
             <h3 className="font-semibold text-ink-soft mb-3">
-              {rellena(t.cuentas.quienHaPagado, { que: allTickets.length > 1 ? tkt.label : t.cuentas.laCuenta })}
+              {rellena(t.cuentas.quienHaPagado, { que: variosEnLaMesa ? tkt.label : t.cuentas.laCuenta })}
             </h3>
             {people.length === 0 ? (
               <p className="text-sm text-ink-faint">{t.cuentas.nadieEnLaMesa}</p>
