@@ -77,6 +77,8 @@ export default function SplitApp({
   // null = decide la app (abierto si no te has unido); true/false = lo has decidido tú.
   const [joinOverride, setJoinOverride] = useState<boolean | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  // La hoja del escudo: las opciones de quien puso el dinero.
+  const [escudoOpen, setEscudoOpen] = useState(false);
   const [cambiarPagadorOpen, setCambiarPagadorOpen] = useState(false);
   const [editNameOpen, setEditNameOpen] = useState(false);
   const [showStatusPopup, setShowStatusPopup] = useState(false);
@@ -423,6 +425,28 @@ export default function SplitApp({
               <circle cx="12" cy="12" r="9" />
             </svg>
           </button>
+
+          {/*
+            El escudo, sólo para quien puso el dinero.
+
+            Lo que puede hacer el pagador —cambiar quién pagó, cerrar la mesa,
+            configurar el cobro— estaba mezclado con «editar mi perfil» en los
+            tres puntos, donde el resto de la mesa se topaba con media lista de
+            botones que no le tocaban. Aquí va aparte, y de paso el escudo dice
+            sin palabras quién adelantó la cuenta.
+          */}
+          {soyElPagador && (
+            <button
+              type="button"
+              onClick={() => setEscudoOpen(true)}
+              aria-label={t.menu.opcionesPagador}
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-amber/50 bg-amber/10 text-amber transition-colors hover:bg-amber/20 active:bg-amber/25 ml-0.5"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round">
+                <path d="M12 2.8 4.8 5.6v5.7c0 4.4 3 8.5 7.2 9.6 4.2-1.1 7.2-5.2 7.2-9.6V5.6L12 2.8Z" />
+              </svg>
+            </button>
+          )}
 
           <button
             type="button"
@@ -876,11 +900,14 @@ export default function SplitApp({
         />
       )}
 
-      {menuOpen && (
+      {(menuOpen || escudoOpen) && (
         <HeaderMenuSheet
-          showPayerOptions={soyElPagador}
+          modo={escudoOpen ? "pagador" : "general"}
           ticketClosed={state.ticket.closed ?? false}
-          onClose={() => setMenuOpen(false)}
+          onClose={() => {
+            setMenuOpen(false);
+            setEscudoOpen(false);
+          }}
           onComoFunciona={() => setGuiding(true)}
           onChangeName={() => {
             if (!yo) {

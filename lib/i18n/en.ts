@@ -150,6 +150,9 @@ export const en: Dict = {
 
   menu: {
     titulo: "Table options",
+    tituloPagador: "You put the money down",
+    entradillaPagador: "Only somebody who paid a receipt sees these.",
+    opcionesPagador: "Payer options",
     cambiarPagador: "Change who paid",
     noPagueYo: "I didn't pay the bill",
     noPagueYoAviso: "Nobody will be marked as the person who put the money down.",

@@ -14,6 +14,7 @@ import { Sheet } from "./ui";
  * de la pantalla justo cuando hay que leer con atención.
  */
 export function HeaderMenuSheet({
+  modo = "general",
   onClose,
   onChangeName,
   onLeave,
@@ -22,9 +23,10 @@ export function HeaderMenuSheet({
   onConfigPayment,
   onCloseTicket,
   onComoFunciona,
-  showPayerOptions,
   ticketClosed,
 }: {
+  /** «general» es el de los tres puntos; «pagador», el del escudo. */
+  modo?: "general" | "pagador";
   onClose: () => void;
   onChangeName: () => void;
   onLeave: () => void;
@@ -33,7 +35,6 @@ export function HeaderMenuSheet({
   onConfigPayment: (() => void) | null;
   onCloseTicket: (() => void) | null;
   onComoFunciona: () => void;
-  showPayerOptions: boolean;
   ticketClosed: boolean;
 }) {
   const t = useT();
@@ -92,41 +93,62 @@ export function HeaderMenuSheet({
     );
   }
 
+  /*
+    Lo que sólo puede hacer quien puso el dinero vive detrás del escudo, y no
+    mezclado con «editar mi perfil». Así el resto de la mesa no se encuentra
+    media lista de botones que no le corresponden, y quien pagó reconoce de un
+    vistazo que ese escudo es suyo.
+  */
+  if (modo === "pagador") {
+    return (
+      <Sheet onClose={onClose}>
+        <h2 className="text-xl font-bold tracking-tight">{t.menu.tituloPagador}</h2>
+        <p className="mt-1 text-sm text-ink-soft">{t.menu.entradillaPagador}</p>
+
+        <div className="mt-5 flex flex-col gap-2">
+          {onChangePayer && !ticketClosed && (
+            <Opcion
+              onClick={() => {
+                onClose();
+                onChangePayer();
+              }}
+            >
+              {t.menu.cambiarPagador}
+            </Opcion>
+          )}
+
+          {onConfigPayment && !ticketClosed && (
+            <Opcion
+              onClick={() => {
+                onClose();
+                onConfigPayment();
+              }}
+            >
+              {t.menu.configurarCobro}
+            </Opcion>
+          )}
+
+          {onCloseTicket && !ticketClosed && (
+            <Opcion tono="amber" className="mt-2" onClick={() => setConfirmando("cerrar")}>
+              {t.menu.bloquear}
+            </Opcion>
+          )}
+
+          {onRemovePayer && !ticketClosed && (
+            <Opcion tono="clay" onClick={() => setConfirmando("pagador")}>
+              {t.menu.noPagueYo}
+            </Opcion>
+          )}
+        </div>
+      </Sheet>
+    );
+  }
+
   return (
     <Sheet onClose={onClose}>
       <h2 className="mb-4 text-xl font-bold tracking-tight">{t.menu.titulo}</h2>
 
       <div className="flex flex-col gap-2">
-        {onChangePayer && showPayerOptions && !ticketClosed && (
-          <Opcion
-            onClick={() => {
-              onClose();
-              onChangePayer();
-            }}
-          >
-            {t.menu.cambiarPagador}
-          </Opcion>
-        )}
-
-        {onRemovePayer && showPayerOptions && !ticketClosed && (
-          <Opcion tono="clay" onClick={() => setConfirmando("pagador")}>
-            {t.menu.noPagueYo}
-          </Opcion>
-        )}
-
-        {onConfigPayment && showPayerOptions && !ticketClosed && (
-          <Opcion
-            onClick={() => {
-              onClose();
-              onConfigPayment();
-            }}
-          >
-            {t.menu.configurarCobro}
-          </Opcion>
-        )}
-
-        <hr className="my-2 border-line/60" />
-
         <Opcion
           onClick={() => {
             onClose();
@@ -157,12 +179,6 @@ export function HeaderMenuSheet({
           <span className="font-semibold">{t.menu.idioma}</span>
           <LangSwitch />
         </div>
-
-        {onCloseTicket && showPayerOptions && !ticketClosed && (
-          <Opcion tono="amber" onClick={() => setConfirmando("cerrar")}>
-            {t.menu.bloquear}
-          </Opcion>
-        )}
 
         <Opcion tono="clay" className="mt-4" onClick={() => setConfirmando("salir")}>
           {t.menu.salir}

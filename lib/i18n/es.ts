@@ -161,6 +161,10 @@ export const es = {
   /* ----------------------------------------------- el menú de la cabecera */
   menu: {
     titulo: "Opciones de la mesa",
+    // La hoja del escudo: lo que sólo puede hacer quien puso el dinero.
+    tituloPagador: "Tú pusiste el dinero",
+    entradillaPagador: "Estas opciones sólo las ve quien ha pagado un ticket.",
+    opcionesPagador: "Opciones de pagador",
     cambiarPagador: "Cambiar quién ha pagado",
     noPagueYo: "No he pagado yo la cuenta",
     noPagueYoAviso: "La mesa se quedará sin nadie marcado como quien puso el dinero.",
