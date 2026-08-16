@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { EV, track } from "@/lib/track";
 import { useT } from "@/lib/i18n";
 import JoinByCode from "./JoinByCode";
-import { Sheet } from "./ui";
 
 /**
  * Reduce la foto antes de subirla. Además de ahorrar ancho de banda, el canvas
@@ -151,70 +150,93 @@ export default function TicketUploader({
           const file = event.dataTransfer.files?.[0];
           if (file) void upload(file);
         }}
-        className={`relative rounded-3xl border-2 border-dashed p-2 transition-colors ${
-          dragging ? "border-amber bg-amber/5" : "border-line"
+        className={`relative overflow-hidden rounded-[20px] border transition-colors ${
+          dragging ? "border-amber bg-amber/5" : "border-line-soft bg-paper-2"
         }`}
       >
-        <div className="flex w-full flex-col items-center gap-4 rounded-2xl bg-paper-2 px-6 py-8 text-center sm:py-10">
-          {/*
-            En cuanto la foto está lista se enseña con el escáner encima. Leer
-            un ticket tarda varios segundos y un icono parpadeando no dice nada:
-            ver tu propia foto con la línea pasando por encima cuenta que se
-            está trabajando sobre ella, y que la que has hecho vale.
-          */}
-          {vista ? (
-            <Escaner src={vista} />
-          ) : (
-            <span
-              className={`grid h-16 w-16 place-items-center rounded-2xl bg-amber text-paper ${
-                busy ? "animate-pulse" : ""
-              }`}
-              aria-hidden
-            >
-              <CameraIcon />
+        {/*
+          La misma tarjeta, dos puertas.
+
+          El código se pedía en una hoja que subía por encima de todo, y para
+          una sola casilla de seis letras era mucho aparato: tapabas la portada
+          entera para escribir un código. Ahora la tarjeta se da la vuelta en su
+          sitio y el pie de abajo cambia de palabra para volver.
+        */}
+        {pidiendoCodigo ? (
+          <div className="flex w-full flex-col items-center gap-3.5 px-[var(--gutter)] py-7 text-center">
+            <span className="grid h-14 w-14 place-items-center rounded-2xl bg-amber text-[26px] font-bold text-paper" aria-hidden>
+              #
             </span>
-          )}
-
-          <span className="text-xl font-semibold tracking-tight sm:text-2xl">
-            {busy ? getDynamicCopy() : t.subir.titulo}
-          </span>
-
-          {/* Sólo mientras trabaja: al empezar, la frase de apoyo repetía lo que
-              ya dicen el título y los dos botones de debajo. */}
-          {busy && (
-            <span className="max-w-sm text-sm text-ink-soft">
-              {progress < 85 
-                ? t.subir.tardo
-                : t.subir.cuadrando}
+            <span className="text-[21px] font-bold leading-tight tracking-[-0.025em]">
+              {t.subir.codigoTitulo}
             </span>
-          )}
-
-          <div className="mt-1 w-full max-w-xs min-h-[52px]">
-            {busy ? (
-              <div className="w-full text-left pt-2">
-                <div className="mb-2 flex justify-between text-[10px] font-bold tracking-widest text-amber uppercase">
-                  <span>{t.subir.progreso}</span>
-                  <span>{progress}%</span>
-                </div>
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-line">
-                  <div 
-                    className="h-full rounded-full bg-amber shadow-[0_0_10px_rgba(232,176,75,0.8)] transition-all duration-300 ease-out" 
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-              </div>
-            ) : (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => fileRef.current?.click()}
-                className="w-full rounded-xl bg-amber px-4 py-3.5 font-semibold text-paper transition-colors hover:bg-amber-deep disabled:cursor-wait disabled:opacity-60"
-              >
-                {t.subir.boton}
-              </button>
-            )}
+            <span className="max-w-xs text-[13px] leading-relaxed text-ink-faint">
+              {t.subir.codigoAyuda}
+            </span>
+            <div className="w-full">
+              <JoinByCode />
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex w-full flex-col items-center gap-3.5 px-[var(--gutter)] py-7 text-center">
+            {/*
+              En cuanto la foto está lista se enseña con el escáner encima. Leer
+              un ticket tarda varios segundos y un icono parpadeando no dice nada:
+              ver tu propia foto con la línea pasando por encima cuenta que se
+              está trabajando sobre ella, y que la que has hecho vale.
+            */}
+            {vista ? (
+              <Escaner src={vista} />
+            ) : (
+              <span
+                className={`grid h-14 w-14 place-items-center rounded-2xl bg-amber text-paper ${
+                  busy ? "animate-pulse" : ""
+                }`}
+                aria-hidden
+              >
+                <CameraIcon />
+              </span>
+            )}
+
+            <span className="text-[21px] font-bold leading-tight tracking-[-0.025em]">
+              {busy ? getDynamicCopy() : t.subir.titulo}
+            </span>
+
+            {/* Sólo mientras trabaja: al empezar, la frase de apoyo repetía lo que
+                ya dicen el título y los dos botones de debajo. */}
+            {busy && (
+              <span className="max-w-sm text-[13px] leading-relaxed text-ink-soft">
+                {progress < 85 ? t.subir.tardo : t.subir.cuadrando}
+              </span>
+            )}
+
+            <div className="min-h-[52px] w-full">
+              {busy ? (
+                <div className="w-full pt-2 text-left">
+                  <div className="stamp mb-2 flex justify-between text-amber">
+                    <span>{t.subir.progreso}</span>
+                    <span className="tnum">{progress}%</span>
+                  </div>
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-line">
+                    <div
+                      className="h-full rounded-full bg-amber transition-all duration-300 ease-out"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => fileRef.current?.click()}
+                  className="min-h-[52px] w-full rounded-xl bg-amber px-4 text-[15px] font-bold text-paper transition-transform active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
+                >
+                  {t.subir.boton}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         <input
           ref={fileRef}
@@ -228,55 +250,41 @@ export default function TicketUploader({
           }}
         />
 
+        {/*
+          La otra puerta, dentro de la misma tarjeta y detrás del filete.
+
+          Quien llega con un enlace o un QR no tiene que subir ninguna foto:
+          sólo meter el código. Estaba en una segunda tarjeta debajo, y dos
+          cajas seguidas hacían dudar de si eran lo mismo o dos sitios
+          distintos. Aquí se lee lo que es: la misma puerta, la otra manera.
+        */}
+        {!targetCode && !busy && (
+          <>
+            <div className="rule" />
+            <button
+              type="button"
+              onClick={() => setPidiendoCodigo(!pidiendoCodigo)}
+              className="flex min-h-[52px] w-full items-center justify-center gap-2 whitespace-nowrap px-4 text-[15px] font-semibold text-ink-soft transition-colors active:bg-paper-3"
+            >
+              {/* Una sola línea: la pregunta más el enlace se partían en dos en
+                  390 px y el botón perdía la forma de puerta. Y es un acto, no
+                  una pregunta, igual que «Subir foto». */}
+              <span aria-hidden className="text-amber">{pidiendoCodigo ? "\u2190" : "#"}</span>
+              {pidiendoCodigo ? t.subir.conFoto : t.subir.conCodigo}
+            </button>
+          </>
+        )}
       </div>
 
       {error && (
         <p
           role="alert"
-          className="mt-3 rounded-xl border border-clay/40 bg-clay/10 px-4 py-3 text-sm text-clay"
+          className="mt-3 rounded-xl border border-clay/40 bg-clay/10 px-4 py-3 text-[13px] leading-relaxed text-clay"
         >
           {error}
         </p>
       )}
 
-      {/*
-        Quien llega con un enlace o un QR de una mesa que ya existe no tiene que
-        subir ninguna foto: sólo meter el código. Antes eso vivía en un bloque
-        aparte siempre abierto, y le robaba sitio al único botón que importa la
-        primera vez. Ahora se pide al pulsar.
-      */}
-      {!targetCode && (
-        <>
-          {/*
-            En el móvil es una tarjeta con el mismo peso visual que la de la
-            foto —sin ser tan grande—, porque ahí sólo hay dos maneras de
-            empezar y las dos tienen que verse como tales. Un enlace subrayado
-            al pie no se lee como una puerta. En el ordenador se queda como
-            estaba: una línea discreta debajo de la tarjeta.
-          */}
-          <button
-            type="button"
-            onClick={() => setPidiendoCodigo(true)}
-            className="mt-3 flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-2xl border border-line bg-paper-2/60 px-4 py-3.5 text-sm font-semibold text-ink-soft transition-colors active:bg-paper-3 lg:mt-4 lg:border-0 lg:bg-transparent lg:py-0 lg:font-normal lg:active:bg-transparent"
-          >
-            {/* Una sola línea: la pregunta más el enlace se partían en dos en
-                390 px y el botón perdía la forma de puerta. Y es un acto, no
-                una pregunta, igual que «Subir foto». */}
-            <span aria-hidden className="text-amber">#</span>
-            {t.subir.conCodigo}
-          </button>
-
-          {pidiendoCodigo && (
-            <Sheet onClose={() => setPidiendoCodigo(false)}>
-              <h2 className="text-xl font-bold tracking-tight">{t.subir.codigoTitulo}</h2>
-              <p className="mt-1 text-sm text-ink-soft">{t.subir.codigoAyuda}</p>
-              <div className="mt-4">
-                <JoinByCode />
-              </div>
-            </Sheet>
-          )}
-        </>
-      )}
     </div>
   );
 }

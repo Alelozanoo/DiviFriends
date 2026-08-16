@@ -45,30 +45,36 @@ function Cuerpo() {
           style={{ background: "radial-gradient(circle, var(--amber), transparent 65%)" }}
         />
 
-        <div className="mx-auto max-w-6xl px-5 pb-8 pt-6 lg:pb-20 lg:pt-16">
-          <header className="mb-5 flex justify-center lg:mb-12 lg:justify-start">
-            <Link href={inicio(lang)} className="inline-flex items-center gap-2.5 lg:gap-4">
-              <Logo size={128} priority className="h-11 w-11 lg:h-20 lg:w-20" />
-              <Wordmark className="text-xl font-bold tracking-tight lg:text-3xl" />
+        <div className="mx-auto max-w-6xl px-[var(--gutter)] pb-8 pt-8 lg:px-5 lg:pb-20 lg:pt-16">
+          <header className="mb-6 flex justify-center lg:mb-12 lg:justify-start">
+            <Link href={inicio(lang)} className="inline-flex items-center gap-3 lg:gap-4">
+              <Logo size={128} priority className="h-10 w-10 lg:h-20 lg:w-20" />
+              <Wordmark className="text-[24px] font-bold tracking-[-0.03em] lg:text-3xl" />
             </Link>
           </header>
 
           {/*
-            Una línea, sólo en el móvil. El titular grande y el párrafo se
+            El reclamo, sólo en el móvil. El titular grande y el párrafo se
             quedan para el ordenador, pero sin nada la pantalla no decía qué es
-            esto: era una tarjeta suelta en un hueco negro. Una frase corta da
-            identidad sin robarle sitio a lo que se viene a hacer.
+            esto: era una tarjeta suelta en un hueco negro.
           */}
-          <p className="mb-4 text-center text-lg font-semibold tracking-tight text-ink-soft lg:hidden">
+          <p className="mb-5 text-center text-[21px] font-bold leading-tight tracking-[-0.025em] text-ink lg:hidden">
             {t.home.claim} <span className="text-amber">{t.home.claimAmber}</span>
           </p>
 
           <div className="flex flex-col gap-10 lg:flex-row lg:items-center lg:gap-16">
-            <div className="w-full lg:max-w-md order-1 lg:order-2">
-              <div className="rounded-[1.75rem] border border-line bg-paper-2/60 p-4 shadow-2xl shadow-black/40 backdrop-blur">
-                <p className="stamp mb-3 px-2 text-ink-faint">{t.home.empiezaAqui}</p>
-                <TicketUploader />
-              </div>
+            <div className="order-1 w-full lg:order-2 lg:max-w-md">
+              {/*
+                Una sola caja.
+
+                Había tres metidas una dentro de otra —la tarjeta, el recuadro
+                de puntos y el fondo de dentro—, cada una con su borde y su
+                radio, y el ojo no sabía cuál era el sitio donde se toca. Ahora
+                el rótulo va fuera, como el sello de una sección, y debajo hay
+                un solo bloque con las dos maneras de empezar.
+              */}
+              <p className="stamp mb-2.5 text-ink-faint lg:px-2">{t.home.empiezaAqui}</p>
+              <TicketUploader />
 
               {/*
                 Debajo de la tarjeta y no encima: quien vuelve baja el pulgar un
@@ -80,6 +86,33 @@ function Cuerpo() {
                 llega nuevo la portada es exactamente la de antes.
               */}
               <MisDivis />
+
+              {/*
+                Los cuatro pasos, en corto y sólo en el móvil.
+
+                Debajo de la tarjeta quedaba un palmo de negro hasta el pie:
+                centrar el bloque lo repartía arriba y abajo, pero seguía siendo
+                hueco. Aquí van los titulares de los cuatro pasos, sin los
+                dibujos —que son de ordenador y pesan— y con los filetes de la
+                comanda entre uno y otro, así que se lee como lo que es: la
+                lista de un ticket.
+              */}
+              <div className="mt-7 lg:hidden">
+                <p className="stamp text-ink-faint">{t.pasos.titulo}</p>
+                <ol className="mt-2.5 grid">
+                  {t.pasos.resumen.map((paso, i) => (
+                    <li key={paso}>
+                      {i > 0 && <div className="rule" />}
+                      <p className="flex items-baseline gap-3 py-2.5">
+                        <span className="tnum shrink-0 text-[13px] font-bold text-amber">
+                          {i + 1}
+                        </span>
+                        <span className="text-[15px] font-semibold leading-snug">{paso}</span>
+                      </p>
+                    </li>
+                  ))}
+                </ol>
+              </div>
             </div>
 
             {/*
@@ -161,11 +194,13 @@ function Cuerpo() {
         estaba.
       */}
       <footer className="border-t border-line">
-        <div className="mx-auto flex max-w-6xl flex-col items-center gap-1.5 px-5 py-6 text-sm text-ink-faint sm:flex-row sm:justify-between sm:gap-4 sm:py-8">
+        <div className="mx-auto flex max-w-6xl flex-col items-center gap-2 px-[var(--gutter)] py-6 text-[13px] text-ink-faint sm:flex-row sm:justify-between sm:gap-4 sm:px-5 sm:py-8">
           <p className="text-center sm:text-left">
             <Wordmark className="font-semibold" /> · {t.home.pieLema}
           </p>
-          <span className="flex items-center gap-4">
+          {/* Con hueco para el dedo: los tres enlaces del pie median 20 px de
+              alto, la mitad de lo que hace falta para acertar sin mirar. */}
+          <span className="flex items-center gap-4 [&_a]:py-2 [&_button]:py-2">
             <LangSwitch enPortada />
             <ComoFuncionaSheet />
             <CambiarCookies className="underline underline-offset-2 transition-colors hover:text-amber" />

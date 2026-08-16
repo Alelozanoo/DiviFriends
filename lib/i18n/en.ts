@@ -45,6 +45,12 @@ export const en: Dict = {
       title: "It works out who pays whom",
       foot: "Even if a different person paid at each place.",
     },
+    resumen: [
+      "Take a photo of the receipt",
+      "Tap what you had",
+      "It works out who pays whom",
+      "Pay your share by card, Apple Pay or Bizum",
+    ],
     entendido: "Got it",
     total: "Total",
     totalMesa: "Table total",
@@ -61,6 +67,7 @@ export const en: Dict = {
   subir: {
     titulo: "Upload a photo of the receipt",
     boton: "Upload photo",
+    conFoto: "Start with a photo",
     conCodigo: "Join with a code",
     preparando: "Getting the photo ready…",
     analizando: "Looking at the photo…",
@@ -71,8 +78,7 @@ export const en: Dict = {
     cuadrando: "Checking that the totals add up.",
     progreso: "Progress",
     codigoTitulo: "The table code",
-    codigoAyuda:
-      "Six characters. They are on the printed receipt, or whoever started the Divi can pass them to you.",
+    codigoAyuda: "Whoever started the Divi can pass it to you.",
     otroTicket: "Add another receipt",
   },
 
@@ -420,7 +426,7 @@ export const en: Dict = {
     eligeAvatar: "Pick your picture",
     otraCana: "Another beer",
     comanda: "Bill",
-    codigoCorto: "The code is at least 4 characters.",
+    codigoCorto: "The code is six characters.",
     codigoNoExiste: "Can't find that bill. Check the code on the receipt.",
   },
 

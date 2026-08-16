@@ -48,6 +48,20 @@ export const es = {
       title: "Sale quién le paga a quién",
       foot: "Aunque haya puesto la tarjeta uno distinto en cada sitio.",
     },
+    /*
+      El resumen del móvil: cuatro líneas sin dibujos.
+
+      Va aparte de los cuatro pasos ilustrados de arriba a propósito. Aquellos
+      explican la app entera —incluido lo de juntar varios tickets en una
+      cuenta, que se cuenta con un dibujo—; esto son cuatro renglones para
+      quien acaba de abrir el enlace y quiere saber en qué se mete.
+    */
+    resumen: [
+      "Le haces una foto al ticket",
+      "Seleccionas lo que has tomado",
+      "Sale quién le paga a quién",
+      "Pagas tu parte con tarjeta, Apple Pay o Bizum",
+    ],
     entendido: "Entendido",
     // Los rótulos de dentro de los dibujos.
     total: "Total",
@@ -66,6 +80,7 @@ export const es = {
   subir: {
     titulo: "Sube la foto del ticket",
     boton: "Subir foto",
+    conFoto: "Entrar con una foto",
     conCodigo: "Entrar con un código",
     preparando: "Preparando la foto…",
     analizando: "Analizando foto…",
@@ -76,8 +91,7 @@ export const es = {
     cuadrando: "La IA está cuadrando los totales.",
     progreso: "Progreso",
     codigoTitulo: "El código de la mesa",
-    codigoAyuda:
-      "Seis caracteres. Están en el ticket impreso o te los pasa quien creó el Divi.",
+    codigoAyuda: "Te lo pasa quien haya creado el Divi.",
     otroTicket: "Subir otro ticket",
   },
 
@@ -455,7 +469,7 @@ export const es = {
     eligeAvatar: "Elige tu foto de perfil",
     otraCana: "Otra caña",
     comanda: "Comanda",
-    codigoCorto: "El código tiene al menos 4 caracteres.",
+    codigoCorto: "El código tiene seis caracteres.",
     codigoNoExiste: "No encuentro esa comanda. Revisa el código del ticket.",
   },
 
