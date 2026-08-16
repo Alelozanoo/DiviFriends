@@ -28,8 +28,8 @@ export default function TicketSheet({
   const t = useT();
   return (
     <Sheet onClose={onClose}>
-      <h2 className="text-xl font-bold tracking-tight">{t.ticket.titulo}</h2>
-      <p className="mt-1 text-sm text-ink-soft">
+      <h2 className="text-[21px] font-bold leading-tight tracking-[-0.025em]">{t.ticket.titulo}</h2>
+      <p className="mt-1.5 text-[13px] leading-relaxed text-ink-soft">
         {t.ticket.entradilla}
       </p>
 
@@ -82,7 +82,7 @@ export default function TicketSheet({
       <button
         type="button"
         onClick={onClose}
-        className="mt-2 w-full rounded-xl py-2 text-sm text-ink-faint"
+        className="mt-2 w-full rounded-xl py-2 text-[15px] text-ink-faint"
       >
         {t.ticket.cerrar}
       </button>

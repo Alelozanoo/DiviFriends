@@ -30,7 +30,7 @@ export default function LangSwitch({ enPortada = false }: { enPortada?: boolean 
   }
 
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs">
+    <span className="inline-flex items-center gap-1.5 text-[13px]">
       {(["es", "en"] as const).map((codigo) => (
         <button
           key={codigo}

@@ -125,6 +125,17 @@ export const en: Dict = {
     opciones: "Options",
     quienPagoEste: "Who paid it?",
     pagarTotal: "Pay {dinero}",
+    repartido: "Shared out",
+    laMesa: "The table",
+    filtrar: "Filter the list",
+    filtroTodo: "All",
+    filtroLibres: "Free",
+    filtroMio: "Mine",
+    nadaTuyoTitulo: "You haven't taken anything yet",
+    nadaTuyoTexto: "Tap a line and press “It's mine”.",
+    nadaLibreTitulo: "Nothing left to claim",
+    nadaLibreTexto: "You can move on to Totals.",
+    verTodo: "See everything",
   },
 
   pagadorTicket: {
@@ -175,6 +186,12 @@ export const en: Dict = {
     ponteFoto: "Add a profile photo (optional)",
     subirFoto: "Upload a photo…",
     quitarFoto: "Remove photo",
+    sinGuardarTitulo: "Leave without saving?",
+    sinGuardarAviso: "You've changed something and it hasn't been saved yet.",
+    salirSinGuardar: "Leave without saving",
+    seguirEditando: "Keep editing",
+    ponerFoto: "Add your photo",
+    cambiarFoto: "Change your photo",
     cancelar: "Cancel",
     entrarComo: "Continue as {name}",
     entrarNuevo: "Join as someone else",
@@ -191,6 +208,11 @@ export const en: Dict = {
     anadirUnidad: "Add one",
     repartirEntreVarios: "Share {name} between several people",
     quitarDeLaComanda: "Remove {name} from the bill",
+    yaNo: "Not mine",
+    esMio: "It's mine",
+    tuyo: "Yours",
+    masOpciones: "More options for {name}",
+    quedanN: "{n} left",
   },
 
   repartir: {
@@ -271,6 +293,8 @@ export const en: Dict = {
     ojoSinDueno:
       "Careful: {dinero} has no owner. Go back to the bill and share it out, or the totals below fall short.",
     ojoDeMas: "Careful: {dinero} has been shared out twice over. Check the total or the amounts.",
+    leDebes: "You owe them",
+    teDebe: "Owes you",
     seLeDebe: "Is owed",
     noDebeNada: "Owes nothing",
     hePagado: "I've paid",
@@ -306,6 +330,7 @@ export const en: Dict = {
     puso: "set",
     comoPagador: "as the one who paid the bill, worth",
     sePuso: "marked themselves as the one who paid the bill, worth",
+    renombro: "named the table",
     pago: "paid",
   },
 
@@ -316,7 +341,7 @@ export const en: Dict = {
     noEstas: "Not there? Type it in",
     tuNombre: "Your name",
     entrar: "Join",
-    soloMirando: "Just looking",
+    volver: "Back",
   },
 
   mesa: {
@@ -330,6 +355,14 @@ export const en: Dict = {
     copiar: "Copy",
     copiado: "Copied ✓",
     imprimir: "See the receipt with the QR to print",
+    nombreMesa: "Table name",
+    ponleNombre: "Give the table a name",
+    nombreAyuda: "It's what your friends see when the link arrives. “BBQ 29 July”, “Ana's dinner”…",
+    nombreEjemplo: "BBQ 29 July",
+    guardarNombre: "Save",
+    invitacion: "Pay your share of “{sitio}” here 👇",
+    invitacionSinNombre: "We're splitting the bill here 👇 Tap what you had and pay your share.",
+    quienEsta: "Who's here",
     cerrar: "Close",
     tu: "(you)",
     quitarDeLaMesa: "Remove {name} from the table",
@@ -443,6 +476,7 @@ export const en: Dict = {
     siLlego: "Yes, it's in",
     noLlego: "Not yet",
     esperando: "Waiting for {name} to confirm",
+    esperandoCorto: "Waiting",
     porRevolut: "by Revolut",
     porBizum: "by Bizum",
     enMano: "in cash",
@@ -456,15 +490,15 @@ export const en: Dict = {
       {
         pregunta: "How do I mark what I had?",
         pasos: [
-          "Tap the item card. It turns amber and your avatar appears.",
-          "Tap it again to drop it if you made a mistake. At the bottom, <B>Your total</B> adds up in real-time.",
-          "If there were multiple units—like three beers—use the <B>+</B> to add yours one by one.",
+          "Tap the item row: it opens and the buttons appear.",
+          "Press <B>It's mine</B>. The row turns amber and at the bottom <B>Your share</B> adds up in real time.",
+          "If there were several units—three beers, say—use the <B>+</B> to add yours one by one. And <B>Not mine</B> to drop it if you made a mistake.",
         ],
       },
       {
         pregunta: "How do I split an item with others?",
         pasos: [
-          "Tap <B>÷ Split</B> on the item card. Two questions will follow.",
+          "Open the item row and tap <B>÷ Split</B>. Two questions will follow.",
           "<B>Among how many.</B> Below each number you'll see what each share costs. Your share is secured right there, without waiting for anyone else.",
           "<B>With whom.</B> Tap the people at the table, and if someone isn't there, add them by typing their name.",
           "Whoever you add will have their name waiting for them when they join via the link: they just tap it and inherit what you marked for them.",
@@ -475,8 +509,7 @@ export const en: Dict = {
         pasos: [
           "To add a single item: use the dotted <B>+ Missing item</B> box at the end of the list.",
           "To add another full receipt to the same bill: tap <B>+ Add</B> in the top bar.",
-          "To remove a line or reduce its quantity: use the <B>✕</B> in its corner. The receipt total decreases automatically, and it's recorded in the <B>history</B> with the name of who did it.",
-          "If the read total doesn't match the paper, correct it in <B>Accounts</B>, under <B>Receipt total</B>.",
+          "To remove a line or reduce its quantity: open it and tap <B>⋯</B>. The receipt total decreases automatically, and it's recorded in the <B>history</B> with the name of who did it.",
         ],
       },
       {

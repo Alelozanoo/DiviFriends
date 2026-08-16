@@ -44,7 +44,7 @@ export function CambiarPagadorSheet({
 
   return (
     <Sheet onClose={onClose}>
-      <h2 className="text-xl font-bold tracking-tight mb-6">{t.menu.cambiarPagador}</h2>
+      <h2 className="text-[21px] font-bold leading-tight tracking-[-0.025em] mb-6">{t.menu.cambiarPagador}</h2>
 
       <div className="flex flex-col gap-6">
         {mios.map((tkt, index) => (
@@ -53,7 +53,7 @@ export function CambiarPagadorSheet({
               {rellena(t.cuentas.quienHaPagado, { que: variosEnLaMesa ? tkt.label : t.cuentas.laCuenta })}
             </h3>
             {people.length === 0 ? (
-              <p className="text-sm text-ink-faint">{t.cuentas.nadieEnLaMesa}</p>
+              <p className="text-[15px] text-ink-faint">{t.cuentas.nadieEnLaMesa}</p>
             ) : (
               <div className="flex flex-wrap gap-2">
                 {people.map((person) => {
@@ -67,7 +67,7 @@ export function CambiarPagadorSheet({
                         onClose();
                       }}
                       aria-pressed={isPayer}
-                      className={`flex items-center gap-2 rounded-xl border-2 py-2 pl-2 pr-4 text-sm font-semibold transition-colors ${
+                      className={`flex items-center gap-2 rounded-xl border-2 py-2 pl-2 pr-4 text-[15px] font-semibold transition-colors ${
                         isPayer
                           ? "border-amber bg-amber/15 text-amber"
                           : "border-line text-ink-soft active:bg-paper-3"
@@ -87,7 +87,7 @@ export function CambiarPagadorSheet({
       <button
         type="button"
         onClick={onClose}
-        className="mt-8 w-full rounded-xl border border-line py-3 text-sm font-semibold text-ink-soft transition-colors active:bg-paper-3"
+        className="mt-8 w-full min-h-[46px] rounded-xl border border-line text-[15px] font-semibold text-ink transition-colors active:bg-paper-3"
       >
         {t.perfil.cancelar}
       </button>

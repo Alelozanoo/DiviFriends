@@ -133,6 +133,19 @@ export const es = {
     opciones: "Opciones",
     quienPagoEste: "¿Quién lo pagó?",
     pagarTotal: "Pagar {dinero}",
+    // La barra de arriba: cuánto lleváis repartido del ticket.
+    repartido: "Repartido",
+    laMesa: "La mesa",
+    // El segmentado que filtra la lista.
+    filtrar: "Filtrar la lista",
+    filtroTodo: "Todo",
+    filtroLibres: "Libres",
+    filtroMio: "Lo mío",
+    nadaTuyoTitulo: "Todavía no has cogido nada",
+    nadaTuyoTexto: "Toca una línea y pulsa «Es mío».",
+    nadaLibreTitulo: "Ya no queda nada libre",
+    nadaLibreTexto: "Podéis pasar a Cuentas.",
+    verTodo: "Ver todo",
   },
 
   /* ------------------------------------------ quién pagó un ticket suelto */
@@ -189,6 +202,13 @@ export const es = {
     ponteFoto: "Ponte foto de perfil (opcional)",
     subirFoto: "Subir foto…",
     quitarFoto: "Quitar foto",
+    // El aviso al cerrar con cambios sin guardar.
+    sinGuardarTitulo: "¿Salir sin guardar?",
+    sinGuardarAviso: "Has cambiado algo y todavía no se ha guardado.",
+    salirSinGuardar: "Salir sin guardar",
+    seguirEditando: "Seguir editando",
+    ponerFoto: "Poner tu foto",
+    cambiarFoto: "Cambiar tu foto",
     cancelar: "Cancelar",
     entrarComo: "Entrar como {name}",
     entrarNuevo: "Entrar como otra persona",
@@ -206,6 +226,12 @@ export const es = {
     anadirUnidad: "Añadir una unidad de",
     repartirEntreVarios: "Repartir {name} entre varios",
     quitarDeLaComanda: "Quitar {name} de la comanda",
+    yaNo: "Ya no es mío",
+    esMio: "Es mío",
+    tuyo: "Tuyo",
+    masOpciones: "Más opciones de {name}",
+    // Con plantilla porque en inglés el número va delante: «3 left».
+    quedanN: "quedan {n}",
   },
 
   /* -------------------------------------------------- hoja de repartir */
@@ -290,6 +316,8 @@ export const es = {
     ojoSinDueno:
       "Ojo: quedan {dinero} sin dueño. Vuelve a la comanda y repártelos, o las cuentas de abajo se quedan cortas.",
     ojoDeMas: "Ojo: hay {dinero} repartidos de más. Revisa el total o las cantidades.",
+    leDebes: "Le debes",
+    teDebe: "Te debe",
     seLeDebe: "Se le debe",
     noDebeNada: "No debe nada",
     hePagado: "He pagado",
@@ -326,6 +354,7 @@ export const es = {
     puso: "puso a",
     comoPagador: "como quien pagó la cuenta de",
     sePuso: "se puso como quien pagó la cuenta de",
+    renombro: "le puso a la mesa",
     pago: "le pagó a",
   },
 
@@ -337,7 +366,7 @@ export const es = {
     noEstas: "¿No estás? Escríbelo",
     tuNombre: "Tu nombre",
     entrar: "Entrar",
-    soloMirando: "Sólo estoy mirando",
+    volver: "Volver",
   },
 
   /* -------------------------------------------------------------- mesa */
@@ -352,6 +381,16 @@ export const es = {
     copiar: "Copiar",
     copiado: "Copiado ✓",
     imprimir: "Ver el ticket con el QR para imprimir",
+    // Cómo se llama la mesa. Va en el enlace, así que es lo que ve quien lo recibe.
+    nombreMesa: "Nombre de la mesa",
+    ponleNombre: "Ponle nombre a la mesa",
+    nombreAyuda: "Es lo que verán tus amigos al recibir el enlace. «BBQ 29 de julio», «Cena de Ana»…",
+    nombreEjemplo: "BBQ 29 de julio",
+    guardarNombre: "Guardar",
+    // El mensaje con el que sale el enlace por WhatsApp.
+    invitacion: "Paga tu parte de «{sitio}» aquí 👇",
+    invitacionSinNombre: "Repartimos la cuenta aquí 👇 Marca lo que te has tomado y paga tu parte.",
+    quienEsta: "Quién está",
     cerrar: "Cerrar",
     tu: "(tú)",
     quitarDeLaMesa: "Quitar a {name} de la mesa",
@@ -479,6 +518,7 @@ export const es = {
     siLlego: "Sí, ya está",
     noLlego: "Todavía no",
     esperando: "Esperando a que {name} lo confirme",
+    esperandoCorto: "Esperando",
     porRevolut: "por Revolut",
     porBizum: "por Bizum",
     enMano: "en mano",
@@ -493,15 +533,15 @@ export const es = {
       {
         pregunta: "¿Cómo marco lo que me he tomado?",
         pasos: [
-          "Toca la tarjeta del plato. Se pone en ámbar y aparece tu ficha.",
-          "Vuelve a tocarla para soltarlo si te has colado. Abajo del todo, <B>Lo tuyo</B> va sumando en directo.",
-          "Si había varias unidades —tres cañas, por ejemplo— usa el <B>+</B> para ir sumando las tuyas de una en una.",
+          "Toca la línea del plato: se abre y salen los botones.",
+          "Pulsa <B>Es mío</B>. La línea se pone en ámbar y abajo del todo <B>Lo tuyo</B> va sumando en directo.",
+          "Si había varias unidades —tres cañas, por ejemplo— usa el <B>+</B> para ir sumando las tuyas de una en una. Y <B>Ya no es mío</B> para soltarlo si te has colado.",
         ],
       },
       {
         pregunta: "¿Cómo divido un plato entre varios?",
         pasos: [
-          "Toca <B>÷ Dividir</B> en la tarjeta del plato. Van dos preguntas seguidas.",
+          "Abre la línea del plato y toca <B>÷ Dividir</B>. Van dos preguntas seguidas.",
           "<B>Entre cuántos.</B> Debajo de cada número tienes lo que costaría cada parte. Tu parte queda fijada ahí mismo, sin esperar a que se apunte nadie.",
           "<B>Con quién.</B> Toca a los de la mesa, y a quien no esté lo apuntas ahí mismo escribiendo su nombre.",
           "A quien apuntes le saldrá su nombre esperándole cuando entre por el enlace: sólo tiene que tocarlo y hereda lo que le marcaste.",
@@ -512,8 +552,7 @@ export const es = {
         pasos: [
           "Para añadir un plato suelto: el recuadro de puntos <B>+ Falta algo</B>, al final de la lista.",
           "Para añadir otro ticket entero a la misma cuenta: pulsa <B>+ Añadir</B> en la barra superior.",
-          "Para quitar una línea o reducir su cantidad: la <B>✕</B> de su esquina. El total del ticket baja automáticamente, así que queda anotado en el <B>historial</B> con el nombre de quien lo hizo.",
-          "Si el total leído no cuadra con el papel, se corrige en <B>Cuentas</B>, en <B>Total del ticket</B>.",
+          "Para quitar una línea o reducir su cantidad: ábrela y toca <B>⋯</B>. El total del ticket baja automáticamente, así que queda anotado en el <B>historial</B> con el nombre de quien lo hizo.",
         ],
       },
       {

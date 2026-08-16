@@ -33,14 +33,14 @@ export default function GuideSheet({ onClose }: { onClose: () => void }) {
     <Sheet onClose={onClose}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold tracking-tight">{t.guia.titulo}</h2>
-          <p className="mt-1 text-sm text-ink-soft">{t.guia.entradilla}</p>
+          <h2 className="text-[21px] font-bold leading-tight tracking-[-0.025em]">{t.guia.titulo}</h2>
+          <p className="mt-1.5 text-[13px] leading-relaxed text-ink-soft">{t.guia.entradilla}</p>
         </div>
         <button
           type="button"
           onClick={onClose}
           aria-label="Cerrar"
-          className="-mr-1.5 shrink-0 rounded-lg px-2.5 py-1.5 text-lg leading-none text-ink-faint transition-colors hover:bg-paper-3 hover:text-ink active:bg-paper-3"
+          className="-mr-1.5 shrink-0 rounded-lg px-2.5 py-1.5 text-[17px] leading-none text-ink-faint transition-colors hover:bg-paper-3 hover:text-ink active:bg-paper-3"
         >
           ✕
         </button>
@@ -55,7 +55,7 @@ export default function GuideSheet({ onClose }: { onClose: () => void }) {
             open={i === 0}
             className="group overflow-hidden rounded-xl border border-line bg-paper"
           >
-            <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 text-sm font-semibold [&::-webkit-details-marker]:hidden">
+            <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 text-[15px] font-semibold [&::-webkit-details-marker]:hidden">
               <span className="flex-1">{pregunta}</span>
               <span
                 aria-hidden
@@ -67,8 +67,8 @@ export default function GuideSheet({ onClose }: { onClose: () => void }) {
 
             <ol className="space-y-2.5 border-t border-line/60 px-4 py-3">
               {pasos.map((paso, n) => (
-                <li key={n} className="flex gap-2.5 text-sm leading-relaxed text-ink-soft">
-                  <span className="tnum mt-px shrink-0 text-xs font-bold text-amber">{n + 1}</span>
+                <li key={n} className="flex gap-2.5 text-[15px] leading-relaxed text-ink-soft">
+                  <span className="tnum mt-px shrink-0 text-[13px] font-bold text-amber">{n + 1}</span>
                   <span>{renderTextWithB(paso)}</span>
                 </li>
               ))}
@@ -80,7 +80,7 @@ export default function GuideSheet({ onClose }: { onClose: () => void }) {
       <button
         type="button"
         onClick={onClose}
-        className="mt-4 w-full rounded-xl bg-amber py-3 text-sm font-bold text-paper transition-transform active:scale-[0.98]"
+        className="mt-4 w-full min-h-[52px] rounded-xl bg-amber text-[15px] font-bold text-paper transition-transform active:scale-[0.98]"
       >
         {t.guia.entendido}
       </button>

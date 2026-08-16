@@ -154,10 +154,10 @@ export default function ItemSheet({
         hay unos cuantos comensales, así que un cierre al final del todo obliga
         a bajar para salir. Tocar fuera sigue funcionando, pero no se ve.
       */}
-      <div className="sticky -top-5 z-10 -mx-5 -mt-5 flex items-start justify-between gap-3 bg-paper-2/95 px-5 pb-3 pt-5 backdrop-blur">
+      <div className="sticky -top-2 z-10 -mx-[var(--gutter)] -mt-2 flex items-start justify-between gap-3 bg-paper-2/95 px-[var(--gutter)] pb-3 pt-2 backdrop-blur">
         <div className="min-w-0">
-          <h2 className="truncate text-lg font-bold tracking-tight">{item.name}</h2>
-          <p className="mt-0.5 text-sm text-ink-soft">
+          <h2 className="truncate text-[17px] font-bold tracking-[-0.02em]">{item.name}</h2>
+          <p className="mt-0.5 text-[15px] text-ink-soft">
             {money(item.totalCents, currency)}
             {/* «1,025 unidades» no es una frase: eso es un peso, no unidades. */}
             {Number.isInteger(item.qty) && item.qty > 1 && ` · ${item.qty} ${t.repartir.unidades}`}
@@ -167,7 +167,7 @@ export default function ItemSheet({
           type="button"
           onClick={onClose}
           aria-label="Cerrar"
-          className="-mr-1.5 shrink-0 rounded-lg px-2.5 py-1.5 text-lg leading-none text-ink-faint transition-colors hover:bg-paper-3 hover:text-ink active:bg-paper-3"
+          className="-mr-1.5 shrink-0 rounded-lg px-2.5 py-1.5 text-[17px] leading-none text-ink-faint transition-colors hover:bg-paper-3 hover:text-ink active:bg-paper-3"
         >
           ✕
         </button>
@@ -177,10 +177,10 @@ export default function ItemSheet({
         /* ------------------------------------------ paso 1: cuántas de ellas */
         <>
           <p className="stamp mt-5 text-amber">{rellena(t.repartir.paso, { n: 1, total: pasos })}</p>
-          <h3 className="mt-1 text-lg font-bold tracking-tight">
+          <h3 className="mt-1 text-[17px] font-bold tracking-[-0.02em]">
             {t.repartir.cuantasUnidades}
           </h3>
-          <p className="mt-1 text-sm leading-relaxed text-ink-soft">
+          <p className="mt-1 text-[15px] leading-relaxed text-ink-soft">
             {rellena(t.repartir.cuantasAyuda, { n: item.qty })}
           </p>
 
@@ -193,10 +193,10 @@ export default function ItemSheet({
                 onClick={() => void elegirUnidades(n)}
                 className="flex flex-col items-center gap-0.5 rounded-2xl border-2 border-line py-3 transition-colors hover:border-mint active:bg-paper-3 disabled:opacity-40"
               >
-                <span className="tnum text-xl font-bold">
+                <span className="tnum text-[21px] font-bold">
                   {n === item.qty ? rellena(t.repartir.lasN, { n }) : n}
                 </span>
-                <span className="tnum text-[0.7rem] text-ink-soft">
+                <span className="tnum text-[11px] text-ink-soft">
                   {money(Math.round((item.totalCents * n) / item.qty), currency)}
                 </span>
               </button>
@@ -220,8 +220,8 @@ export default function ItemSheet({
           <p className={`stamp text-amber ${multiUnidad ? "mt-3" : "mt-5"}`}>
             {rellena(t.repartir.paso, { n: pasos - 1, total: pasos })}
           </p>
-          <h3 className="mt-1 text-lg font-bold tracking-tight">{t.repartir.entreCuantos}</h3>
-          <p className="mt-1 text-sm text-ink-soft">
+          <h3 className="mt-1 text-[17px] font-bold tracking-[-0.02em]">{t.repartir.entreCuantos}</h3>
+          <p className="mt-1.5 text-[13px] leading-relaxed text-ink-soft">
             {t.repartir.entreCuantosAyuda}
           </p>
 
@@ -241,8 +241,8 @@ export default function ItemSheet({
                       : "border-line hover:border-mint active:bg-paper-3"
                   }`}
                 >
-                  <span className="tnum text-xl font-bold">{n}</span>
-                  <span className="tnum text-[0.7rem] text-ink-soft">
+                  <span className="tnum text-[21px] font-bold">{n}</span>
+                  <span className="tnum text-[11px] text-ink-soft">
                     {money(Math.round(item.totalCents / n), currency)}
                   </span>
                 </button>
@@ -269,7 +269,7 @@ export default function ItemSheet({
             <button
               type="submit"
               disabled={!customValid}
-              className="shrink-0 rounded-xl bg-mint px-4 text-sm font-bold text-paper disabled:opacity-30"
+              className="shrink-0 rounded-xl bg-mint px-4 text-[15px] font-bold text-paper disabled:opacity-30"
             >
               {customValid ? money(Math.round(item.totalCents / typed), currency) : t.repartir.repartirBoton}
             </button>
@@ -283,7 +283,7 @@ export default function ItemSheet({
             <button
               type="button"
               onClick={onUndoSplit}
-              className="mt-3 w-full rounded-xl border border-line py-2.5 text-sm font-semibold text-ink-soft transition-colors hover:border-amber hover:text-amber"
+              className="mt-3 w-full min-h-[46px] rounded-xl border border-line text-[15px] font-semibold text-ink transition-colors hover:border-amber hover:text-amber"
             >
               {natural > 1 ? rellena(t.repartir.volverAUnidades, { n: natural }) : t.repartir.dejarDeCompartir}
             </button>
@@ -302,8 +302,8 @@ export default function ItemSheet({
             ← {rellena(t.repartir.entreCambiar, { n: item.splitInto })}
           </button>
 
-          <h3 className="mt-3 text-lg font-bold tracking-tight">{t.repartir.conQuien}</h3>
-          <p className="mt-1 text-sm leading-relaxed text-ink-soft">
+          <h3 className="mt-3 text-[17px] font-bold tracking-[-0.02em]">{t.repartir.conQuien}</h3>
+          <p className="mt-1 text-[15px] leading-relaxed text-ink-soft">
             {t.repartir.conQuienAyuda}
           </p>
 
@@ -325,15 +325,15 @@ export default function ItemSheet({
                       className="flex items-center gap-1.5 py-2 pl-2 pr-2.5"
                     >
                       <Avatar name={person.name} avatar={person.avatar} color={person.color} size={22} />
-                      <span className="max-w-28 truncate text-sm font-semibold">
+                      <span className="max-w-28 truncate text-[15px] font-semibold">
                         {person.name}
                         {person.id === meId && (
-                          <span className="ml-1 text-xs font-normal text-ink-faint">{t.mesa.tu}</span>
+                          <span className="ml-1 text-[13px] font-normal text-ink-faint">{t.mesa.tu}</span>
                         )}
                       </span>
                       <span
                         aria-hidden
-                        className={`text-sm font-bold leading-none ${
+                        className={`text-[15px] font-bold leading-none ${
                           share ? "text-amber" : "text-ink-faint"
                         }`}
                       >
@@ -349,7 +349,7 @@ export default function ItemSheet({
                         >
                           −
                         </Step>
-                        <span className="tnum w-4 text-center text-xs font-bold">
+                        <span className="tnum w-4 text-center text-[13px] font-bold">
                           {share.shares}
                         </span>
                         <Step
@@ -395,19 +395,19 @@ export default function ItemSheet({
               placeholder={t.repartir.anadeAQuienFalte}
               maxLength={40}
               aria-label={t.repartir.anadeAQuienFalte}
-              className="min-w-0 flex-1 rounded-xl border border-line bg-paper px-3.5 py-2.5 text-sm focus:border-amber focus:outline-none"
+              className="min-w-0 flex-1 rounded-xl border border-line bg-paper px-3.5 py-2.5 text-[15px] focus:border-amber focus:outline-none"
             />
             <button
               type="submit"
               disabled={busy || !nuevo.trim()}
-              className="shrink-0 rounded-xl bg-amber px-4 text-sm font-bold text-paper disabled:opacity-30"
+              className="shrink-0 rounded-xl bg-amber px-4 text-[15px] font-bold text-paper disabled:opacity-30"
             >
               {t.repartir.anadir}
             </button>
           </form>
 
           {/* La cuenta de lo que queda: es lo único que dice si ya has terminado. */}
-          <p className="mt-3 rounded-xl bg-paper px-3.5 py-2.5 text-sm leading-relaxed text-ink-soft">
+          <p className="mt-3 rounded-xl bg-paper px-3.5 py-2.5 text-[15px] leading-relaxed text-ink-soft">
             {breakdown.freeShares > 0 ? (
               <span dangerouslySetInnerHTML={{ __html: rellena(t.repartir.quedanSinDueno, {
                 libres: `<b class="tnum font-bold text-ink">${breakdown.freeShares}`,
@@ -449,7 +449,7 @@ export default function ItemSheet({
         <button
           type="button"
           onClick={onClose}
-          className="mt-3 w-full rounded-xl bg-amber py-3 text-sm font-bold text-paper transition-transform active:scale-[0.98]"
+          className="mt-3 w-full min-h-[52px] rounded-xl bg-amber text-[15px] font-bold text-paper transition-transform active:scale-[0.98]"
         >
           {t.repartir.listo}
         </button>
@@ -457,7 +457,7 @@ export default function ItemSheet({
         <button
           type="button"
           onClick={() => setPaso("quienes")}
-          className="mt-3 w-full rounded-xl bg-amber py-3 text-sm font-bold text-paper transition-transform active:scale-[0.98]"
+          className="mt-3 w-full min-h-[52px] rounded-xl bg-amber text-[15px] font-bold text-paper transition-transform active:scale-[0.98]"
         >
           {t.repartir.seguirConQuien}
         </button>
@@ -465,7 +465,7 @@ export default function ItemSheet({
         <button
           type="button"
           onClick={onClose}
-          className="mt-3 w-full rounded-xl border border-line py-3 text-sm font-semibold text-ink-soft"
+          className="mt-3 w-full min-h-[46px] rounded-xl border border-line text-[15px] font-semibold text-ink"
         >
           {t.repartir.cerrar}
         </button>
@@ -491,7 +491,7 @@ function Step({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="grid h-7 w-5 place-items-center text-sm font-bold transition-colors hover:text-amber disabled:opacity-25"
+      className="grid h-7 w-5 place-items-center text-[15px] font-bold transition-colors hover:text-amber disabled:opacity-25"
     >
       {children}
     </button>

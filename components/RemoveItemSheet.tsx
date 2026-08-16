@@ -55,11 +55,11 @@ export default function RemoveItemSheet({
 
   return (
     <Sheet onClose={onClose}>
-      <h2 className="text-xl font-bold tracking-tight">
+      <h2 className="text-[21px] font-bold leading-tight tracking-[-0.025em]">
         {t.quitar.titulo} <span className="text-clay">{item.name}</span>?
       </h2>
 
-      <p className="mt-2 text-sm leading-relaxed text-ink-soft">
+      <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
         {sinTocar ? (
           // Nada elegido todavía: se dice lo que se puede hacer, y ni una
           // palabra del total. Antes cantaba «la cantidad bajará a 3» con el
@@ -96,7 +96,7 @@ export default function RemoveItemSheet({
 
       {item.qty > 1 && (
         <div className="mt-6 flex items-center justify-between rounded-xl border border-line bg-paper-2 p-2">
-          <span className="pl-2 text-sm font-semibold text-ink-soft">{t.quitar.cantidad}</span>
+          <span className="pl-2 text-[15px] font-semibold text-ink-soft">{t.quitar.cantidad}</span>
           <div className="flex items-center gap-4 pr-1">
             <button
               type="button"
@@ -106,7 +106,7 @@ export default function RemoveItemSheet({
             >
               −
             </button>
-            <span className="tnum min-w-[1.5rem] text-center text-lg font-bold">{qty}</span>
+            <span className="tnum min-w-[1.5rem] text-center text-[17px] font-bold">{qty}</span>
             <button
               type="button"
               onClick={() => setQty(Math.min(item.qty, qty + 1))}
@@ -121,7 +121,7 @@ export default function RemoveItemSheet({
 
       {/* Que se sepa antes de pulsar, no después: es media razón de que exista
           el historial. Quitar algo aquí no es un gesto anónimo. */}
-      <p className="mt-5 rounded-xl border border-line bg-paper px-3.5 py-2.5 text-xs leading-relaxed text-ink-faint">
+      <p className="mt-5 rounded-xl border border-line bg-paper px-3.5 py-2.5 text-[13px] leading-relaxed text-ink-faint">
         {t.quitar.anotado}
       </p>
 
@@ -130,14 +130,14 @@ export default function RemoveItemSheet({
           type="button"
           onClick={() => onConfirm(qty)}
           disabled={qty === item.qty}
-          className="flex-1 rounded-xl bg-clay py-3 text-sm font-bold text-paper transition-transform active:scale-[0.98] disabled:opacity-50"
+          className="flex-1 rounded-xl bg-clay py-3 text-[15px] font-bold text-paper transition-transform active:scale-[0.98] disabled:opacity-50"
         >
           {removingAll ? t.quitar.eliminar : rellena(t.quitar.dejarloEn, { n: qty })}
         </button>
         <button
           type="button"
           onClick={onClose}
-          className="flex-1 rounded-xl border border-line py-3 text-sm font-semibold text-ink-soft"
+          className="flex-1 min-h-[46px] rounded-xl border border-line text-[15px] font-semibold text-ink"
         >
           {t.quitar.dejarla}
         </button>

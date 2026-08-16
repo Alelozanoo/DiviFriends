@@ -32,8 +32,8 @@ export function CobroSheet({
   const t = useT();
   return (
     <Sheet onClose={onClose}>
-      <h2 className="text-xl font-bold tracking-tight">{t.cobro.comoTitulo}</h2>
-      <p className="mt-1 text-sm text-ink-soft">{t.cobro.comoAviso}</p>
+      <h2 className="text-[21px] font-bold leading-tight tracking-[-0.025em]">{t.cobro.comoTitulo}</h2>
+      <p className="mt-1.5 text-[13px] leading-relaxed text-ink-soft">{t.cobro.comoAviso}</p>
       <FormaDeCobro revolut={revolut} bizum={bizum} onSave={onSave} onClose={onClose} />
     </Sheet>
   );
@@ -70,8 +70,8 @@ export function PagadorSheet({
     <Sheet onClose={onClose}>
       {paso === "pregunta" ? (
         <>
-          <h2 className="text-xl font-bold tracking-tight">{t.cobro.pagasteTitulo}</h2>
-          <p className="mt-1 text-sm text-ink-soft">{t.cobro.pagasteAviso}</p>
+          <h2 className="text-[21px] font-bold leading-tight tracking-[-0.025em]">{t.cobro.pagasteTitulo}</h2>
+          <p className="mt-1.5 text-[13px] leading-relaxed text-ink-soft">{t.cobro.pagasteAviso}</p>
 
           <div className="mt-5 flex flex-col gap-2">
             <button
@@ -90,14 +90,14 @@ export function PagadorSheet({
                   setPaso("cobro");
                 }
               }}
-              className="rounded-xl bg-amber py-3.5 font-bold text-paper transition-transform active:scale-[0.98] disabled:opacity-50"
+              className="min-h-[52px] rounded-xl bg-amber text-[15px] font-bold text-paper transition-transform active:scale-[0.98] disabled:opacity-50"
             >
               {t.cobro.pagueYo}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl border border-line py-3 text-sm font-semibold text-ink-soft transition-colors active:bg-paper-3"
+              className="min-h-[46px] rounded-xl border border-line text-[15px] font-semibold text-ink transition-colors active:bg-paper-3"
             >
               {t.cobro.pagoOtro}
             </button>
@@ -105,8 +105,8 @@ export function PagadorSheet({
         </>
       ) : (
         <>
-          <h2 className="text-xl font-bold tracking-tight">{t.cobro.comoTitulo}</h2>
-          <p className="mt-1 text-sm text-ink-soft">{t.cobro.comoAviso}</p>
+          <h2 className="text-[21px] font-bold leading-tight tracking-[-0.025em]">{t.cobro.comoTitulo}</h2>
+          <p className="mt-1.5 text-[13px] leading-relaxed text-ink-soft">{t.cobro.comoAviso}</p>
           <FormaDeCobro revolut={revolut} bizum={bizum} onSave={onSave} onClose={onClose} />
         </>
       )}
@@ -158,7 +158,7 @@ function FormaDeCobro({
           <span>{t.cobro.tuRevolut}</span>
         </span>
         <span className="mt-1.5 flex items-center overflow-hidden rounded-xl border border-line bg-paper focus-within:border-amber">
-          <span className="shrink-0 pl-3 text-sm text-ink-faint">revolut.me/</span>
+          <span className="shrink-0 pl-3 text-[15px] text-ink-faint">revolut.me/</span>
           <input
             value={rev}
             onChange={(event) => setRev(event.target.value)}
@@ -189,27 +189,27 @@ function FormaDeCobro({
       </label>
 
       {error && (
-        <p role="alert" className="mt-3 rounded-xl border border-clay/40 bg-clay/10 px-3 py-2 text-sm text-clay">
+        <p role="alert" className="mt-3 rounded-xl border border-clay/40 bg-clay/10 px-3 py-2 text-[15px] text-clay">
           {error}
         </p>
       )}
 
       {/* Va en un documento que ve cualquiera con el código de la mesa. Es la
           mesa y no el mundo, pero el móvil es el móvil y hay que decirlo. */}
-      <p className="mt-3 text-xs leading-relaxed text-ink-faint">{t.cobro.avisoCompartido}</p>
+      <p className="mt-3 text-[13px] leading-relaxed text-ink-faint">{t.cobro.avisoCompartido}</p>
 
       <button
         type="button"
         onClick={guardar}
         disabled={busy}
-        className="mt-4 w-full rounded-xl bg-amber py-3.5 font-bold text-paper transition-transform active:scale-[0.98] disabled:opacity-50"
+        className="mt-4 w-full min-h-[52px] rounded-xl bg-amber text-[15px] font-bold text-paper transition-transform active:scale-[0.98] disabled:opacity-50"
       >
         {t.cobro.guardar}
       </button>
       <button
         type="button"
         onClick={onClose}
-        className="mt-2 w-full rounded-xl py-2.5 text-sm text-ink-faint"
+        className="mt-2 w-full rounded-xl py-2.5 text-[15px] text-ink-faint"
       >
         {t.cobro.ahoraNo}
       </button>

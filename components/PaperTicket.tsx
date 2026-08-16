@@ -39,16 +39,16 @@ export default function PaperTicket({
   return (
     <article className="mx-auto w-full max-w-[22rem] bg-[#f4ece0] px-7 pb-8 pt-7 text-[#14100d]">
       <header className="text-center">
-        <h1 className="text-xl font-bold tracking-tight">{ticket.place ?? t.varios.comanda}</h1>
+        <h1 className="text-[21px] font-bold tracking-tight">{ticket.place ?? t.varios.comanda}</h1>
         {ticket.tableLabel && <p className="stamp mt-1 text-[#776a5c]">{ticket.tableLabel}</p>}
       </header>
 
       <div className="rule my-5 opacity-30" />
 
       {items.length === 0 ? (
-        <p className="py-2 text-center text-sm text-[#776a5c]">{t.ticket.sinLineas}</p>
+        <p className="py-2 text-center text-[15px] text-[#776a5c]">{t.ticket.sinLineas}</p>
       ) : (
-        <ul className="space-y-1.5 text-sm">
+        <ul className="space-y-1.5 text-[15px]">
           {items.map((item, index) => (
             <li key={item.id} className="flex items-baseline gap-3">
               {/* A la derecha de su columna: el número queda pegado al nombre
@@ -70,7 +70,7 @@ export default function PaperTicket({
 
       {/* Lo que el ticket cobra por encima de las líneas: servicio, impuestos… */}
       {extras !== 0 && (
-        <div className="flex items-baseline justify-between text-sm text-[#776a5c]">
+        <div className="flex items-baseline justify-between text-[15px] text-[#776a5c]">
           <span className="stamp">{extras > 0 ? t.ticket.servicio : t.ticket.descuento}</span>
           <span className="tnum">{money(extras, ticket.currency)}</span>
         </div>

@@ -49,17 +49,17 @@ export function PagadorTicketSheet({
 
   return (
     <Sheet onClose={onClose}>
-      <h2 className="text-xl font-bold tracking-tight">
+      <h2 className="text-[21px] font-bold leading-tight tracking-[-0.025em]">
         {rellena(t.pagadorTicket.titulo, { que: etiqueta || t.pagadorTicket.esteTicket })}
       </h2>
-      <p className="mt-1 text-sm leading-relaxed text-ink-soft">{t.pagadorTicket.aviso}</p>
+      <p className="mt-1 text-[15px] leading-relaxed text-ink-soft">{t.pagadorTicket.aviso}</p>
 
       {meId && (
         <button
           type="button"
           disabled={busy}
           onClick={() => elige(meId)}
-          className="mt-5 w-full rounded-xl bg-amber py-3.5 font-bold transition-transform active:scale-[0.98] disabled:opacity-50"
+          className="mt-5 w-full min-h-[52px] rounded-xl bg-amber text-[15px] font-bold transition-transform active:scale-[0.98] disabled:opacity-50"
           style={{ color: "var(--paper-2)" }}
         >
           {t.pagadorTicket.loPagueYo}
@@ -77,7 +77,7 @@ export function PagadorTicketSheet({
                 disabled={busy}
                 onClick={() => elige(person.id)}
                 aria-pressed={payerId === person.id}
-                className={`flex items-center gap-2 rounded-xl border-2 py-2 pl-2 pr-3.5 text-sm font-semibold transition-colors disabled:opacity-50 ${
+                className={`flex items-center gap-2 rounded-xl border-2 py-2 pl-2 pr-3.5 text-[15px] font-semibold transition-colors disabled:opacity-50 ${
                   payerId === person.id
                     ? "border-amber bg-amber/15 text-amber"
                     : "border-line text-ink-soft active:bg-paper-3"
@@ -96,7 +96,7 @@ export function PagadorTicketSheet({
       <button
         type="button"
         onClick={onClose}
-        className="mt-5 w-full rounded-xl py-2.5 text-sm text-ink-faint"
+        className="mt-5 w-full rounded-xl py-2.5 text-[15px] text-ink-faint"
       >
         {t.pagadorTicket.ahoraNo}
       </button>

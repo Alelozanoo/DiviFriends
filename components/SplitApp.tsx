@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState, useRef } from "react";
-import confetti from "canvas-confetti";
 import { computeSettlement, totalAfterRemoving } from "@/lib/settle";
 import { useStoredParticipant } from "@/lib/useStoredParticipant";
 import { useTicketSync } from "@/lib/useTicketSync";
@@ -17,10 +16,10 @@ import {
   usePagoPendiente,
 } from "@/lib/pagoPendiente";
 import type { Participant, TicketState, Via } from "@/lib/types";
-import AccountsPanel from "./AccountsPanel";
+import CuentasSheet from "./CuentasSheet";
 import { CobroSheet, PagadorSheet } from "./CobroSheet";
 import PagarSheet from "./PagarSheet";
-import ItemBubble from "./ItemBubble";
+import ItemRow from "./ItemRow";
 import ItemSheet from "./ItemSheet";
 import RemoveItemSheet from "./RemoveItemSheet";
 import HistorySheet from "./HistorySheet";
@@ -49,7 +48,7 @@ export default function SplitApp({
   const code = initial.ticket.id;
   const t = useT();
   const lang = useLang();
-  const [tab, setTab] = useState<"comanda" | "cuentas">("comanda");
+  const [cuentasOpen, setCuentasOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [removing, setRemoving] = useState<string | null>(null);
@@ -60,6 +59,10 @@ export default function SplitApp({
   const [guiding, setGuiding] = useState(false);
   const [uploadingAnother, setUploadingAnother] = useState(false);
   const [activeReceiptId, setActiveReceiptId] = useState<string | null>(null);
+  // Qué línea tiene los mandos a la vista. Sólo una: dos filas abiertas a la
+  // vez y la lista deja de leerse de un vistazo, que es para lo que está.
+  const [abierta, setAbierta] = useState<string | null>(null);
+  const [filtro, setFiltro] = useState<"todo" | "libre" | "mio">("todo");
   // A quién le voy a pagar y cuánto, mientras la hoja está abierta.
   const [pagandoA, setPagandoA] = useState<{ id: string; cents: number } | null>(null);
   const [cobrando, setCobrando] = useState(false);
@@ -200,12 +203,6 @@ export default function SplitApp({
       method: "POST",
       body: JSON.stringify({ itemId, participantId: target, shares, splitInto }),
     }).then((confirmed) => settleClaim(token, confirmed ?? undefined));
-  }
-
-  function toggle(itemId: string) {
-    const breakdown = settlement.byItem[itemId];
-    const mine = breakdown.shares.find((s) => s.participantId === meId);
-    claim(itemId, mine ? 0 : 1);
   }
 
   const patchTicket = (body: Record<string, unknown>) =>
@@ -367,240 +364,311 @@ export default function SplitApp({
       return 0;
     });
 
+  const esMio = (itemId: string) =>
+    Boolean(settlement.byItem[itemId]?.shares.some((s) => s.participantId === meId));
+  const quedaLibre = (itemId: string) => (settlement.byItem[itemId]?.freeShares ?? 0) > 0;
+
+  const cuantos = {
+    todo: currentItems.length,
+    libre: currentItems.filter((i) => quedaLibre(i.id)).length,
+    mio: currentItems.filter((i) => esMio(i.id)).length,
+  };
+
+  const vistos = currentItems.filter((i) =>
+    filtro === "libre" ? quedaLibre(i.id) : filtro === "mio" ? esMio(i.id) : true,
+  );
+
   return (
     <div className="flex min-h-full flex-col">
       {/* ------------------------------------------------------------ cabecera */}
       <header className="sticky top-0 z-20 border-b border-line bg-paper/95 backdrop-blur">
-        <div className="mx-auto flex max-w-3xl items-center gap-2 px-3 py-2.5">
-          <Link href={inicio(lang)} aria-label="DiviFriends" className="shrink-0">
-            <Logo size={64} className="h-8 w-8" />
-          </Link>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-bold leading-tight">
-              Divi<span className="text-amber">Friends</span>
-            </p>
-            <p className="stamp text-ink-faint tracking-wider">
-              {code}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setSharing(true)}
-            className="flex shrink-0 items-center gap-1.5 rounded-full border border-line bg-paper-2 py-1 pl-1.5 pr-2.5 transition-transform active:scale-95"
-          >
-            <span className="flex items-center -space-x-1.5">
-              {state.participants.slice(0, 3).map((person) => (
-                <Avatar
-                  key={person.id}
-                  name={person.name}
-                  avatar={person.avatar}
-                  color={person.color}
-                  size={22}
-                />
-              ))}
-              {state.participants.length > 3 && (
-                <span className="tnum grid h-[22px] w-[22px] place-items-center rounded-full border-2 border-line bg-paper text-[0.6rem] font-bold text-ink-faint">
-                  +{state.participants.length - 3}
-                </span>
-              )}
-            </span>
-            <span className="text-xs font-bold text-amber">{t.comanda.compartir}</span>
-          </button>
-
-
-
-          <button
-            type="button"
-            onClick={() => setShowingLog(true)}
-            aria-label={t.comanda.historialTitulo}
-            className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-line text-ink-faint transition-colors hover:border-amber hover:text-amber active:bg-paper-2 ml-0.5 relative"
-          >
-            {state.events.length > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-amber px-1 text-[9px] font-bold text-paper">
-                {state.events.length}
-              </span>
-            )}
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 8v4l3 3" />
-              <circle cx="12" cy="12" r="9" />
-            </svg>
-          </button>
-
+        <div className="mx-auto grid max-w-3xl gap-3 px-[var(--gutter)] pt-3 pb-2.5">
           {/*
-            El escudo, sólo para quien puso el dinero.
+            Cuatro botones redondos iguales y la marca a la izquierda.
 
-            Lo que puede hacer el pagador —cambiar quién pagó, cerrar la mesa,
-            configurar el cobro— estaba mezclado con «editar mi perfil» en los
-            tres puntos, donde el resto de la mesa se topaba con media lista de
-            botones que no le tocaban. Aquí va aparte, y de paso el escudo dice
-            sin palabras quién adelantó la cuenta.
+            Las tres caras y la palabra «Compartir» ocupaban aquí 150 px que no
+            había, y en un iPhone dejaban la marca en «DiviFrien…». La gente se
+            cuenta en el globo del primer botón, y las caras están dentro de la
+            hoja de la mesa, que es donde se mira quién se ha unido.
           */}
-          {soyElPagador && (
+          <div className="flex items-center gap-2">
+            {/*
+              Sólo el logo.
+
+              Con las caras y la palabra «Compartir» de vuelta, ni el nombre de
+              la marca ni el código caben: medido, se quedaban a siete píxeles
+              en un iPhone de 390. Ninguno de los dos se echa de menos aquí —
+              dentro de la app ya sabes en qué app estás, y el código está en
+              grande en la hoja de compartir, que es justo donde vas a buscarlo
+              para decírselo a alguien. Y ahora la mesa tiene nombre, que sale
+              en la pestaña de debajo.
+            */}
+            <Link
+              href={inicio(lang)}
+              aria-label="DiviFriends"
+              className="flex min-w-0 shrink-0 items-center gap-2.5"
+            >
+              <Logo size={64} className="h-8 w-8 shrink-0" />
+              {/* Sin el «+N» la píldora adelgaza treinta píxeles, y con ellos
+                  vuelve a caber el código a partir de 375, que es de donde
+                  arrancan los móviles de verdad. Debajo, sólo el logo. */}
+              <span className="stamp hidden tracking-[0.1em] text-ink-faint min-[375px]:block">
+                {code}
+              </span>
+            </Link>
+            <span className="min-w-0 flex-1" />
+
+            {/*
+              Compartir: las caras de quien ya está y la palabra.
+
+              Estuvo un rato como botón redondo con un icono, y perdía las dos
+              cosas que lo hacían funcionar: ver de un vistazo quién hay en la
+              mesa, y una palabra que diga a las claras que de ahí sale el
+              enlace para el grupo. Ocupa más, y lo vale.
+            */}
             <button
               type="button"
-              onClick={() => setEscudoOpen(true)}
-              aria-label={t.menu.opcionesPagador}
-              className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-amber/50 bg-amber/10 text-amber transition-colors hover:bg-amber/20 active:bg-amber/25 ml-0.5"
+              onClick={() => setSharing(true)}
+              className="flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-line bg-paper-2 pl-1 pr-2.5 transition-transform active:scale-95"
             >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round">
-                <path d="M12 2.8 4.8 5.6v5.7c0 4.4 3 8.5 7.2 9.6 4.2-1.1 7.2-5.2 7.2-9.6V5.6L12 2.8Z" />
-              </svg>
+              {/*
+                Tres caras como mucho y sin el «+N».
+
+                El contador ocupaba veintitantos píxeles y era justo lo que
+                obligaba a esconder la palabra «Compartir» en las pantallas
+                estrechas —o sea, a quitar lo único que dice para qué sirve el
+                botón—. Cuántos sois se cuenta en la hoja, que es donde se mira.
+              */}
+              <span className="flex items-center">
+                {state.participants.slice(0, 3).map((person, i) => (
+                  <span
+                    key={person.id}
+                    className="rounded-full"
+                    style={{ marginLeft: i === 0 ? 0 : -7, boxShadow: "0 0 0 2px var(--paper-2)" }}
+                  >
+                    <Avatar
+                      name={person.name}
+                      avatar={person.avatar}
+                      color={person.color}
+                      size={20}
+                    />
+                  </span>
+                ))}
+              </span>
+              <span className="text-[13px] font-bold text-amber">{t.comanda.compartir}</span>
             </button>
-          )}
 
-          <button
-            type="button"
-            onClick={() => setMenuOpen(true)}
-            aria-label={t.comanda.opciones}
-            className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-line text-ink-faint transition-colors hover:border-amber hover:text-amber active:bg-paper-2 ml-0.5"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-              <circle cx="12" cy="5" r="1.5" fill="currentColor" />
-              <circle cx="12" cy="12" r="1.5" fill="currentColor" />
-              <circle cx="12" cy="19" r="1.5" fill="currentColor" />
-            </svg>
-          </button>
-        </div>
-        <Progress value={progress} />
+            {/*
+              El escudo, sólo para quien puso el dinero.
 
-        {/* Pestañas de recibos */}
-        {tab === "comanda" && (
-          <div className="flex gap-2 overflow-x-auto px-3 py-2 hide-scrollbar border-t border-line/50">
-            {hasLegacyItems && (
-              <button
-                type="button"
-                onClick={() => setActiveReceiptId(null)}
-                className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold transition-colors ${currentReceiptId === null
-                    ? "bg-amber"
-                    : "bg-paper-2 border border-line text-ink-soft hover:border-amber hover:text-amber"
-                  }`}
-                style={currentReceiptId === null ? { color: "var(--paper)" } : undefined}
-              >
-                {state.ticket.place || t.comanda.ticketOriginal}
-                {!pagadorDelTicket(null) && <Sinpagador />}
-              </button>
+              Lo que puede hacer el pagador —cambiar quién pagó, cerrar la mesa,
+              configurar el cobro— estaba mezclado con «editar mi perfil» en los
+              tres puntos, donde el resto de la mesa se topaba con media lista de
+              botones que no le tocaban. Aquí va aparte, y de paso el escudo dice
+              sin palabras quién adelantó la cuenta.
+            */}
+            {soyElPagador && (
+              <Redondo onClick={() => setEscudoOpen(true)} label={t.menu.opcionesPagador} escudo>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinejoin="round" strokeLinecap="round">
+                  <path d="M12 2.8 4.8 5.6v5.7c0 4.4 3 8.5 7.2 9.6 4.2-1.1 7.2-5.2 7.2-9.6V5.6L12 2.8Z" />
+                </svg>
+              </Redondo>
             )}
-            {receipts.map((r) => (
-              <button
-                key={r.id}
-                type="button"
-                onClick={() => setActiveReceiptId(r.id)}
-                className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold transition-colors ${currentReceiptId === r.id
-                    ? "bg-amber"
-                    : "bg-paper-2 border border-line text-ink-soft hover:border-amber hover:text-amber"
-                  }`}
-                style={currentReceiptId === r.id ? { color: "var(--paper)" } : undefined}
-              >
-                {r.label}
-                {!pagadorDelTicket(r.id) && <Sinpagador />}
-              </button>
-            ))}
-            <button
-              type="button"
-              onClick={() => setUploadingAnother(true)}
-              className="shrink-0 rounded-full border border-dashed border-line bg-paper px-3 py-1 text-xs font-bold text-ink-faint transition-colors hover:border-amber hover:text-amber active:bg-paper-2"
-            >
-              {t.comanda.anadir}
-            </button>
+
+            <Redondo onClick={() => setMenuOpen(true)} label={t.comanda.opciones}>
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="5" r="1.7" />
+                <circle cx="12" cy="12" r="1.7" />
+                <circle cx="12" cy="19" r="1.7" />
+              </svg>
+            </Redondo>
           </div>
-        )}
+
+          <>
+              {/* Las pestañas sangran hasta el borde: una pastilla a medio salir
+                  se corta contra el filo de la pantalla y no contra un padding,
+                  que es lo que hacía parecer que la fila estaba mal medida. */}
+              <div className="rail">
+                {hasLegacyItems && (
+                  <Pestana
+                    activa={currentReceiptId === null}
+                    onClick={() => setActiveReceiptId(null)}
+                    sinPagador={!pagadorDelTicket(null)}
+                  >
+                    {state.ticket.place || t.comanda.ticketOriginal}
+                  </Pestana>
+                )}
+                {receipts.map((r) => (
+                  <Pestana
+                    key={r.id}
+                    activa={currentReceiptId === r.id}
+                    onClick={() => setActiveReceiptId(r.id)}
+                    sinPagador={!pagadorDelTicket(r.id)}
+                  >
+                    {r.label}
+                  </Pestana>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setUploadingAnother(true)}
+                  className="flex h-10 shrink-0 items-center whitespace-nowrap rounded-[11px] border border-dashed border-line px-[15px] text-[13px] font-semibold text-ink-faint transition-colors hover:border-amber hover:text-amber active:bg-paper-2"
+                >
+                  {t.comanda.anadir}
+                </button>
+              </div>
+
+              <div className="rule" />
+
+              {/* Cuánto lleváis repartido del ticket que estáis mirando. */}
+              <div className="grid gap-[7px]">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="stamp text-ink-faint">{t.comanda.repartido}</span>
+                  <span className="tnum whitespace-nowrap text-[13px] text-ink-faint">
+                    <b className="font-bold text-ink">
+                      {money(settlement.assignedCents, state.ticket.currency)}
+                    </b>{" "}
+                    / {money(settlement.grandTotalCents, state.ticket.currency)}
+                  </span>
+                </div>
+                <Progress value={progress} />
+                <div className="flex min-h-10 items-center justify-between gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setViewing(true)}
+                    className="-my-2 py-2 text-[13px] text-ink-soft underline decoration-line underline-offset-4 transition-colors hover:text-ink"
+                  >
+                    {t.comanda.verTicket}
+                  </button>
+                  <span className="tnum whitespace-nowrap text-[13px] text-ink-faint">
+                    {left > 0 ? (
+                      <>
+                        {t.comanda.sinRepartir}{" "}
+                        <b className="font-bold text-ink">
+                          {money(left, state.ticket.currency)}
+                        </b>
+                      </>
+                    ) : (
+                      <b className="font-bold text-ink">{t.comanda.todoRepartido}</b>
+                    )}
+                  </span>
+                </div>
+              </div>
+
+              {/*
+                Un segmentado y no tres botones sueltos: los tres se reparten el
+                ancho que haya, así que caben siempre. Con su cuenta al lado, en
+                un móvil de 390 px no cabían y se salían por la derecha.
+              */}
+              <div
+                role="group"
+                aria-label={t.comanda.filtrar}
+                className="flex gap-[3px] rounded-xl border border-line-soft bg-paper-2 p-[3px]"
+              >
+                {(
+                  [
+                    ["todo", t.comanda.filtroTodo, cuantos.todo],
+                    ["libre", t.comanda.filtroLibres, cuantos.libre],
+                    ["mio", t.comanda.filtroMio, cuantos.mio],
+                  ] as const
+                ).map(([clave, etiqueta, n]) => (
+                  <button
+                    key={clave}
+                    type="button"
+                    aria-pressed={filtro === clave}
+                    onClick={() => setFiltro(clave)}
+                    className={`flex min-h-10 min-w-0 flex-1 items-center justify-center gap-1.5 overflow-hidden whitespace-nowrap rounded-[9px] text-[13px] font-semibold transition-colors ${
+                      filtro === clave ? "bg-paper-4 text-ink" : "text-ink-faint"
+                    }`}
+                  >
+                    {etiqueta}
+                    <span
+                      className={`tnum text-[11px] ${
+                        filtro === clave ? "text-amber" : "text-ink-faint"
+                      }`}
+                    >
+                      {n}
+                    </span>
+                  </button>
+                ))}
+              </div>
+          </>
+        </div>
       </header>
 
-      <main className="mx-auto w-full max-w-3xl flex-1 px-3 py-3">
+      <main className="mx-auto w-full max-w-3xl flex-1 px-[var(--gutter)] py-3">
         {error && (
           <p role="alert" className="mb-3 rounded-xl border border-clay/40 bg-clay/10 px-3 py-2.5 text-sm text-clay">
             {error}
           </p>
         )}
 
-        {tab === "comanda" ? (
-          <div className="pb-36">
-            <div className="mb-2.5 flex items-center justify-between gap-2 px-1">
-              <p className="stamp min-w-0 truncate text-ink-faint">
-                {left <= 0
-                  ? t.comanda.todoRepartido
-                  : meId
-                    ? `${t.comanda.faltan} ${money(left, state.ticket.currency)}`
-                    : t.comanda.tocaLoQueHasComido}
-              </p>
-              <span className="flex shrink-0 items-center gap-1.5">
+        {
+          /*
+            Una sola columna.
+
+            En dos, cada burbuja se quedaba en 170 px de ancho y el nombre de un
+            plato tenía que partirse en tres renglones, así que había que dejar
+            hueco fijo para el peor caso y todas las tarjetas crecían por igual.
+            En una fila el nombre cabe entero y la cifra siempre cae en el mismo
+            sitio, que es lo que se va comparando al bajar.
+          */
+          <ul className="grid list-none gap-[9px] pb-36">
+            {vistos.map((item) => (
+              <ItemRow
+                key={item.id}
+                item={item}
+                breakdown={settlement.byItem[item.id]}
+                participants={state.participants}
+                meId={meId}
+                currency={state.ticket.currency}
+                open={abierta === item.id}
+                onOpen={() => setAbierta(abierta === item.id ? null : item.id)}
+                onSetShares={(shares) => claim(item.id, shares)}
+                onOpenOptions={() => setEditing(item.id)}
+                onRemove={() => setRemoving(item.id)}
+              />
+            ))}
+
+            {vistos.length === 0 && filtro !== "todo" && (
+              <li className="grid justify-items-center gap-2.5 px-5 py-12 text-center">
+                <span className="text-[17px] font-semibold text-ink">
+                  {filtro === "mio" ? t.comanda.nadaTuyoTitulo : t.comanda.nadaLibreTitulo}
+                </span>
+                <p className="max-w-[26ch] text-[13px] leading-relaxed text-ink-faint">
+                  {filtro === "mio" ? t.comanda.nadaTuyoTexto : t.comanda.nadaLibreTexto}
+                </p>
                 <button
                   type="button"
-                  onClick={() => setViewing(true)}
-                  className="stamp rounded-lg border border-line px-2 py-1 text-ink-faint transition-colors hover:border-amber hover:text-amber active:bg-paper-2"
+                  onClick={() => setFiltro("todo")}
+                  className="mt-1 min-h-[46px] rounded-xl border border-line px-5 text-[15px] font-semibold text-ink transition-colors active:bg-paper-2"
                 >
-                  {t.comanda.verTicket}
+                  {t.comanda.verTodo}
                 </button>
-              </span>
-            </div>
+              </li>
+            )}
 
-            {/* dos columnas de burbujas */}
-            <div className="grid grid-cols-2 gap-2.5">
-              {currentItems.map((item) => (
-                <ItemBubble
-                  key={item.id}
-                  item={item}
-                  breakdown={settlement.byItem[item.id]}
-                  participants={state.participants}
-                  meId={meId}
-                  currency={state.ticket.currency}
-                  onToggle={() => toggle(item.id)}
-                  onSetShares={(shares) => claim(item.id, shares)}
-                  onOpenOptions={() => setEditing(item.id)}
-                  onRemove={() => setRemoving(item.id)}
-                />
-              ))}
-
-              <button
-                type="button"
-                onClick={() => setAdding(true)}
-                className="flex min-h-24 flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-line text-sm font-semibold text-ink-faint transition-colors active:bg-paper-2"
-              >
-                <span className="text-xl leading-none">+</span>
-                {t.comanda.faltaAlgo}
-              </button>
-            </div>
-          </div>
-        ) : (
-          <AccountsPanel
-            state={state}
-            settlement={settlement}
-            meId={meId}
-            onSetPayer={async (participantId, receiptId) => {
-              let finalParticipantId: string | null = participantId;
-              if (receiptId) {
-                const r = state.receipts.find((r) => r.id === receiptId);
-                if (r?.payerId === participantId) finalParticipantId = null;
-              } else {
-                if (state.ticket.payerId === participantId || (!state.ticket.payerId && state.participants.find((p) => p.id === participantId)?.isPayer)) {
-                  finalParticipantId = null;
-                }
-              }
-              await send("/payers", {
-                method: "PATCH",
-                body: JSON.stringify({ participantId: finalParticipantId, receiptId, by: meId }),
-              });
-            }}
-            onSetSettled={(participantId, settled) =>
-              void patchParticipant(participantId, { settled })
-            }
-            onSetTotal={(cents) => void patchTicket({ totalCents: cents })}
-            onOpenLog={() => setShowingLog(true)}
-            onPagar={(toId, cents) => setPagandoA({ id: toId, cents })}
-            onResolver={(fromId, ok) => void resolverPago(fromId, ok)}
-            onPonerCobro={() => setCobrando(true)}
-            ticketsSinPagador={ticketsSinPagador}
-            onDecirPagador={(receiptId) => setPreguntandoTicket({ receiptId })}
-          />
-        )}
+            {filtro === "todo" && (
+              <li>
+                <button
+                  type="button"
+                  onClick={() => setAdding(true)}
+                  className="flex min-h-16 w-full items-center justify-center gap-2 rounded-[15px] border-[1.5px] border-dashed border-line text-[15px] font-semibold text-ink-soft transition-colors active:bg-paper-2"
+                >
+                  <span className="text-[21px] leading-none">+</span>
+                  {t.comanda.faltaAlgo}
+                </button>
+              </li>
+            )}
+          </ul>
+        }
       </main>
 
       {/* ---------------------------------------------------------- barra fija */}
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-paper-2/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
-        <div className="mx-auto flex max-w-3xl items-center gap-3 px-3 py-2.5">
+        <div className="mx-auto flex max-w-3xl items-center gap-3.5 px-[var(--gutter)] py-3">
           <div className="min-w-0 flex-1">
             <p className="stamp text-ink-faint">{meId ? t.comanda.loTuyo : t.comanda.sinRepartir}</p>
-            <p className="tnum text-2xl font-bold leading-tight">
+            <p className="tnum mt-0.5 text-2xl font-bold leading-tight">
               {/*
                 Lo que te has tomado tú, y nada más.
 
@@ -623,13 +691,9 @@ export default function SplitApp({
           </div>
           {meId ? (() => {
             const misDeudas = settlement.transactions.filter((tx) => tx.fromId === meId);
-            const deboAUnaPersona = misDeudas.length === 1;
             const soyAcreedor = settlement.transactions.some((tx) => tx.toId === meId);
-            const isPureDebtor = deboAUnaPersona && !soyAcreedor;
             const debidoTotal = misDeudas.reduce((a, tx) => a + tx.cents, 0);
-
-            const isSettled = myBalance?.settled;
-            const showTodoPagado = isSettled && !soyAcreedor && !soyElPagador;
+            const todoPagado = Boolean(myBalance?.settled) && !soyAcreedor && !soyElPagador;
 
             /*
               Lo primero de todo: si el ticket que estás mirando no tiene
@@ -638,21 +702,28 @@ export default function SplitApp({
               dato lo que costó se le cobra a quien se lo comió sin abonárselo
               a nadie: sale una deuda sin acreedor y los números mienten.
             */
-            const faltaPagadorAqui = tab === "comanda" && !pagadorDelTicket(currentReceiptId);
+            const faltaPagadorAqui = !pagadorDelTicket(currentReceiptId);
+            /* El aviso del pagador manda sobre el «todo pagado», igual en la
+               palabra que en el color: recién llegado y sin marcar nada tu
+               saldo ya es cero, así que salía el botón azul de «todo pagado»
+               con la frase «¿Quién lo pagó?» dentro. */
+            const showTodoPagado = todoPagado && !faltaPagadorAqui;
 
             /*
               Lo que dice el botón, por orden de urgencia. Fuera del JSX porque
               encadenado allí eran seis ternarios anidados y ya no se leía cuál
               ganaba a cuál.
+
+              Salvo la pregunta del pagador, todo acaba abriendo la hoja de
+              cuentas. Antes, debiéndole a una sola persona, saltaba directo a
+              pagar: dos botones con la misma pinta, uno para mirar y otro para
+              sacar el dinero. Ahora se mira primero, y el botón de pagar está
+              al lado de a quien le pagas.
             */
             const etiqueta = (() => {
-              if (tab !== "comanda") return t.comanda.volverComanda;
               if (faltaPagadorAqui) return t.comanda.quienPagoEste;
               if (showTodoPagado) return t.comanda.todoPagadoBoton;
-              if (isPureDebtor) return t.cuentas.pagarAhora;
-              // Debiéndole a dos, el botón lleva a la lista y dice cuánto sale
-              // en total: «Cuentas» a secas no contaba que había dos pagos.
-              if (misDeudas.length > 1) {
+              if (misDeudas.length > 0) {
                 return rellena(t.comanda.pagarTotal, {
                   dinero: money(debidoTotal, state.ticket.currency),
                 });
@@ -667,42 +738,25 @@ export default function SplitApp({
                 onClick={() => {
                   if (faltaPagadorAqui) {
                     setPreguntandoTicket({ receiptId: currentReceiptId });
-                  } else if (showTodoPagado && tab === "comanda") {
-                    const faltanPorPagar = settlement.byParticipant.filter(p => p.owesCents > 0 && !p.settled);
-                    const isCompleted = state.items.length > 0 && settlement.unassignedCents === 0 && faltanPorPagar.length === 0 && settlement.byParticipant.some(p => p.paidCents > 0);
-                    if (isCompleted) {
-                      confetti({
-                        particleCount: 150,
-                        spread: 70,
-                        origin: { y: 0.6 },
-                        colors: ["#e8b04b", "#5ec5c0", "#e0705f"],
-                        disableForReducedMotion: true
-                      });
-                      if (typeof navigator !== "undefined" && navigator.vibrate) {
-                        navigator.vibrate([100, 50, 100]);
-                      }
-                    }
+                  } else if (showTodoPagado) {
                     setShowStatusPopup(true);
-                  } else if (isPureDebtor && tab === "comanda") {
-                    const deuda = misDeudas[0];
-                    setPagandoA({ id: deuda.toId, cents: deuda.cents });
-                  } else if (!soyElPagador && (myBalance?.owesCents ?? 0) === 0 && tab === "comanda") {
+                  } else if (!soyElPagador && (myBalance?.owesCents ?? 0) === 0) {
                     window.scrollTo({ top: 0, behavior: "smooth" });
                   } else {
-                    if (tab === "comanda") trackOnce("cuentas", EV.veCuentas);
-                    setTab(tab === "comanda" ? "cuentas" : "comanda");
+                    trackOnce("cuentas", EV.veCuentas);
+                    setCuentasOpen(true);
                   }
                 }}
                 /* Con tope y recortando: este botón cambia de frase según lo
                    que te toque, y la más larga se comía la cifra de la
                    izquierda hasta taparla. Lo que no puede perderse nunca es
                    cuánto llevas. */
-                className={`max-w-[58%] shrink-0 truncate rounded-xl px-4 py-2.5 text-sm font-bold active:scale-95 transition-transform ${
-                  showTodoPagado && tab === "comanda"
+                className={`max-w-[58%] min-h-[46px] shrink-0 truncate rounded-xl px-5 text-[15px] font-bold active:scale-95 transition-transform ${
+                  showTodoPagado
                     ? "bg-[#3b82f6]/10 text-[#3b82f6] border border-[#3b82f6]/20"
                     : "bg-amber"
                 }`}
-                style={showTodoPagado && tab === "comanda" ? {} : { color: "var(--paper-2)" }}
+                style={showTodoPagado ? {} : { color: "var(--paper-2)" }}
               >
                 {etiqueta}
               </button>
@@ -711,7 +765,7 @@ export default function SplitApp({
             <button
               type="button"
               onClick={() => setJoinOverride(true)}
-              className="shrink-0 rounded-xl bg-amber px-4 py-2.5 text-sm font-bold"
+              className="min-h-[46px] shrink-0 rounded-xl bg-amber px-5 text-[15px] font-bold"
               style={{ color: "var(--paper-2)" }}
             >
               {t.comanda.unirme}
@@ -769,6 +823,30 @@ export default function SplitApp({
         />
       )}
 
+      {cuentasOpen && (
+        <CuentasSheet
+          state={state}
+          settlement={settlement}
+          meId={meId}
+          onSetSettled={(participantId, settled) =>
+            void patchParticipant(participantId, { settled })
+          }
+          onPagar={(toId, cents) => {
+            /* La hoja de cuentas se cierra al abrir la de pagar: dos paneles
+               apilados dejan de saberse cuál cierra el gesto de bajar. */
+            setCuentasOpen(false);
+            setPagandoA({ id: toId, cents });
+          }}
+          onResolver={(fromId, ok) => void resolverPago(fromId, ok)}
+          ticketsSinPagador={ticketsSinPagador}
+          onDecirPagador={(receiptId) => {
+            setCuentasOpen(false);
+            setPreguntandoTicket({ receiptId });
+          }}
+          onClose={() => setCuentasOpen(false)}
+        />
+      )}
+
       {showingLog && (
         <HistorySheet
           events={state.events}
@@ -790,6 +868,8 @@ export default function SplitApp({
           code={code}
           url={shareUrl}
           qrSvg={qrSvg}
+          place={state.ticket.place}
+          onRename={(nombre) => void patchTicket({ place: nombre })}
           participants={state.participants}
           payerId={state.ticket.payerId}
           meId={meId}
@@ -824,7 +904,7 @@ export default function SplitApp({
 
       {uploadingAnother && (
         <Sheet onClose={() => setUploadingAnother(false)}>
-          <h2 className="mb-4 text-xl font-bold tracking-tight">{t.subir.otroTicket}</h2>
+          <h2 className="mb-4 text-[21px] font-bold leading-tight tracking-[-0.025em]">{t.subir.otroTicket}</h2>
           <TicketUploader
             targetCode={code}
             onSuccess={(receiptId) => {
@@ -845,12 +925,11 @@ export default function SplitApp({
       )}
 
       {showJoin && (
-        <JoinSheet 
-          people={state.participants} 
+        <JoinSheet
+          people={state.participants}
           globalProfile={globalProfile}
-          onJoin={join} 
+          onJoin={join}
           onSaveProfile={saveProfile}
-          onClose={() => setJoinOverride(false)} 
         />
       )}
 
@@ -909,6 +988,8 @@ export default function SplitApp({
             setEscudoOpen(false);
           }}
           onComoFunciona={() => setGuiding(true)}
+          onHistorial={() => setShowingLog(true)}
+          eventos={state.events.length}
           onChangeName={() => {
             if (!yo) {
               setJoinOverride(true);
@@ -916,11 +997,20 @@ export default function SplitApp({
               setEditNameOpen(true);
             }
           }}
-          onLeave={() => {
-            if (yo) {
-              void removeParticipant(yo.id);
-              store(null);
-            }
+          onLeave={async () => {
+            if (!yo) return;
+            await removeParticipant(yo.id);
+            store(null);
+            /*
+              Y fuera de «tus divis».
+
+              Sin esto la mesa seguía en la lista de la portada después de
+              salirse: el efecto que la mantiene al día se rinde en cuanto
+              dejas de estar apuntado, así que nunca llegaba a borrarla y te
+              quedaba ahí una cena de la que ya te habías ido.
+            */
+            olvidar(code);
+            window.location.href = inicio(lang);
           }}
           onChangePayer={
             (!state.ticket.closed) ? () => setCambiarPagadorOpen(true) : null
@@ -1013,13 +1103,13 @@ export default function SplitApp({
                 {isCompleted ? (
                   <>
                     <p className="text-6xl mb-5">🎉</p>
-                    <h2 className="text-2xl font-bold text-amber mb-3 tracking-tight">{t.estado.completadoTitulo}</h2>
+                    <h2 className="mb-3 text-[24px] font-bold tracking-[-0.02em] text-amber">{t.estado.completadoTitulo}</h2>
                     <p className="text-ink-soft mb-8 leading-relaxed">{t.estado.completadoTexto}<br/>{t.estado.completadoRemate}</p>
                   </>
                 ) : (
                   <>
                     <p className="text-6xl mb-5">⏳</p>
-                    <h2 className="text-2xl font-bold text-[#3b82f6] mb-3 tracking-tight">{t.estado.alDiaTitulo}</h2>
+                    <h2 className="mb-3 text-[24px] font-bold tracking-[-0.02em] text-[#3b82f6]">{t.estado.alDiaTitulo}</h2>
                     <p className="text-ink-soft mb-8 leading-relaxed">
                       {t.estado.alDiaTexto}<br/>
                       {faltanPorPagar.length === 1
@@ -1031,7 +1121,7 @@ export default function SplitApp({
                 <button
                   type="button"
                   onClick={() => setShowStatusPopup(false)}
-                  className="w-full rounded-xl border border-line bg-paper px-4 py-3.5 font-bold text-ink transition-colors active:bg-paper-3"
+                  className="w-full min-h-[46px] w-full rounded-xl border border-line text-[15px] font-semibold text-ink transition-colors active:bg-paper-3"
                 >
                   {t.estado.cerrar}
                 </button>
@@ -1086,14 +1176,93 @@ export default function SplitApp({
   );
 }
 
+/**
+ * Los botones de la cabecera: todos del mismo tamaño y en el mismo sitio.
+ *
+ * Miden 40 px y no los 44 de rigor porque cuatro de 44 con sus huecos no caben
+ * en un iPhone junto a la marca, y quedarse sin el escudo o sin el historial es
+ * peor que perder cuatro píxeles. Siguen muy por encima del mínimo de 28.
+ */
+function Redondo({
+  children,
+  label,
+  onClick,
+  globo,
+  tonoGlobo = "amber",
+  escudo = false,
+  destacado = false,
+}: {
+  children: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  globo?: number | null;
+  tonoGlobo?: "amber" | "gris";
+  escudo?: boolean;
+  /** El de compartir: relleno, porque es a lo que se viene. */
+  destacado?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className={`relative grid h-10 w-10 shrink-0 place-items-center rounded-full border transition-colors [&>svg]:h-[19px] [&>svg]:w-[19px] ${
+        destacado
+          ? "border-amber bg-amber text-paper active:scale-95"
+          : escudo
+            ? "border-amber/45 bg-amber/10 text-amber hover:bg-amber/20"
+            : "border-line text-ink-soft hover:bg-paper-2 hover:text-ink"
+      }`}
+    >
+      {children}
+      {globo != null && (
+        <span
+          className={`tnum absolute -right-[3px] -top-[3px] grid h-[18px] min-w-[18px] place-items-center rounded-full border-2 border-paper px-1 text-[11px] font-bold ${
+            tonoGlobo === "gris" ? "bg-paper-4 text-ink" : "bg-amber text-paper"
+          }`}
+        >
+          {globo}
+        </span>
+      )}
+    </button>
+  );
+}
+
+/** Una pestaña de ticket. La activa no va rellena: el relleno es para actuar. */
+function Pestana({
+  children,
+  activa,
+  sinPagador,
+  onClick,
+}: {
+  children: React.ReactNode;
+  activa: boolean;
+  sinPagador: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-current={activa || undefined}
+      /* Con tope: desde que la mesa se puede llamar «Cena de despedida de
+         Nuria en el asador», una pestaña sola empujaba el «+ Añadir» fuera de
+         la pantalla y había que adivinar que aquello se desplazaba. */
+      className={`flex h-10 max-w-[13rem] shrink-0 items-center gap-2 overflow-hidden whitespace-nowrap rounded-[11px] border px-[15px] text-[13px] font-semibold transition-colors ${
+        activa
+          ? "border-line bg-paper-3 text-ink shadow-[inset_0_-2px_0_var(--amber)]"
+          : "border-line text-ink-faint hover:text-ink"
+      }`}
+    >
+      <span className="truncate">{children}</span>
+      {sinPagador && <Sinpagador />}
+    </button>
+  );
+}
+
 /** El aviso de que a ese ticket todavía nadie le ha puesto pagador. */
 function Sinpagador() {
-  return (
-    <span
-      aria-hidden
-      className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-clay align-middle"
-    />
-  );
+  return <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full bg-clay" />;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1112,13 +1281,11 @@ function JoinSheet({
   globalProfile,
   onJoin,
   onSaveProfile,
-  onClose,
 }: {
   people: Participant[];
   globalProfile: { name: string; avatar?: string; bizum?: string; revolut?: string } | null;
   onJoin: (name: string, avatar?: string, bizum?: string, revolut?: string) => Promise<void>;
   onSaveProfile: (updates: {name: string, avatar?: string, bizum?: string, revolut?: string}) => void;
-  onClose: () => void;
 }) {
   const t = useT();
   const [name, setName] = useState("");
@@ -1128,9 +1295,7 @@ function JoinSheet({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <Sheet onClose={onClose}>
-      <h2 className="text-xl font-bold tracking-tight">{t.entrar.titulo}</h2>
-      <p className="mt-1 text-sm text-ink-soft">{t.entrar.entradilla}</p>
+    <Sheet fijo onClose={() => {}} titulo={t.entrar.titulo} sub={t.entrar.entradilla}>
 
       {globalProfile && !showForm && (
         <div className="mt-5 mb-4 flex flex-col gap-3">
@@ -1156,9 +1321,8 @@ function JoinSheet({
       )}
 
       {showForm && (
-        <>
-          <form
-          className={`flex flex-col gap-4 mt-4`}
+        <form
+          className="mt-5 flex flex-col gap-4"
           onSubmit={async (event) => {
             event.preventDefault();
             if (!name.trim() || busy) return;
@@ -1168,80 +1332,95 @@ function JoinSheet({
             setBusy(false);
           }}
         >
-          <div className="flex flex-col gap-2">
-            <p className="stamp text-ink-faint uppercase tracking-wider text-[0.7rem] font-bold">{t.perfil.tuNombre}</p>
-            <div className="flex gap-2">
-              <input
-                autoFocus={people.length === 0}
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                placeholder={t.entrar.tuNombre}
-                maxLength={40}
-                className="min-w-0 flex-1 rounded-xl border border-line bg-paper px-4 py-3 focus:border-amber focus:outline-none"
-              />
-              <button
-                type="submit"
-                disabled={busy || !name.trim()}
-                className="shrink-0 rounded-xl bg-amber px-5 font-bold text-paper disabled:opacity-40"
-              >
-                {t.entrar.entrar}
-              </button>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2 mt-2">
-            <p className="stamp text-ink-faint uppercase tracking-wider text-[0.7rem] font-bold">{t.perfil.ponteFoto}</p>
-            <div className="flex gap-3">
-              <div className="shrink-0 flex items-center justify-center">
-                <Avatar name={name || "Yo"} avatar={avatar} color="#e8b04b" size={56} />
-              </div>
-              <div className="flex flex-col gap-2 flex-1 justify-center">
+          {/* La foto, al lado del nombre y sin rótulo: es el círculo que hay
+              junto a cómo te llamas, y se toca. */}
+          <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="w-full rounded-xl border border-line bg-paper px-4 py-2 text-sm font-semibold transition-colors hover:bg-paper-2 active:bg-paper-3"
+              aria-label={avatar ? t.perfil.cambiarFoto : t.perfil.ponerFoto}
+              className="relative shrink-0 rounded-full transition-transform active:scale-95"
             >
-              {t.perfil.subirFoto}
-            </button>
-            <input
-              type="file"
-              accept="image/*"
-              ref={fileInputRef}
-              className="hidden"
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                try {
-                  const base64 = await processImageToAvatarBase64(file);
-                  setAvatar(base64);
-                } catch (error) {
-                  console.error("Error processing image", error);
-                }
-              }}
-            />
-            {avatar && (
-              <button
-                type="button"
-                onClick={() => setAvatar("")}
-                className="w-full rounded-xl border border-transparent bg-paper-2 px-4 py-2 text-sm font-semibold text-ink-soft transition-colors hover:bg-paper-3 active:bg-paper-4"
+              <Avatar name={name || "?"} avatar={avatar} color="#e8b04b" size={52} />
+              <span
+                aria-hidden
+                className="absolute -bottom-0.5 -right-0.5 grid h-[22px] w-[22px] place-items-center rounded-full border-2 border-paper-2 bg-amber text-paper"
               >
-                {t.perfil.quitarFoto}
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    </form>
-    </>
-  )}
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 8.5h3l1.5-2h7L17 8.5h3a1 1 0 0 1 1 1V18a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5a1 1 0 0 1 1-1Z" />
+                  <circle cx="12" cy="13" r="3.2" />
+                </svg>
+              </span>
+            </button>
 
-      <button
-        type="button"
-        onClick={onClose}
-        className="mt-4 block w-full py-2 text-center text-sm font-bold text-ink-soft opacity-70 transition-opacity hover:opacity-100"
-      >
-        {t.entrar.soloMirando}
-      </button>
+            <input
+              autoFocus={people.length === 0}
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder={t.entrar.tuNombre}
+              aria-label={t.perfil.tuNombre}
+              autoCapitalize="words"
+              maxLength={40}
+              className="min-h-[52px] w-full min-w-0 rounded-xl border border-line bg-paper px-4 text-[15px] font-semibold focus:border-amber focus:outline-none"
+            />
+          </div>
+
+          <input
+            type="file"
+            accept="image/*"
+            ref={fileInputRef}
+            className="hidden"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              try {
+                setAvatar(await processImageToAvatarBase64(file));
+              } catch (error) {
+                console.error("Error processing image", error);
+              }
+            }}
+          />
+
+          {avatar && (
+            <button
+              type="button"
+              onClick={() => setAvatar("")}
+              className="-mt-2 self-start text-[13px] text-ink-faint underline decoration-line underline-offset-4 transition-colors hover:text-ink"
+            >
+              {t.perfil.quitarFoto}
+            </button>
+          )}
+
+          <button
+            type="submit"
+            disabled={busy || !name.trim()}
+            className="min-h-[52px] w-full rounded-xl bg-amber text-[15px] font-bold text-paper transition-transform active:scale-[0.98] disabled:opacity-40"
+          >
+            {t.entrar.entrar}
+          </button>
+        </form>
+      )}
+
+      {/*
+        Deshacer el «entrar como otra persona».
+
+        Ese botón cambia la hoja entera por un formulario en blanco, y quien lo
+        toca por error se queda escribiendo su nombre a mano teniéndolo ya
+        guardado. Sólo sale cuando hay algo a lo que volver: sin perfil
+        guardado el formulario es la única pantalla que hay.
+      */}
+      {showForm && globalProfile && (
+        <button
+          type="button"
+          onClick={() => setShowForm(false)}
+          className="mt-3 flex min-h-[46px] w-full items-center justify-center gap-2 rounded-xl border border-line text-[15px] font-semibold text-ink-soft transition-colors active:bg-paper-3"
+        >
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M14 6.5 8.5 12l5.5 5.5" />
+          </svg>
+          {t.entrar.volver}
+        </button>
+      )}
     </Sheet>
   );
 }
@@ -1260,7 +1439,7 @@ function AddItemSheet({
 
   return (
     <Sheet onClose={onClose}>
-      <h2 className="text-xl font-bold tracking-tight">{t.comanda.faltaAlgo}</h2>
+      <h2 className="text-[21px] font-bold leading-tight tracking-[-0.025em]">{t.comanda.faltaAlgo}</h2>
       <form
         className="mt-4 space-y-3"
         onSubmit={async (event) => {
@@ -1296,7 +1475,7 @@ function AddItemSheet({
         <button
           type="submit"
           disabled={!name.trim() || parseMoney(price) <= 0}
-          className="w-full rounded-xl bg-amber py-3 font-bold text-paper disabled:opacity-40"
+          className="w-full min-h-[52px] rounded-xl bg-amber text-[15px] font-bold text-paper disabled:opacity-40"
         >
           {t.comanda.anadir}
         </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { initials } from "@/lib/format";
 
 export function Avatar({
@@ -25,7 +25,9 @@ export function Avatar({
         background: dimmed ? "transparent" : color,
         borderColor: color,
         color: dimmed ? color : "#14100d",
-        fontSize: size * 0.4,
+        /* Con suelo en 11 px: las iniciales de un avatar de 25 salían a 10 y se
+           quedaban por debajo del mínimo legible en un móvil. */
+        fontSize: Math.max(11, Math.round(size * 0.4)),
       }}
       className="grid shrink-0 place-items-center rounded-full border-2 font-bold leading-none overflow-hidden relative"
     >
@@ -69,8 +71,34 @@ export function Stat({
   );
 }
 
-/** El panel que sube desde abajo: el gesto de toda la app en el móvil. */
-export function Sheet({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+/**
+ * El panel que sube desde abajo: el gesto de toda la app en el móvil.
+ *
+ * El tirador de arriba no es adorno: dice que esto se cierra hacia abajo, que
+ * es lo que la gente intenta hacer antes de buscar el botón de cerrar. Los
+ * márgenes son los mismos de la pantalla, para que una hoja no se sienta como
+ * otra aplicación distinta metida encima.
+ */
+export function Sheet({
+  children,
+  onClose,
+  titulo,
+  sub,
+  fijo = false,
+}: {
+  children: React.ReactNode;
+  onClose: () => void;
+  /** Con título, la hoja pinta también la cabecera. */
+  titulo?: string;
+  sub?: React.ReactNode;
+  /**
+   * Una hoja que no se puede esquivar: ni el toque fuera la cierra, ni lleva
+   * tirador. Se reserva para lo que de verdad no tiene alternativa —decir
+   * quién eres al sentarte— porque un modal sin salida es de las cosas que
+   * más molestan cuando no hace falta.
+   */
+  fijo?: boolean;
+}) {
   useEffect(() => {
     const originalStyle = window.getComputedStyle(document.body).overflow;
     document.body.style.overflow = "hidden";
@@ -79,15 +107,87 @@ export function Sheet({ children, onClose }: { children: React.ReactNode; onClos
     };
   }, []);
 
+  /*
+    ¿Queda contenido por debajo del corte?
+
+    En una ventana baja —el móvil tumbado, o el navegador del escritorio a
+    media altura— la hoja no cabe entera y los últimos botones se quedan fuera
+    sin que nada lo diga: parece que la hoja está mal, no que haya que bajar.
+    El degradado sólo sale cuando de verdad hay más.
+  */
+  const [hayMas, setHayMas] = useState(false);
+  /* Se vuelve a medir cuando la hoja cambia de alto —una hoja de dos pasos, un
+     botón que aparece— y no sólo al abrirla, o el degradado se queda mintiendo. */
+  const mide = useCallback((el: HTMLDivElement | null) => {
+    if (!el) return;
+    const calcula = () => setHayMas(el.scrollHeight - el.scrollTop - el.clientHeight > 8);
+    calcula();
+    const observador = new ResizeObserver(calcula);
+    observador.observe(el);
+    for (const hijo of el.children) observador.observe(hijo);
+    // React 19 llama a lo que devuelve el ref cuando el nodo se va.
+    return () => observador.disconnect();
+  }, []);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70" onClick={onClose}>
-      <div
-        className="rise max-h-[88vh] w-full max-w-md overflow-y-auto rounded-t-3xl border-t border-line bg-paper-2 p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
-        onClick={(event) => event.stopPropagation()}
-      >
-        {children}
+    /*
+      El fondo va oscuro y desenfocado, no sólo oscuro.
+
+      Sobre una app que ya es casi negra, un velo negro al 75 % apenas cambia
+      nada: la comanda se seguía leyendo detrás y la hoja parecía un recuadro
+      suelto encima en vez de algo que está delante de todo. Con el desenfoque
+      la pantalla de atrás pierde el foco de golpe.
+    */
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 backdrop-blur-[3px]"
+      onClick={fijo ? undefined : onClose}
+    >
+      <div className="relative w-full max-w-md" onClick={(event) => event.stopPropagation()}>
+        <div
+          role="dialog"
+          aria-modal="true"
+          ref={mide}
+          onScroll={(event) => mide(event.currentTarget)}
+          /*
+            Borde por los cuatro lados y sombra: en una ventana ancha la hoja no
+            llega a los lados, así que necesita su propio filo para no quedarse
+            flotando sin bordes. `dvh` y no `vh` porque en el móvil la barra del
+            navegador se mueve y con `vh` la hoja se cortaba por abajo.
+          */
+          className="rise max-h-[92dvh] overflow-y-auto overscroll-contain rounded-t-[24px] border border-b-0 border-line bg-paper-2 px-[var(--gutter)] pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-2 shadow-[0_-24px_70px_rgba(0,0,0,0.65)]"
+        >
+          {fijo ? (
+            <div className="h-3" />
+          ) : (
+            <div aria-hidden className="mx-auto mb-3 h-1 w-10 rounded-full bg-line" />
+          )}
+          {titulo && (
+            <h2 className="text-[21px] font-bold leading-tight tracking-[-0.025em]">{titulo}</h2>
+          )}
+          {sub && <p className="mt-1.5 text-[13px] leading-relaxed text-ink-faint">{sub}</p>}
+          {children}
+        </div>
+        {hayMas && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-paper-2 via-paper-2/85 to-transparent"
+          />
+        )}
       </div>
     </div>
+  );
+}
+
+/** El botón de cerrar que remata todas las hojas. */
+export function CerrarHoja({ children, onClick }: { children: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="min-h-[46px] w-full rounded-xl border border-line text-[15px] font-semibold text-ink transition-colors active:bg-paper-3"
+    >
+      {children}
+    </button>
   );
 }
 

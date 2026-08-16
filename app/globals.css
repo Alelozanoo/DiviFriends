@@ -8,15 +8,27 @@
 :root {
   --ink: #f4ece0;
   --ink-soft: #b3a695;
-  --ink-faint: #776a5c;
+  /* Sube de #776a5c: aquel se quedaba en 3,4:1 sobre la tarjeta y no llegaba
+     al mínimo de 4,5:1 del texto pequeño. Éste mide 5,2:1. */
+  --ink-faint: #98897a;
   --paper: #14100d;
   --paper-2: #1c1714;
   --paper-3: #262019;
-  --line: #362d25;
+  --paper-4: #302820;
+  --line: #3b3229;
+  --line-soft: #2a231d;
   --amber: #e8b04b;
   --amber-deep: #b8842a;
   --mint: #5ec5c0;
   --clay: #e0705f;
+
+  /*
+    Una sola medida de margen para toda la app.
+
+    Cuando cada bloque se inventa su padding es cuando las cosas empiezan a
+    salirse por la derecha, y por eso los filtros no cabían.
+  */
+  --gutter: 16px;
 }
 
 @theme inline {
@@ -26,7 +38,9 @@
   --color-paper: var(--paper);
   --color-paper-2: var(--paper-2);
   --color-paper-3: var(--paper-3);
+  --color-paper-4: var(--paper-4);
   --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
   --color-amber: var(--amber);
   --color-amber-deep: var(--amber-deep);
   --color-mint: var(--mint);
@@ -45,6 +59,10 @@ html {
 body {
   background: var(--paper);
   color: var(--ink);
+  /* El cuerpo, en un escalón de la escala. Sin esto todo lo que no lleva una
+     clase de tamaño se queda en los 16 px del navegador, que no es ninguno de
+     los seis pasos y desalinea las hojas por dentro. */
+  font-size: 15px;
   font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
   overscroll-behavior-y: none;
 }
@@ -138,12 +156,68 @@ body {
   }
 }
 
-input,
-button,
-select,
-textarea {
-  font: inherit;
-  color: inherit;
+/*
+  Va en @layer base a propósito.
+
+  Suelta, esta regla gana a las utilidades de Tailwind por orden de aparición:
+  `font: inherit` es un atajo que resetea el peso, así que se comía cualquier
+  `font-bold` puesto en un botón, y `color: inherit` se comía cualquier
+  `text-amber`. Se notó cuando el idioma activo del menú no se pintaba de
+  ámbar. Dentro de base, las utilidades vuelven a mandar, que es lo que
+  dice el código en cada sitio donde se usan.
+*/
+@layer base {
+  input,
+  button,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+}
+
+/*
+  Un carril horizontal que sangra hasta el borde de la pantalla, pero cuyo
+  contenido arranca en el margen: así una pastilla a medio salir se ve cortada
+  por el borde y no por un padding, que es lo que hacía parecer que la lista
+  estaba mal medida.
+*/
+.rail {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-inline: calc(var(--gutter) * -1);
+  padding-inline: var(--gutter);
+}
+.rail::-webkit-scrollbar {
+  display: none;
+}
+
+/*
+  El cajón de acciones de una línea de la comanda. Se abre midiendo el
+  contenido, sin altura fija que haya que mantener a mano cuando cambien los
+  botones de dentro.
+*/
+.slot {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.22s ease;
+}
+.slot[data-open="true"] {
+  grid-template-rows: 1fr;
+}
+.slot > div {
+  overflow: hidden;
+  visibility: hidden;
+}
+.slot[data-open="true"] > div {
+  visibility: visible;
+}
+@media (prefers-reduced-motion: reduce) {
+  .slot {
+    transition: none;
+  }
 }
 
 input[type="number"]::-webkit-outer-spin-button,

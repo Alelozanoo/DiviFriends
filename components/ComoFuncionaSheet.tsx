@@ -35,16 +35,16 @@ export default function ComoFuncionaSheet() {
         <Sheet onClose={() => setAbierto(false)}>
           {/* Pegada arriba: la hoja es más alta que la pantalla —son cuatro
               dibujos— y un cierre al final obliga a bajarlo todo para salir. */}
-          <div className="sticky -top-5 z-10 -mx-5 -mt-5 flex items-start justify-between gap-3 bg-paper-2/95 px-5 pb-3 pt-5 backdrop-blur">
+          <div className="sticky -top-2 z-10 -mx-[var(--gutter)] -mt-2 flex items-start justify-between gap-3 bg-paper-2/95 px-[var(--gutter)] pb-3 pt-2 backdrop-blur">
             <div>
-              <h2 className="text-xl font-bold tracking-tight">{t.pasos.titulo}</h2>
-              <p className="mt-1 text-sm text-ink-soft">{t.pasos.entradilla}</p>
+              <h2 className="text-[21px] font-bold leading-tight tracking-[-0.025em]">{t.pasos.titulo}</h2>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-ink-soft">{t.pasos.entradilla}</p>
             </div>
             <button
               type="button"
               onClick={() => setAbierto(false)}
               aria-label="Cerrar"
-              className="-mr-1.5 shrink-0 rounded-lg px-2.5 py-1.5 text-lg leading-none text-ink-faint transition-colors hover:bg-paper-3 hover:text-ink active:bg-paper-3"
+              className="-mr-1.5 shrink-0 rounded-lg px-2.5 py-1.5 text-[17px] leading-none text-ink-faint transition-colors hover:bg-paper-3 hover:text-ink active:bg-paper-3"
             >
               ✕
             </button>
@@ -55,10 +55,10 @@ export default function ComoFuncionaSheet() {
               <li key={n} className="flex flex-col">
                 <div>
                   <p className="flex items-baseline gap-2.5">
-                    <span className="tnum text-sm font-bold text-amber">{n}</span>
-                    <span className="text-lg font-semibold tracking-tight">{title}</span>
+                    <span className="tnum text-[15px] font-bold text-amber">{n}</span>
+                    <span className="text-[17px] font-semibold tracking-tight">{title}</span>
                   </p>
-                  <p className="mt-1 text-sm leading-relaxed text-ink-soft">{foot}</p>
+                  <p className="mt-1 text-[15px] leading-relaxed text-ink-soft">{foot}</p>
                 </div>
                 <div className="mt-4 flex-1">
                   <Pieza />
@@ -70,7 +70,7 @@ export default function ComoFuncionaSheet() {
           <button
             type="button"
             onClick={() => setAbierto(false)}
-            className="mt-6 w-full rounded-xl bg-amber py-3 text-sm font-bold text-paper transition-transform active:scale-[0.98]"
+            className="mt-6 w-full min-h-[52px] rounded-xl bg-amber text-[15px] font-bold text-paper transition-transform active:scale-[0.98]"
           >
             {t.pasos.entendido}
           </button>

@@ -141,7 +141,13 @@ export function patchTicket(
       // historial igual que quitar una línea. `what` guarda el total viejo.
       if (doc.totalCents !== antes) log(doc, "total.edit", by, String(antes), doc.totalCents);
     }
-    if (patch.place !== undefined) doc.place = patch.place.trim() || null;
+    if (patch.place !== undefined) {
+      const antes = doc.place;
+      /* Con tope: el nombre viaja en el título del enlace y en la estampa que
+         sale al compartirlo, y una parrafada ahí no se lee ni cabe. */
+      doc.place = patch.place.trim().slice(0, 40) || null;
+      if (doc.place !== antes) log(doc, "mesa.nombre", by, doc.place ?? "", 0);
+    }
     if (patch.tableLabel !== undefined) doc.tableLabel = patch.tableLabel.trim() || null;
     if (patch.closed !== undefined) doc.closed = patch.closed;
   });

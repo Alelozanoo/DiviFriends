@@ -37,11 +37,11 @@ export default function HistorySheet({
   const colorDe = new Map(participants.map((p) => [p.id, p.color]));
   return (
     <Sheet onClose={onClose}>
-      <div className="sticky -top-5 z-10 -mx-5 -mt-5">
-        <div className="flex items-start justify-between gap-3 bg-paper-2 px-5 pt-5 pb-2">
+      <div className="sticky -top-2 z-10 -mx-[var(--gutter)] -mt-2">
+        <div className="flex items-start justify-between gap-3 bg-paper-2 px-[var(--gutter)] pt-2 pb-2">
           <div>
-            <h2 className="text-xl font-bold tracking-tight">{t.historial.titulo}</h2>
-            <p className="mt-1 text-sm text-ink-soft">
+            <h2 className="text-[21px] font-bold leading-tight tracking-[-0.025em]">{t.historial.titulo}</h2>
+            <p className="mt-1.5 text-[13px] leading-relaxed text-ink-soft">
               {t.historial.entradilla}
             </p>
           </div>
@@ -49,7 +49,7 @@ export default function HistorySheet({
             type="button"
             onClick={onClose}
             aria-label={t.historial.cerrar}
-            className="-mr-1.5 shrink-0 rounded-lg px-2.5 py-1.5 text-lg leading-none text-ink-faint transition-colors hover:bg-paper-3 hover:text-ink active:bg-paper-3"
+            className="-mr-1.5 shrink-0 rounded-lg px-2.5 py-1.5 text-[17px] leading-none text-ink-faint transition-colors hover:bg-paper-3 hover:text-ink active:bg-paper-3"
           >
             ✕
           </button>
@@ -58,7 +58,7 @@ export default function HistorySheet({
       </div>
 
       {events.length === 0 ? (
-        <p className="mt-5 rounded-xl border border-line bg-paper px-4 py-5 text-center text-sm text-ink-faint">
+        <p className="mt-5 rounded-xl border border-line bg-paper px-4 py-5 text-center text-[15px] text-ink-faint">
           {t.historial.vacio}
         </p>
       ) : (
@@ -79,7 +79,7 @@ export default function HistorySheet({
       )}
 
       <div 
-        className="sticky z-10 -mx-5 px-5 pt-12"
+        className="sticky z-10 -mx-[var(--gutter)] px-[var(--gutter)] pt-12"
         style={{ 
           bottom: "calc(-1.25rem - env(safe-area-inset-bottom))",
           marginBottom: "calc(-1.25rem - env(safe-area-inset-bottom))", 
@@ -90,7 +90,7 @@ export default function HistorySheet({
         <button
           type="button"
           onClick={onClose}
-          className="relative w-full rounded-xl bg-amber py-3 text-sm font-bold text-paper transition-transform active:scale-[0.98]"
+          className="relative w-full min-h-[52px] rounded-xl bg-amber text-[15px] font-bold text-paper transition-transform active:scale-[0.98]"
         >
           {t.historial.cerrar}
         </button>
@@ -123,9 +123,9 @@ function Fila({
       <Avatar name={event.by} color={color} size={26} />
 
       <div className="min-w-0 flex-1">
-        <p className="text-sm leading-snug">
+        <p className="text-[15px] leading-snug">
           <b className="font-semibold">{event.by}</b>
-          {mio && <span className="ml-1 text-xs text-amber">{t.mesa.tu}</span>}{" "}
+          {mio && <span className="ml-1 text-[13px] text-amber">{t.mesa.tu}</span>}{" "}
           <Cuenta event={event} currency={currency} t={t} />
         </p>
         <p className="stamp mt-0.5 text-ink-faint">{cuando(event.at, t)}</p>
@@ -159,6 +159,14 @@ function Cuenta({ event, currency, t }: { event: ChangeEvent; currency: string; 
           </>
         )}
         {importe}
+      </span>
+    );
+  }
+
+  if (event.kind === "mesa.nombre") {
+    return (
+      <span className="text-ink-soft">
+        {t.historial.renombro} <b className="font-semibold text-ink">{event.what}</b>
       </span>
     );
   }
