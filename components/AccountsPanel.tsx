@@ -18,6 +18,9 @@ interface Props {
   onPagar: (toId: string, cents: number) => void;
   onResolver: (fromId: string, ok: boolean) => void;
   onPonerCobro: () => void;
+  /** Los tickets a los que nadie ha dicho todavía quién los pagó. */
+  ticketsSinPagador: { id: string | null; label: string | null }[];
+  onDecirPagador: (receiptId: string | null) => void;
 }
 
 export default function AccountsPanel({
@@ -27,6 +30,8 @@ export default function AccountsPanel({
   onSetSettled,
   onPagar,
   onResolver,
+  ticketsSinPagador,
+  onDecirPagador,
 }: Props) {
   const t = useT();
   const { currency } = state.ticket;
@@ -52,7 +57,14 @@ export default function AccountsPanel({
   const faltanPorPagar = people.filter(p => p.owesCents > 0 && !p.settled);
   const yaHanPagado = people.filter(p => p.owesCents > 0 && p.settled);
 
-  const isCompleted = state.items.length > 0 && settlement.unassignedCents === 0 && faltanPorPagar.length === 0 && people.some(p => p.paidCents > 0);
+  const isCompleted =
+    state.items.length > 0 &&
+    settlement.unassignedCents === 0 &&
+    faltanPorPagar.length === 0 &&
+    people.some((p) => p.paidCents > 0) &&
+    // Sin saber quién puso cada ticket no hay nada que celebrar: los números
+    // de arriba todavía no son los buenos.
+    ticketsSinPagador.length === 0;
 
   const prevCompleted = useRef(false);
   useEffect(() => {
@@ -78,6 +90,34 @@ export default function AccountsPanel({
           <p className="text-lg font-bold text-mint tracking-tight">{t.cuentas.mesaCerrada}</p>
           <p className="text-sm text-ink-soft mt-1">{t.cuentas.mesaCerradaAviso}</p>
         </div>
+      )}
+
+      {/*
+        Mientras quede un ticket sin pagador, todo lo de abajo está mal.
+
+        Lo que costó ese papel se le cobra a quien se lo comió pero no se le
+        abona a nadie, así que aparece una deuda sin acreedor: la fila te dice
+        que debes treinta cuando en realidad debes diez. Y no se nota, porque
+        la flecha de «quién paga a quién» sí sale bien. Por eso el aviso va
+        arriba del todo y en rojo, no escondido.
+      */}
+      {ticketsSinPagador.length > 0 && (
+        <button
+          type="button"
+          onClick={() => onDecirPagador(ticketsSinPagador[0].id)}
+          className="flex w-full items-center justify-between gap-3 rounded-2xl border border-clay/40 bg-clay/[0.08] px-4 py-3 text-left transition-colors active:bg-clay/15"
+        >
+          <span className="text-sm leading-relaxed text-clay">
+            {ticketsSinPagador.length === 1
+              ? rellena(t.cuentas.faltaPagadorUno, {
+                  que: ticketsSinPagador[0].label || t.pagadorTicket.esteTicket,
+                })
+              : rellena(t.cuentas.faltaPagadorVarios, { n: ticketsSinPagador.length })}
+          </span>
+          <span className="shrink-0 rounded-lg bg-clay px-3 py-1.5 text-xs font-bold text-paper">
+            {t.cuentas.decirlo}
+          </span>
+        </button>
       )}
 
       {isCompleted && (

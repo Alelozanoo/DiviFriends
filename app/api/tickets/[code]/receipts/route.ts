@@ -120,7 +120,7 @@ export async function POST(
   }
 
   try {
-    const state = await addReceipt(code, {
+    const { state, receiptId } = await addReceipt(code, {
       label: body.label || parsed.place || "Ticket",
       totalCents: Math.round(parsed.total * 100),
       items: parsed.items.map((item) => ({
@@ -130,7 +130,7 @@ export async function POST(
         totalCents: Math.round(item.line_total * 100),
       })),
     });
-    return NextResponse.json(state, { status: 201 });
+    return NextResponse.json(state, { status: 201, headers: { "x-receipt-id": receiptId } });
   } catch (error) {
     return fail(error);
   }

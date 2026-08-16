@@ -28,6 +28,7 @@ import { Avatar, Progress, Sheet } from "./ui";
 import { HeaderMenuSheet } from "./HeaderMenuSheet";
 import { CambiarPagadorSheet } from "./CambiarPagadorSheet";
 import { EditNameSheet } from "./EditNameSheet";
+import { PagadorTicketSheet } from "./PagadorTicketSheet";
 import { useT, useLang, rellena } from "@/lib/i18n";
 import { inicio } from "@/lib/i18n/config";
 
@@ -58,6 +59,9 @@ export default function SplitApp({
   const [pagandoA, setPagandoA] = useState<{ id: string; cents: number } | null>(null);
   const [cobrando, setCobrando] = useState(false);
   const [preguntandoPagador, setPreguntandoPagador] = useState(false);
+  // Qué ticket está esperando que alguien diga quién lo pagó. `receiptId` a
+  // null es el ticket original, que no vive en `receipts` sino en el propio doc.
+  const [preguntandoTicket, setPreguntandoTicket] = useState<{ receiptId: string | null } | null>(null);
 
   // Abrir una mesa es el primer momento medible: por el enlace del grupo,
   // por el QR del bar o tecleando el código.
@@ -245,6 +249,12 @@ export default function SplitApp({
     que la respuesta era siempre «no». Por eso al que pagaba no le salían en el
     menú ni «configurar cómo cobrar» ni «cerrar la mesa».
   */
+  /** Quién puso el dinero de un ticket concreto, sea el original o un recibo. */
+  const pagadorDelTicket = (receiptId: string | null): string | null =>
+    receiptId
+      ? ((state.receipts ?? []).find((r) => r.id === receiptId)?.payerId ?? null)
+      : (state.ticket.payerId ?? state.participants.find((p) => p.isPayer)?.id ?? null);
+
   const soyElPagador = Boolean(
     meId &&
       (state.ticket.payerId === meId ||
@@ -301,6 +311,18 @@ export default function SplitApp({
 
   const receipts = state.receipts || [];
   const hasLegacyItems = state.items.some(i => !i.receiptId) || (state.ticket.totalCents - receipts.reduce((a, r) => a + r.totalCents, 0)) > 0;
+
+  /*
+    Los tickets a los que todavía nadie les ha puesto pagador.
+
+    Se puede saltar la pregunta, pero no en silencio: mientras quede alguno,
+    su pestaña va marcada y la pantalla de cuentas avisa. Sin eso los números
+    salen mal y encima con toda la pinta de estar bien.
+  */
+  const ticketsSinPagador = [
+    ...(hasLegacyItems ? [{ id: null as string | null, label: state.ticket.place }] : []),
+    ...receipts.map((r) => ({ id: r.id as string | null, label: r.label })),
+  ].filter((tk) => !pagadorDelTicket(tk.id));
 
   let currentReceiptId = activeReceiptId;
   if (currentReceiptId === null) {
@@ -412,6 +434,7 @@ export default function SplitApp({
                 style={currentReceiptId === null ? { color: "var(--paper)" } : undefined}
               >
                 {state.ticket.place || t.comanda.ticketOriginal}
+                {!pagadorDelTicket(null) && <Sinpagador />}
               </button>
             )}
             {receipts.map((r) => (
@@ -426,6 +449,7 @@ export default function SplitApp({
                 style={currentReceiptId === r.id ? { color: "var(--paper)" } : undefined}
               >
                 {r.label}
+                {!pagadorDelTicket(r.id) && <Sinpagador />}
               </button>
             ))}
             <button
@@ -522,6 +546,8 @@ export default function SplitApp({
             onPagar={(toId, cents) => setPagandoA({ id: toId, cents })}
             onResolver={(fromId, ok) => void resolverPago(fromId, ok)}
             onPonerCobro={() => setCobrando(true)}
+            ticketsSinPagador={ticketsSinPagador}
+            onDecirPagador={(receiptId) => setPreguntandoTicket({ receiptId })}
           />
         )}
       </main>
@@ -557,16 +583,47 @@ export default function SplitApp({
             const deboAUnaPersona = misDeudas.length === 1;
             const soyAcreedor = settlement.transactions.some((tx) => tx.toId === meId);
             const isPureDebtor = deboAUnaPersona && !soyAcreedor;
+            const debidoTotal = misDeudas.reduce((a, tx) => a + tx.cents, 0);
 
             const isSettled = myBalance?.settled;
             const showTodoPagado = isSettled && !soyAcreedor && !soyElPagador;
+
+            /*
+              Lo primero de todo: si el ticket que estás mirando no tiene
+              pagador, no hay nada que calcular todavía. La pregunta va por
+              papel porque tres tickets pueden llevar tres pagadores, y sin ese
+              dato lo que costó se le cobra a quien se lo comió sin abonárselo
+              a nadie: sale una deuda sin acreedor y los números mienten.
+            */
+            const faltaPagadorAqui = tab === "comanda" && !pagadorDelTicket(currentReceiptId);
+
+            /*
+              Lo que dice el botón, por orden de urgencia. Fuera del JSX porque
+              encadenado allí eran seis ternarios anidados y ya no se leía cuál
+              ganaba a cuál.
+            */
+            const etiqueta = (() => {
+              if (tab !== "comanda") return t.comanda.volverComanda;
+              if (faltaPagadorAqui) return t.comanda.quienPagoEste;
+              if (showTodoPagado) return t.comanda.todoPagadoBoton;
+              if (isPureDebtor) return t.cuentas.pagarAhora;
+              // Debiéndole a dos, el botón lleva a la lista y dice cuánto sale
+              // en total: «Cuentas» a secas no contaba que había dos pagos.
+              if (misDeudas.length > 1) {
+                return rellena(t.comanda.pagarTotal, {
+                  dinero: money(debidoTotal, state.ticket.currency),
+                });
+              }
+              if (!soyElPagador && (myBalance?.owesCents ?? 0) === 0) return t.comanda.seleccionaAlgo;
+              return t.comanda.cuentas;
+            })();
 
             return (
               <button
                 type="button"
                 onClick={() => {
-                  if (!hayPagador) {
-                    setCambiarPagadorOpen(true);
+                  if (faltaPagadorAqui) {
+                    setPreguntandoTicket({ receiptId: currentReceiptId });
                   } else if (showTodoPagado && tab === "comanda") {
                     const faltanPorPagar = settlement.byParticipant.filter(p => p.owesCents > 0 && !p.settled);
                     const isCompleted = state.items.length > 0 && settlement.unassignedCents === 0 && faltanPorPagar.length === 0 && settlement.byParticipant.some(p => p.paidCents > 0);
@@ -600,17 +657,7 @@ export default function SplitApp({
                 }`}
                 style={showTodoPagado && tab === "comanda" ? {} : { color: "var(--paper-2)" }}
               >
-                {!hayPagador 
-                  ? t.comanda.quienHaPagadoBoton
-                  : (showTodoPagado && tab === "comanda"
-                      ? t.comanda.todoPagadoBoton
-                      : (isPureDebtor && tab === "comanda" 
-                          ? t.cuentas.pagarAhora 
-                          : (tab === "comanda" 
-                              ? ((!soyElPagador && (myBalance?.owesCents ?? 0) === 0) 
-                                  ? t.comanda.seleccionaAlgo 
-                                  : t.comanda.cuentas) 
-                              : t.comanda.volverComanda)))}
+                {etiqueta}
               </button>
             );
           })() : (
@@ -727,8 +774,18 @@ export default function SplitApp({
           <h2 className="mb-4 text-xl font-bold tracking-tight">{t.subir.otroTicket}</h2>
           <TicketUploader
             targetCode={code}
-            onSuccess={() => {
+            onSuccess={(receiptId) => {
               setUploadingAnother(false);
+              /*
+                Se abre el ticket que se acaba de subir y se pregunta ahí mismo
+                quién lo pagó. Ahora y no luego: quien acaba de hacerle la foto
+                tiene el papel en la mano y sabe la respuesta; media hora
+                después, en la pantalla de cuentas, ya no se acuerda nadie.
+              */
+              if (receiptId) {
+                setActiveReceiptId(receiptId);
+                setPreguntandoTicket({ receiptId });
+              }
             }}
           />
         </Sheet>
@@ -821,6 +878,30 @@ export default function SplitApp({
           onCloseTicket={
             (!state.ticket.closed && soyElPagador) ? () => patchTicket({ closed: true }) : null
           }
+        />
+      )}
+
+      {preguntandoTicket && (
+        <PagadorTicketSheet
+          etiqueta={
+            preguntandoTicket.receiptId
+              ? (receipts.find((r) => r.id === preguntandoTicket.receiptId)?.label ?? null)
+              : state.ticket.place
+          }
+          participants={state.participants}
+          meId={meId}
+          payerId={pagadorDelTicket(preguntandoTicket.receiptId)}
+          onElegir={(participantId) => {
+            void send("/payers", {
+              method: "PATCH",
+              body: JSON.stringify({
+                participantId,
+                receiptId: preguntandoTicket.receiptId,
+                by: meId,
+              }),
+            });
+          }}
+          onClose={() => setPreguntandoTicket(null)}
         />
       )}
 
@@ -929,6 +1010,16 @@ export default function SplitApp({
         </div>
       )}
     </div>
+  );
+}
+
+/** El aviso de que a ese ticket todavía nadie le ha puesto pagador. */
+function Sinpagador() {
+  return (
+    <span
+      aria-hidden
+      className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-clay align-middle"
+    />
   );
 }
 

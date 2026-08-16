@@ -123,6 +123,18 @@ export const en: Dict = {
     todoPagadoBoton: "All paid! 💸",
     historialTitulo: "History",
     opciones: "Options",
+    quienPagoEste: "Who paid this receipt?",
+    pagarTotal: "Pay {dinero}",
+  },
+
+  pagadorTicket: {
+    titulo: "Who paid {que}?",
+    esteTicket: "this receipt",
+    aviso:
+      "Each receipt can have been paid by a different person. With that, the whole table adds up by itself.",
+    loPagueYo: "I paid it",
+    fueOtro: "Or somebody else at the table",
+    ahoraNo: "Not now",
   },
 
   estado: {
@@ -235,6 +247,10 @@ export const en: Dict = {
     debesAName: "You owe {name}",
     enPaz: "You're all square",
     enPazAviso: "You owe nothing and nothing is owed to you. Your side is done.",
+    faltaPagadorUno: "Nobody has said who paid {que}. Until then these totals don't add up.",
+    faltaPagadorVarios:
+      "{n} receipts still need somebody to say who paid them. Until then these totals don't add up.",
+    decirlo: "Say who",
     todoCuadrado: "All square",
     todosSaldados: "Everybody has settled up.",
     faltaSaldar: "Left to settle",

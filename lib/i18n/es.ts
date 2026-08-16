@@ -131,6 +131,19 @@ export const es = {
     todoPagadoBoton: "¡Todo pagado! 💸",
     historialTitulo: "Historial",
     opciones: "Opciones",
+    quienPagoEste: "¿Quién ha pagado este ticket?",
+    pagarTotal: "Pagar {dinero}",
+  },
+
+  /* ------------------------------------------ quién pagó un ticket suelto */
+  pagadorTicket: {
+    titulo: "¿Quién ha pagado {que}?",
+    esteTicket: "este ticket",
+    aviso:
+      "Cada ticket lo puede haber puesto una persona distinta. Con eso, las cuentas de toda la mesa salen solas.",
+    loPagueYo: "Lo pagué yo",
+    fueOtro: "O fue otro de la mesa",
+    ahoraNo: "Ahora no",
   },
 
   /* ------------------------------------------- el aviso de cómo va la cosa */
@@ -252,6 +265,10 @@ export const es = {
     debesAName: "Debes a {name}",
     enPaz: "¡Estás en paz!",
     enPazAviso: "Ni debes dinero ni se te debe. Por tu parte está todo.",
+    faltaPagadorUno: "Falta decir quién pagó {que}. Hasta entonces estas cuentas no cuadran.",
+    faltaPagadorVarios:
+      "Faltan {n} tickets por decir quién los pagó. Hasta entonces estas cuentas no cuadran.",
+    decirlo: "Decirlo",
     todoCuadrado: "Todo cuadrado",
     todosSaldados: "Todos han saldado su deuda.",
     faltaSaldar: "Falta por saldar",

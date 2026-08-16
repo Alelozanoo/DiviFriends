@@ -43,7 +43,7 @@ export default function TicketUploader({
   onSuccess,
 }: {
   targetCode?: string;
-  onSuccess?: () => void;
+  onSuccess?: (receiptId: string | null) => void;
 } = {}) {
   const router = useRouter();
   const t = useT();
@@ -121,7 +121,7 @@ export default function TicketUploader({
         
         if (targetCode && onSuccess) {
           track(EV.anadeTicket, { origen: "foto" });
-          onSuccess();
+          onSuccess(response.headers.get("x-receipt-id"));
         } else if (data.code) {
           track(EV.creaDivi, { metodo: "foto" });
           router.push(`/t/${data.code}`);

@@ -695,9 +695,9 @@ export async function addReceipt(
     totalCents: number;
     items: { name: string; qty: number; unitCents: number; totalCents: number }[];
   },
-): Promise<TicketState> {
+): Promise<{ state: TicketState; receiptId: string }> {
   const receiptId = id("rcp");
-  return mutate(code, (doc) => {
+  const state = await mutate(code, (doc) => {
     const receipts = doc.receipts ?? (doc.receipts = []);
     receipts.push({
       id: receiptId,
@@ -723,4 +723,7 @@ export async function addReceipt(
     
     doc.items.push(...newItems);
   });
+  // Quien lo sube tiene el papel en la mano, así que la pantalla le va a
+  // preguntar en seguida quién lo pagó. Para eso hace falta saber cuál es.
+  return { state, receiptId };
 }
