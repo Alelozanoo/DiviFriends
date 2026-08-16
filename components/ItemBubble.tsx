@@ -56,11 +56,11 @@ export default function ItemBubble({
 
   return (
     <div
-      className={`relative flex flex-col rounded-2xl border-2 transition-colors ${
+      className={`relative flex flex-col rounded-2xl border-2 transition-all duration-300 ${full ? "opacity-40 grayscale-[20%]" : "opacity-100"} ${
         isMine
           ? "border-amber bg-amber/12"
           : full
-            ? "border-line/60 bg-paper-2/50"
+            ? "border-line/40 bg-transparent"
             : "border-line bg-paper-2"
       }`}
     >

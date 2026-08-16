@@ -7,6 +7,7 @@ export interface Ticket {
   totalCents: number;
   payerId: string | null;
   createdAt: string;
+  closed?: boolean;
 }
 
 export interface Item {

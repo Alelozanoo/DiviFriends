@@ -7,20 +7,19 @@ import { useT, rellena } from "@/lib/i18n";
 import { Avatar, Sheet } from "./ui";
 
 /**
- * Quién está en la mesa, y las dos maneras de que crezca esa lista.
+ * Quién está en la mesa y cómo se mete el resto: por QR o por enlace.
  *
- * La rápida es apuntarlos tú: en una mesa de ocho no vas a esperar a que los
- * ocho saquen el móvil, así que escribes los nombres y vas marcando lo que ha
- * tomado cada uno desde la hoja de cada línea. La otra es que entren ellos por
- * QR o por enlace, que es mejor cuando la mesa colabora.
+ * Apuntar a alguien escribiendo su nombre se hace ahora desde la hoja de cada
+ * línea, al repartir un plato, que es cuando de verdad hace falta. Aquí sobraba
+ * un formulario más entre la lista y el QR.
  */
 export default function TableSheet({
   code,
   url,
   qrSvg,
   participants,
+  payerId,
   meId,
-  onAdd,
   onUpdateAvatar,
   onRemove,
   onClose,
@@ -29,20 +28,17 @@ export default function TableSheet({
   url: string;
   qrSvg: string;
   participants: Participant[];
+  payerId?: string | null;
   meId: string | null;
-  onAdd: (name: string, avatar?: string) => Promise<unknown>;
   onUpdateAvatar: (participantId: string, avatar: string) => void;
   onRemove: (participantId: string) => void;
   onClose: () => void;
 }) {
-  const [name, setName] = useState("");
-  const [avatar, setAvatar] = useState("");
-  const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
   const [editingAvatarId, setEditingAvatarId] = useState<string | null>(null);
   const t = useT();
   
-  const emojis = ["🐶", "🐱", "🦊", "🐼", "🐯", "🦁", "🐰", "🐸"];
+  const emojis = ["🍕", "🍔", "🍟", "🌮", "🍣", "🍻", "🍹", "☕️"];
 
   async function copy() {
     try {
@@ -90,18 +86,25 @@ export default function TableSheet({
                 >
                   <Avatar name={person.name} avatar={person.avatar} color={person.color} size={26} />
                 </button>
-                <span className="min-w-0 flex-1 truncate text-sm font-semibold">
-                  {person.name}
-                  {person.id === meId && <span className="ml-1.5 text-xs text-amber">{t.mesa.tu}</span>}
+                <span className="min-w-0 flex-1 truncate text-sm font-semibold flex items-center gap-1.5">
+                  <span className="truncate">{person.name}</span>
+                  {person.id === meId && <span className="shrink-0 text-xs text-amber">{t.mesa.tu}</span>}
+                  {(person.isPayer || person.id === payerId) && (
+                    <span className="shrink-0 text-[0.65rem] uppercase tracking-wider font-bold text-mint px-1.5 py-0.5 rounded bg-mint/10 border border-mint/20">
+                      {t.mesa.pagadorEtiqueta}
+                    </span>
+                  )}
                 </span>
-                <button
-                  type="button"
-                  onClick={() => onRemove(person.id)}
-                  aria-label={rellena(t.mesa.quitarDeLaMesa, { name: person.name })}
-                  className="rounded-lg px-2 py-1 text-xs text-ink-faint transition-colors hover:text-clay"
-                >
-                  ✕
-                </button>
+                {(!(payerId || participants.find(p => p.isPayer)) || meId === (payerId || participants.find(p => p.isPayer)?.id) || person.id === meId) && (
+                  <button
+                    type="button"
+                    onClick={() => onRemove(person.id)}
+                    aria-label={rellena(t.mesa.quitarDeLaMesa, { name: person.name })}
+                    className="rounded-lg px-2 py-1 text-xs text-ink-faint transition-colors hover:text-clay"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
               
               {editingAvatarId === person.id && (
@@ -140,57 +143,10 @@ export default function TableSheet({
         </ul>
       )}
 
-      <form
-        className="mt-3 flex flex-col gap-2"
-        onSubmit={async (event) => {
-          event.preventDefault();
-          if (!name.trim() || busy) return;
-          setBusy(true);
-          await onAdd(name.trim(), avatar || undefined);
-          setName("");
-          setAvatar("");
-          setBusy(false);
-        }}
-      >
-        <div className="flex gap-2">
-          <input
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            placeholder={t.mesa.anadeAlguien}
-            maxLength={40}
-            aria-label="Nombre de quien se sienta en la mesa"
-            className="min-w-0 flex-1 rounded-xl border border-line bg-paper px-4 py-2.5 focus:border-amber focus:outline-none"
-          />
-          <button
-            type="submit"
-            disabled={busy || !name.trim()}
-            className="shrink-0 rounded-xl bg-amber px-5 text-sm font-bold text-paper disabled:opacity-30"
-          >
-            {t.mesa.anadir}
-          </button>
-        </div>
-        {name.trim() && (
-          <div className="flex gap-2 overflow-x-auto pb-1 pt-1">
-            {emojis.map((emoji) => (
-              <button
-                key={emoji}
-                type="button"
-                onClick={() => setAvatar(avatar === emoji ? "" : emoji)}
-                className={`grid h-8 w-8 shrink-0 place-items-center rounded-full border-2 text-sm transition-all ${
-                  avatar === emoji ? "border-amber bg-amber/10 scale-110" : "border-transparent bg-paper-3 hover:bg-paper-4"
-                }`}
-              >
-                {emoji}
-              </button>
-            ))}
-          </div>
-        )}
-      </form>
-
-      <div className="rule my-5" />
+      <div className="mt-6" />
 
       {/* ------------------------------------------------- que entren ellos */}
-      <p className="stamp text-ink-faint">{t.mesa.oQueSeMetan}</p>
+      <p className="stamp text-ink-faint uppercase tracking-wider text-[0.7rem] font-bold">{t.mesa.comoUnirse}</p>
       <div className="mt-2.5 flex items-center gap-4 rounded-2xl bg-[#f4ece0] p-4">
         <div
           className="h-28 w-28 shrink-0 [&>svg]:h-full [&>svg]:w-full"

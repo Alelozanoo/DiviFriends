@@ -12,11 +12,13 @@ export default function MoneyInput({
   onCommit,
   ariaLabel,
   className = "",
+  disabled,
 }: {
   cents: number;
   onCommit: (cents: number) => void;
   ariaLabel: string;
   className?: string;
+  disabled?: boolean;
 }) {
   const [draft, setDraft] = useState(() => centsToDraft(cents));
   const [editing, setEditing] = useState(false);
@@ -39,6 +41,7 @@ export default function MoneyInput({
 
   return (
     <input
+      disabled={disabled}
       inputMode="decimal"
       aria-label={ariaLabel}
       value={draft}

@@ -38,11 +38,24 @@ export default function LangSwitch({ enPortada = false }: { enPortada?: boolean 
           onClick={() => cambiar(codigo)}
           aria-current={codigo === lang}
           lang={codigo}
-          className={`uppercase tracking-wider transition-colors ${
-            codigo === lang ? "font-bold text-amber" : "text-ink-faint hover:text-ink"
-          }`}
+          className="uppercase tracking-wider transition-colors"
         >
-          {codigo}
+          {/*
+            El color y la negrita van en un <span> y no en el <button>.
+
+            `globals.css` le da a todo botón `font: inherit; color: inherit`
+            fuera de las capas de Tailwind, así que gana siempre y se comía el
+            ámbar: los dos idiomas salían del mismo color y no se veía cuál
+            estaba puesto. Dentro de un span no le afecta, que es como lo
+            resuelve el resto de la app.
+          */}
+          <span
+            className={
+              codigo === lang ? "font-bold text-amber" : "text-ink-faint hover:text-ink"
+            }
+          >
+            {codigo}
+          </span>
         </button>
       ))}
     </span>

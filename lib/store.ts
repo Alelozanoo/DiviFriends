@@ -130,7 +130,7 @@ function isAlreadyExists(error: unknown): boolean {
 
 export function patchTicket(
   code: string,
-  patch: { totalCents?: number; place?: string; tableLabel?: string },
+  patch: { totalCents?: number; place?: string; tableLabel?: string; closed?: boolean },
   by?: string | null,
 ): Promise<TicketState> {
   return mutate(code, (doc) => {
@@ -143,6 +143,7 @@ export function patchTicket(
     }
     if (patch.place !== undefined) doc.place = patch.place.trim() || null;
     if (patch.tableLabel !== undefined) doc.tableLabel = patch.tableLabel.trim() || null;
+    if (patch.closed !== undefined) doc.closed = patch.closed;
   });
 }
 
@@ -152,6 +153,8 @@ export async function addParticipant(
   code: string,
   rawName: string,
   avatar?: string,
+  bizum?: string,
+  revolut?: string
 ): Promise<{ state: TicketState; participantId: string }> {
   const name = rawName.trim().slice(0, 40);
   if (!name) throw new StoreError("Escribe un nombre.");
@@ -163,6 +166,8 @@ export async function addParticipant(
     const already = doc.participants.find((p) => p.name.toLowerCase() === name.toLowerCase());
     if (already) {
       if (avatar) already.avatar = avatar; // Actualizar avatar si se proporciona uno nuevo
+      if (bizum !== undefined) already.bizum = bizum;
+      if (revolut !== undefined) already.revolut = revolut;
       participantId = already.id;
       return;
     }
@@ -174,6 +179,8 @@ export async function addParticipant(
       id: participantId,
       name,
       avatar,
+      bizum,
+      revolut,
       color: colorFor(doc.participants.length),
       isPayer: false,
       settled: false,
@@ -318,7 +325,10 @@ export function declararPago(
     const ya = pagos.find((p) => p.fromId === fromId && p.toId === toId);
     // Lo ya cobrado no se reabre desde el lado del que paga: eso sólo puede
     // hacerlo quien tiene el dinero delante.
-    if (ya?.estado === "ok") return;
+    // EXCEPCIÓN: si el pagador desmarcó manualmente el "saldado" (settled === false),
+    // permitimos que el deudor vuelva a notificar el pago.
+    const deudor = doc.participants.find(p => p.id === fromId);
+    if (ya?.estado === "ok" && deudor?.settled) return;
 
     const nuevo = {
       fromId,

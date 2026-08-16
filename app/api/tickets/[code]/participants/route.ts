@@ -7,10 +7,16 @@ type Ctx = { params: Promise<{ code: string }> };
 
 export async function POST(request: Request, { params }: Ctx) {
   const { code } = await params;
-  const body = (await request.json()) as { name?: string; avatar?: string };
+  const body = (await request.json()) as { name?: string; avatar?: string; bizum?: string; revolut?: string };
 
   try {
-    const { state, participantId } = await addParticipant(code.toUpperCase(), body.name ?? "", body.avatar);
+    const { state, participantId } = await addParticipant(
+      code.toUpperCase(), 
+      body.name ?? "", 
+      body.avatar,
+      body.bizum,
+      body.revolut
+    );
     return ok(state, { "x-participant-id": participantId });
   } catch (error) {
     return fail(error);

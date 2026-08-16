@@ -125,6 +125,56 @@ export const es = {
     errorGuardar: "No se ha podido guardar el cambio.",
     errorApuntar: "No se ha podido apuntar a nadie más.",
     errorSeparar: "No se han podido separar esas unidades.",
+    // El botón grande de abajo, que dice cosas distintas según lo que te toque.
+    quienHaPagadoBoton: "¿Quién ha pagado?",
+    seleccionaAlgo: "Toca lo tuyo",
+    todoPagadoBoton: "¡Todo pagado! 💸",
+    historialTitulo: "Historial",
+    opciones: "Opciones",
+  },
+
+  /* ------------------------------------------- el aviso de cómo va la cosa */
+  estado: {
+    completadoTitulo: "¡Divi completado!",
+    completadoTexto: "Todo el mundo ha pagado su parte.",
+    completadoRemate: "¡Cuentas claras, amistades largas!",
+    alDiaTitulo: "Tú ya estás al día",
+    alDiaTexto: "Has pagado tu parte, pero la mesa sigue abierta.",
+    faltaUna: "Todavía falta 1 persona por pagar.",
+    faltanN: "Todavía faltan {n} personas por pagar.",
+    cerrar: "Cerrar",
+  },
+
+  /* ----------------------------------------------- el menú de la cabecera */
+  menu: {
+    titulo: "Opciones de la mesa",
+    cambiarPagador: "Cambiar quién ha pagado",
+    noPagueYo: "No he pagado yo la cuenta",
+    noPagueYoAviso: "La mesa se quedará sin nadie marcado como quien puso el dinero.",
+    configurarCobro: "Configurar cómo cobrar",
+    editarPerfil: "Editar mi perfil",
+    idioma: "Idioma",
+    bloquear: "Cerrar la mesa",
+    bloquearAviso: "Ya no se podrán añadir ni cambiar consumos. No tiene vuelta atrás.",
+    salir: "Salirme de la mesa",
+    salirAviso: "Se te quita de la comanda y sueltas todo lo que habías marcado.",
+    // Los dos botones de cualquiera de las confirmaciones de arriba.
+    si: "Sí, seguir",
+    no: "Dejarlo",
+  },
+
+  /* ----------------------------------------------------------- tu perfil */
+  perfil: {
+    titulo: "Editar mi perfil",
+    tuNombre: "Tu nombre",
+    datosPago: "Datos de pago guardados",
+    tuFoto: "Tu foto (opcional)",
+    ponteFoto: "Ponte foto de perfil (opcional)",
+    subirFoto: "Subir foto…",
+    quitarFoto: "Quitar foto",
+    cancelar: "Cancelar",
+    entrarComo: "Entrar como {name}",
+    entrarNuevo: "Entrar como otra persona",
   },
 
   /* -------------------------------------------------------- una línea */
@@ -193,10 +243,24 @@ export const es = {
   cuentas: {
     totalMesa: "Total de la mesa",
     marcaPagador: "Marca abajo quién puso la tarjeta y aparecerá lo que le debe cada uno.",
+    // El picker de pagador se fue al menú, así que el aviso manda al botón.
+    sinPagador: "Toca «¿Quién ha pagado?» abajo y aparecerá lo que le debe cada uno.",
+    mesaCerrada: "¡Mesa cerrada!",
+    mesaCerradaAviso: "Los consumos están registrados y ya no se pueden cambiar.",
+    diviCompletado: "¡Divi completado! 🎉",
+    diviCompletadoAviso: "Todo el mundo ha pagado su parte. ¡Cuentas claras, amistades largas!",
+    debesAName: "Debes a {name}",
+    enPaz: "¡Estás en paz!",
+    enPazAviso: "Ni debes dinero ni se te debe. Por tu parte está todo.",
     todoCuadrado: "Todo cuadrado",
     todosSaldados: "Todos han saldado su deuda.",
-    faltaSaldar: "Falta por saldar al bote",
+    faltaSaldar: "Falta por saldar",
     faltaDevolver: "Falta por devolverle a {name}",
+    faltaDevolverAmi: "Falta que te paguen",
+    faltanPorPagarte: "Falta que te paguen",
+    yaTeHanPagado: "Ya te han pagado",
+    meHaPagado: "Me ha pagado",
+    yaMeHaPagado: "Pagado ✓",
     sinAsignar: "Hay {dinero} sin asignar en la comanda",
     yaHanSaldado: "{n} de {total} ya han saldado su balance",
     quienHaPagado: "¿Quién ha pagado {que}?",
@@ -214,6 +278,8 @@ export const es = {
     de: "de",
     totalDelTicket: "Total del ticket",
     historial: "Historial de la mesa",
+    debesA: "Debes {dinero} a {name}",
+    pagarAhora: "Pagar ahora",
     sinCambios: "Nadie ha quitado ni añadido nada",
     nCambios: "{n} cambios en la cuenta",
     unCambio: "1 cambio en la cuenta",
@@ -256,7 +322,7 @@ export const es = {
   /* -------------------------------------------------------------- mesa */
   mesa: {
     titulo: "La mesa",
-    entradilla: "Apunta a quien esté contigo y ve marcando lo que ha tomado cada uno.",
+    entradilla: "Comparte el enlace o el QR para que tus amigos se unan a la mesa.",
     anadeAlguien: "Añade a alguien",
     anadir: "Añadir",
     oQueSeMetan: "O que se metan ellos",
@@ -268,6 +334,8 @@ export const es = {
     cerrar: "Cerrar",
     tu: "(tú)",
     quitarDeLaMesa: "Quitar a {name} de la mesa",
+    pagadorEtiqueta: "Pagador/a",
+    comoUnirse: "Cómo unirse a la mesa",
   },
 
   /* ------------------------------------------------------------- ticket */
@@ -357,14 +425,16 @@ export const es = {
     avisoCompartido: "Lo verá quien tenga el enlace de esta comanda.",
 
     // Cuando te deben dinero y no has puesto cómo cobrar.
-    faltaTitulo: "Di cómo quieres cobrar",
-    faltaAviso: "Y a los demás les sale el botón para pagarte de un toque.",
+    faltaTitulo: "Falta decir cómo cobrar",
+    faltaAviso: "Nadie puede pagarte de un toque hasta que no lo pongas.",
+    cobrasPor: "Cobras por {metodos}",
     ponerlo: "Ponerlo",
 
     // Pagar.
     pagar: "Pagar",
     pagarA: "Pagarle a {name}",
     conRevolut: "Pagar con",
+    conTarjeta: "Pagar con Tarjeta / Apple Pay",
     conBizum: "Pagar por",
     aMano: "Se lo he dado en mano",
     pasosBizum: "Bizum no tiene enlace. Abre tu banco, entra en Bizum y pega esto:",

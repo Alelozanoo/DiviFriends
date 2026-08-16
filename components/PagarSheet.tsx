@@ -5,7 +5,7 @@ import { conceptoDe, enlaceRevolut, telefonoBonito } from "@/lib/cobro";
 import { money } from "@/lib/format";
 import { useT, rellena } from "@/lib/i18n";
 import type { Participant, Via } from "@/lib/types";
-import { MarcaBizum, MarcaRevolut } from "./marcas";
+import { MarcaBizum } from "./marcas";
 import { Avatar, Sheet } from "./ui";
 
 /**
@@ -39,8 +39,8 @@ export default function PagarSheet({
   onClose: () => void;
 }) {
   const t = useT();
-  const [paso, setPaso] = useState<"elegir" | "bizum" | "enviado">("elegir");
-  const [via, setVia] = useState<Via>("revolut");
+  const [paso, setPaso] = useState<"elegir" | "bizum" | "enviado">(() => a.bizum && !a.revolut ? "bizum" : "elegir");
+  const [via, setVia] = useState<Via>(a.bizum && !a.revolut ? "bizum" : "revolut");
   const [busy, setBusy] = useState(false);
   const nota = conceptoDe(place);
 
@@ -86,10 +86,9 @@ export default function PagarSheet({
                 setVia("revolut");
                 setPaso("enviado");
               }}
-              className="flex items-center justify-center gap-2 rounded-xl bg-ink py-3.5 font-bold text-paper transition-transform active:scale-[0.98]"
+              className="flex items-center justify-center gap-2 rounded-2xl bg-amber px-10 py-3.5 text-lg font-bold text-paper transition-transform active:scale-[0.98] shadow-md shadow-amber/20"
             >
-              <span>{t.cobro.conRevolut}</span>
-              <MarcaRevolut height={15} />
+              <span>{t.cobro.conTarjeta}</span>
             </a>
           )}
 
@@ -111,7 +110,7 @@ export default function PagarSheet({
             type="button"
             disabled={busy}
             onClick={() => void declarar("mano")}
-            className="mt-1 rounded-xl py-2.5 text-sm text-ink-faint disabled:opacity-50"
+            className="mt-2 rounded-xl py-3 text-sm text-ink-faint disabled:opacity-50 transition-colors hover:bg-paper-3"
           >
             {t.cobro.aMano}
           </button>

@@ -37,21 +37,24 @@ export default function HistorySheet({
   const colorDe = new Map(participants.map((p) => [p.id, p.color]));
   return (
     <Sheet onClose={onClose}>
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-bold tracking-tight">{t.historial.titulo}</h2>
-          <p className="mt-1 text-sm text-ink-soft">
-            {t.historial.entradilla}
-          </p>
+      <div className="sticky -top-5 z-10 -mx-5 -mt-5">
+        <div className="flex items-start justify-between gap-3 bg-paper-2 px-5 pt-5 pb-2">
+          <div>
+            <h2 className="text-xl font-bold tracking-tight">{t.historial.titulo}</h2>
+            <p className="mt-1 text-sm text-ink-soft">
+              {t.historial.entradilla}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t.historial.cerrar}
+            className="-mr-1.5 shrink-0 rounded-lg px-2.5 py-1.5 text-lg leading-none text-ink-faint transition-colors hover:bg-paper-3 hover:text-ink active:bg-paper-3"
+          >
+            ✕
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label={t.historial.cerrar}
-          className="-mr-1.5 shrink-0 rounded-lg px-2.5 py-1.5 text-lg leading-none text-ink-faint transition-colors hover:bg-paper-3 hover:text-ink active:bg-paper-3"
-        >
-          ✕
-        </button>
+        <div className="pointer-events-none h-6 w-full bg-gradient-to-b from-paper-2 to-transparent" />
       </div>
 
       {events.length === 0 ? (
@@ -75,13 +78,23 @@ export default function HistorySheet({
         </ul>
       )}
 
-      <button
-        type="button"
-        onClick={onClose}
-        className="mt-4 w-full rounded-xl bg-amber py-3 text-sm font-bold text-paper transition-transform active:scale-[0.98]"
+      <div 
+        className="sticky z-10 -mx-5 px-5 pt-12"
+        style={{ 
+          bottom: "calc(-1.25rem - env(safe-area-inset-bottom))",
+          marginBottom: "calc(-1.25rem - env(safe-area-inset-bottom))", 
+          paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom))" 
+        }}
       >
-        {t.historial.cerrar}
-      </button>
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-paper-2 via-paper-2 to-transparent" />
+        <button
+          type="button"
+          onClick={onClose}
+          className="relative w-full rounded-xl bg-amber py-3 text-sm font-bold text-paper transition-transform active:scale-[0.98]"
+        >
+          {t.historial.cerrar}
+        </button>
+      </div>
     </Sheet>
   );
 }

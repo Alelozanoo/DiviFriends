@@ -27,10 +27,22 @@ export function Avatar({
         color: dimmed ? color : "#14100d",
         fontSize: size * 0.4,
       }}
-      className="inline-grid shrink-0 place-items-center rounded-full border-2 font-bold leading-none"
+      className="grid shrink-0 place-items-center rounded-full border-2 font-bold leading-none overflow-hidden relative"
     >
       {avatar ? (
-        <span className="leading-none" style={{ fontSize: size * 0.55 }}>{avatar}</span>
+        avatar.startsWith("data:image/") ? (
+          /* La foto ya viene recortada a 150 px y metida en la propia cadena,
+             así que no hay nada que `next/image` pueda optimizar: no existe
+             ninguna URL que pedir. */
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={avatar}
+            alt={name}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        ) : (
+          <span className="leading-none z-10" style={{ fontSize: size * 0.55 }}>{avatar}</span>
+        )
       ) : (
         initials(name)
       )}

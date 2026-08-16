@@ -31,6 +31,8 @@
   --color-amber-deep: var(--amber-deep);
   --color-mint: var(--mint);
   --color-clay: var(--clay);
+  --color-black: #000;
+  --color-white: #fff;
   --font-sans: var(--font-display);
   --font-mono: var(--font-figure);
 }
@@ -99,6 +101,20 @@ body {
   animation: rise 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.pop {
+  animation: pop 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
 @keyframes pulse-ring {
   0% {
     box-shadow: 0 0 0 0 color-mix(in oklab, var(--amber) 55%, transparent);
@@ -116,6 +132,7 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .rise,
+  .pop,
   .ping-once {
     animation: none;
   }

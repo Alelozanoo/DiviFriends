@@ -50,10 +50,14 @@ export function CobroSheet({
  * a cada uno que entra sólo consigue que alguien se marque sin querer.
  */
 export function PagadorSheet({
+  revolut,
+  bizum,
   onPagueYo,
   onSave,
   onClose,
 }: {
+  revolut?: string;
+  bizum?: string;
   onPagueYo: () => Promise<unknown>;
   onSave: (datos: { revolut: string | null; bizum: string | null }) => Promise<unknown>;
   onClose: () => void;
@@ -76,8 +80,15 @@ export function PagadorSheet({
               onClick={async () => {
                 setBusy(true);
                 await onPagueYo();
-                setBusy(false);
-                setPaso("cobro");
+                
+                if (revolut || bizum) {
+                  await onSave({ revolut: revolut || null, bizum: bizum || null });
+                  setBusy(false);
+                  onClose();
+                } else {
+                  setBusy(false);
+                  setPaso("cobro");
+                }
               }}
               className="rounded-xl bg-amber py-3.5 font-bold text-paper transition-transform active:scale-[0.98] disabled:opacity-50"
             >
@@ -96,7 +107,7 @@ export function PagadorSheet({
         <>
           <h2 className="text-xl font-bold tracking-tight">{t.cobro.comoTitulo}</h2>
           <p className="mt-1 text-sm text-ink-soft">{t.cobro.comoAviso}</p>
-          <FormaDeCobro onSave={onSave} onClose={onClose} />
+          <FormaDeCobro revolut={revolut} bizum={bizum} onSave={onSave} onClose={onClose} />
         </>
       )}
     </Sheet>

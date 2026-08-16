@@ -26,6 +26,7 @@ export async function PATCH(request: Request, { params }: Ctx) {
     totalCents?: number;
     place?: string;
     tableLabel?: string;
+    closed?: boolean;
     by?: string | null;
   };
 

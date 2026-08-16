@@ -25,6 +25,7 @@ export interface TicketDoc {
   currency: string;
   totalCents: number;
   payerId?: string | null;
+  closed?: boolean;
   /** @deprecated La propina se quitó: complicaba la pantalla de cuentas. */
   tipCents?: number;
   createdAt: string;
@@ -173,6 +174,9 @@ export function docToState(code: string, doc: TicketDoc): TicketState {
       totalCents: doc.totalCents ?? 0,
       payerId: doc.payerId ?? null,
       createdAt: doc.createdAt ?? "",
+      // Sin esta línea el candado se guardaba y no se leía nunca: la pantalla
+      // veía la mesa siempre abierta y cerrarla no hacía nada visible.
+      closed: doc.closed === true,
     },
     receipts: (doc.receipts ?? []).map(r => ({
       ...r,
