@@ -16,15 +16,44 @@ type Props = { params: Promise<{ code: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { code } = await params;
   const state = await getTicketState(code.toUpperCase());
-  // La marca la pone la plantilla del layout.
+  const nombre = state?.ticket.place?.trim();
+
+  /*
+    Lo que se ve al pegar el enlace en WhatsApp.
+
+    Antes no había nada de esto y el enlace llegaba como una línea de texto
+    azul: quien lo recibía no sabía qué era ni de qué app, así que no lo abría.
+    La imagen la genera `opengraph-image.tsx` de al lado, con el nombre de la
+    mesa y el total.
+
+    `noindex` sigue puesto y no estorba: WhatsApp, Telegram e iMessage piden la
+    página igual para hacer la vista previa; a quien no queremos es a Google.
+  */
+  const titulo = nombre ? `${nombre} · repartir la cuenta` : "Repartir la cuenta";
+  const entradilla = nombre
+    ? `Marca lo que has tomado en ${nombre} y paga tu parte. Sin instalar nada.`
+    : "Marca lo que has tomado y paga tu parte. Sin instalar nada.";
+
   return {
-    title: state?.ticket.place
-      ? `${state.ticket.place} · repartir la cuenta`
-      : "Repartir la cuenta",
+    // La marca la pone la plantilla del layout.
+    title: titulo,
+    description: entradilla,
     // Una comanda es la cuenta de gente real y se abre con sólo tener el
     // código. Fuera de los buscadores: indexarlas dejaría cenas ajenas —con
     // el bar, la fecha y lo que pidió cada uno— a un search de distancia.
     robots: { index: false, follow: false, nocache: true },
+    openGraph: {
+      type: "website",
+      siteName: "DiviFriends",
+      title: nombre ?? "Repartir la cuenta",
+      description: entradilla,
+    },
+    twitter: {
+      // Sin esto la vista previa sale como una miniatura cuadrada diminuta.
+      card: "summary_large_image",
+      title: nombre ?? "Repartir la cuenta",
+      description: entradilla,
+    },
   };
 }
 
