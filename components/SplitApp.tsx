@@ -391,9 +391,9 @@ export default function SplitApp({
             cuenta en el globo del primer botón, y las caras están dentro de la
             hoja de la mesa, que es donde se mira quién se ha unido.
           */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {/*
-              Sólo el logo.
+              El logo y el nombre.
 
               Con las caras y la palabra «Compartir» de vuelta, ni el nombre de
               la marca ni el código caben: medido, se quedaban a siete píxeles
@@ -406,14 +406,15 @@ export default function SplitApp({
             <Link
               href={inicio(lang)}
               aria-label="DiviFriends"
-              className="flex min-w-0 shrink-0 items-center gap-2.5"
+              className="flex min-w-0 shrink items-center gap-2"
             >
               <Logo size={64} className="h-8 w-8 shrink-0" />
-              {/* Sin el «+N» la píldora adelgaza treinta píxeles, y con ellos
-                  vuelve a caber el código a partir de 375, que es de donde
-                  arrancan los móviles de verdad. Debajo, sólo el logo. */}
-              <span className="stamp hidden tracking-[0.1em] text-ink-faint min-[375px]:block">
-                {code}
+              {/* El nombre, no el código. El código está en grande en la hoja
+                  de compartir, que es adonde vas cuando quieres dárselo a
+                  alguien; aquí lo que hace falta es saber de qué app es esto.
+                  Por debajo de 390 no cabe con las caras, y se queda el logo. */}
+              <span className="hidden truncate text-[15px] font-bold leading-tight tracking-[-0.02em] min-[390px]:block">
+                Divi<span className="text-amber">Friends</span>
               </span>
             </Link>
             <span className="min-w-0 flex-1" />
