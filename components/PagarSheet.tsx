@@ -138,6 +138,14 @@ export default function PagarSheet({
           </button>
 
           {a.revolut && <p className="text-center text-xs text-ink-faint">{t.cobro.seAbre}</p>}
+
+          {/* Sin Revolut ni Bizum queda el efectivo, y conviene decir por qué
+              no hay más botones en vez de dejar la hoja medio vacía. */}
+          {!a.revolut && !a.bizum && (
+            <p className="text-center text-xs leading-relaxed text-ink-faint">
+              {rellena(t.cobro.sinMetodo, { name: a.name })}
+            </p>
+          )}
         </div>
       )}
 

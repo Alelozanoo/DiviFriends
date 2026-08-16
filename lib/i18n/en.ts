@@ -413,6 +413,7 @@ export const en: Dict = {
     faltaTitulo: "Add how to get paid",
     faltaAviso: "Nobody can pay you with one tap until you set it up.",
     cobrasPor: "You receive via {metodos}",
+    sinMetodo: "{name} hasn't said how they want to be paid yet. Sort it out between you and mark it here.",
     ponerlo: "Set it up",
 
     pagar: "Pay",

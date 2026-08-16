@@ -210,16 +210,31 @@ export default function AccountsPanel({
                       </svg>
                       {rellena(t.cobro.esperando, { name: cobra.name })}
                     </div>
-                  ) : (!cobra.revolut && !cobra.bizum) ? (
-                    <p className="text-sm text-ink-faint">{t.cobro.faltaTitulo}</p>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={() => onPagar(txn.toId, txn.cents)}
-                      className="w-full max-w-[280px] rounded-2xl bg-amber px-6 py-4 text-[17px] font-extrabold text-paper transition-all active:scale-[0.98] shadow-[0_4px_20px_-6px_rgba(232,176,75,0.4)]"
-                    >
-                      {t.cuentas.pagarAhora}
-                    </button>
+                    /*
+                      El botón sale siempre, tenga el otro puesto Revolut o no.
+
+                      Sin él, a quien no había dicho cómo cobrar no se le podía
+                      pagar de ninguna manera: ni siquiera marcar que se lo
+                      habías dado en mano. Debiendo a dos y habiendo puesto sólo
+                      uno su Revolut, la mesa se quedaba a medias sin que se
+                      pudiera hacer nada. La hoja ya se encarga de ofrecer lo
+                      que haya: Revolut, Bizum o el efectivo, que siempre está.
+                    */
+                    <div className="flex w-full max-w-[280px] flex-col gap-2">
+                      <button
+                        type="button"
+                        onClick={() => onPagar(txn.toId, txn.cents)}
+                        className="w-full rounded-2xl bg-amber px-6 py-4 text-[17px] font-extrabold text-paper transition-all active:scale-[0.98] shadow-[0_4px_20px_-6px_rgba(232,176,75,0.4)]"
+                      >
+                        {t.cuentas.pagarAhora}
+                      </button>
+                      {!cobra.revolut && !cobra.bizum && (
+                        <p className="text-xs leading-relaxed text-ink-faint">
+                          {rellena(t.cobro.sinMetodo, { name: cobra.name })}
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
               );

@@ -445,6 +445,7 @@ export const es = {
     faltaTitulo: "Falta decir cómo cobrar",
     faltaAviso: "Nadie puede pagarte de un toque hasta que no lo pongas.",
     cobrasPor: "Cobras por {metodos}",
+    sinMetodo: "{name} todavía no ha dicho cómo quiere cobrar. Dáselo como podáis y márcalo aquí.",
     ponerlo: "Ponerlo",
 
     // Pagar.
