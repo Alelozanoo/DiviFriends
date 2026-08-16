@@ -228,6 +228,11 @@ export const es = {
     quitarDeLaComanda: "Quitar {name} de la comanda",
     yaNo: "Ya no es mío",
     esMio: "Es mío",
+    // Lo que la fila dice de tu parte. Antes era «Tuyo ×2 ÷2», que hay que
+    // descifrar: ni el ✕ ni el ÷ significan lo mismo para quien no los puso.
+    nDeM: "{n} de {total}",
+    tuYUnoMas: "Tú y 1 más",
+    tuYVariosMas: "Tú y {n} más",
     tuyo: "Tuyo",
     masOpciones: "Más opciones de {name}",
     // Con plantilla porque en inglés el número va delante: «3 left».

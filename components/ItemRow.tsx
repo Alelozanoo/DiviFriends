@@ -69,11 +69,33 @@ export default function ItemRow({
       ? `${item.splitInto} × ${money(breakdown.perShareCents, currency)} · ${quedan}`
       : `${money(item.totalCents, currency)} · ${quedan}`;
 
+  /*
+    Lo que la fila dice de tu parte, en palabras.
+
+    Ponía «✓ Tuyo ×2 ÷2» y hay que descifrarlo: el ×2 eran las unidades que
+    habías cogido y el ÷2 en cuántas partes está partida la línea, dos cosas
+    distintas escritas igual y pegadas. Ahora cada caso dice una frase: cuántas
+    llevas de cuántas, o con cuánta gente lo compartes.
+  */
+  const otros = breakdown.shares.filter((s) => s.participantId !== meId).length;
+  const loTuyo = (() => {
+    if (!mine) return "";
+    if (otros > 0) {
+      const con =
+        otros === 1 ? t.linea.tuYUnoMas : rellena(t.linea.tuYVariosMas, { n: otros });
+      // Con varias unidades tuyas hace falta decir cuántas: compartir la línea
+      // no dice si te tomaste una caña o tres.
+      return mine.shares > 1 ? `${mine.shares} · ${con}` : con;
+    }
+    if (mine.shares < item.splitInto) {
+      return rellena(t.linea.nDeM, { n: mine.shares, total: item.splitInto });
+    }
+    return t.linea.tuyo;
+  })();
+
   const rotulo = [
     item.name,
-    mine
-      ? `${t.comanda.loTuyo}: ${money(mine.cents, currency)}`
-      : `${t.comanda.loTuyo}: 0`,
+    mine ? `${loTuyo}, ${money(mine.cents, currency)}` : `${t.comanda.loTuyo}: 0`,
     meta,
   ].join(", ");
 
@@ -142,9 +164,7 @@ export default function ItemRow({
             */}
             {isMine ? (
               <span className="whitespace-nowrap text-[13px] font-bold text-amber">
-                ✓ {t.linea.tuyo}
-                {mine!.shares > 1 && ` ×${mine!.shares}`}
-                {item.splitInto > 1 && ` ÷${item.splitInto}`}
+                ✓ {loTuyo}
               </span>
             ) : (
               /* Sólo cuando hay partes que contar: en una línea de una sola
