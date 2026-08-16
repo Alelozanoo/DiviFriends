@@ -123,7 +123,7 @@ export const en: Dict = {
     todoPagadoBoton: "All paid! 💸",
     historialTitulo: "History",
     opciones: "Options",
-    quienPagoEste: "Who paid this receipt?",
+    quienPagoEste: "Who paid it?",
     pagarTotal: "Pay {dinero}",
   },
 

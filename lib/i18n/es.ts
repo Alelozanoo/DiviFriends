@@ -131,7 +131,7 @@ export const es = {
     todoPagadoBoton: "¡Todo pagado! 💸",
     historialTitulo: "Historial",
     opciones: "Opciones",
-    quienPagoEste: "¿Quién ha pagado este ticket?",
+    quienPagoEste: "¿Quién lo pagó?",
     pagarTotal: "Pagar {dinero}",
   },
 

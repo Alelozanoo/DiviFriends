@@ -669,7 +669,11 @@ export default function SplitApp({
                     setTab(tab === "comanda" ? "cuentas" : "comanda");
                   }
                 }}
-                className={`shrink-0 rounded-xl px-4 py-2.5 text-sm font-bold active:scale-95 transition-transform ${
+                /* Con tope y recortando: este botón cambia de frase según lo
+                   que te toque, y la más larga se comía la cifra de la
+                   izquierda hasta taparla. Lo que no puede perderse nunca es
+                   cuánto llevas. */
+                className={`max-w-[58%] shrink-0 truncate rounded-xl px-4 py-2.5 text-sm font-bold active:scale-95 transition-transform ${
                   showTodoPagado && tab === "comanda"
                     ? "bg-[#3b82f6]/10 text-[#3b82f6] border border-[#3b82f6]/20"
                     : "bg-amber"
