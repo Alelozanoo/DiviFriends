@@ -28,18 +28,26 @@ export default function PagarSheet({
   cents,
   currency,
   place,
+  volviendoDePagar = false,
   onEnviado,
+  onAntesDeSalir,
   onClose,
 }: {
   a: Participant;
   cents: number;
   currency: string;
   place: string | null;
+  /** true cuando se vuelve de la web de Revolut: la hoja arranca preguntando. */
+  volviendoDePagar?: boolean;
   onEnviado: (via: Via) => Promise<unknown>;
+  /** Se llama antes de salir del navegador, para poder volver donde estabas. */
+  onAntesDeSalir?: () => void;
   onClose: () => void;
 }) {
   const t = useT();
-  const [paso, setPaso] = useState<"elegir" | "bizum" | "enviado">(() => a.bizum && !a.revolut ? "bizum" : "elegir");
+  const [paso, setPaso] = useState<"elegir" | "bizum" | "enviado">(() =>
+    volviendoDePagar ? "enviado" : a.bizum && !a.revolut ? "bizum" : "elegir",
+  );
   const [via, setVia] = useState<Via>(a.bizum && !a.revolut ? "bizum" : "revolut");
   const [busy, setBusy] = useState(false);
   const nota = conceptoDe(place);
@@ -78,18 +86,32 @@ export default function PagarSheet({
       {paso === "elegir" && (
         <div className="mt-5 flex flex-col gap-2">
           {a.revolut && (
-            <a
-              href={enlaceRevolut(a.revolut, cents, currency, nota)}
-              target="_blank"
-              rel="noopener noreferrer"
+            /*
+              Un botón y no un enlace, a propósito.
+
+              `revolut.me` se reserva todos sus enlaces para su app: su fichero
+              de universal links dice `["NOT /money-request/*", "*"]`, así que
+              en iPhone cualquier enlace suyo que toques abre la app de Revolut
+              y te saca del navegador. Y ahí se pierde justo lo que nos
+              interesa, que es su página web: la que acepta tarjeta y Apple Pay
+              de quien no tiene Revolut, que son casi todos.
+
+              iOS sólo se queda el enlace cuando el gesto es tocar un <a>. Si
+              la navegación la lanza el JavaScript, Safari se queda en el
+              navegador, que es exactamente lo que queremos.
+            */
+            <button
+              type="button"
               onClick={() => {
                 setVia("revolut");
                 setPaso("enviado");
+                onAntesDeSalir?.();
+                window.location.href = enlaceRevolut(a.revolut!, cents, currency, nota);
               }}
               className="flex items-center justify-center gap-2 rounded-2xl bg-amber px-10 py-3.5 text-lg font-bold text-paper transition-transform active:scale-[0.98] shadow-md shadow-amber/20"
             >
               <span>{t.cobro.conTarjeta}</span>
-            </a>
+            </button>
           )}
 
           {a.bizum && (

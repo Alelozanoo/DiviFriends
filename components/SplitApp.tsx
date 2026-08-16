@@ -11,6 +11,11 @@ import { processImageToAvatarBase64 } from "@/lib/avatarUpload";
 import { money, parseMoney } from "@/lib/format";
 import { EV, track, trackOnce } from "@/lib/track";
 import { olvidar, recordar } from "@/lib/misDivis";
+import {
+  guardarPagoPendiente,
+  olvidarPagoPendiente,
+  usePagoPendiente,
+} from "@/lib/pagoPendiente";
 import type { Participant, TicketState, Via } from "@/lib/types";
 import AccountsPanel from "./AccountsPanel";
 import { CobroSheet, PagadorSheet } from "./CobroSheet";
@@ -80,6 +85,13 @@ export default function SplitApp({
   const settlement = useMemo(() => computeSettlement(state), [state]);
 
   const { known, participantId: storedId, store } = useStoredParticipant(code);
+  /*
+    El pago que se quedó a medias al salir a Revolut. Si hay uno guardado, la
+    hoja se abre sola por la pregunta de «¿lo has enviado?»: se deriva del
+    dato en vez de meterlo en un estado desde un efecto, que era pintar dos
+    veces para acabar en el mismo sitio.
+  */
+  const pagoPendiente = usePagoPendiente(code);
   const { profile: globalProfile, saveProfile } = useGlobalProfile();
   const meId = storedId && state.participants.some((p) => p.id === storedId) ? storedId : null;
   const showJoin = joinOverride ?? (known && !meId);
@@ -239,6 +251,13 @@ export default function SplitApp({
       (state.receipts ?? []).some((r) => r.payerId),
   );
   const yo = meId ? state.participants.find((p) => p.id === meId) ?? null : null;
+
+  // La hoja de pagar se abre por dos vías: pulsando el botón, o volviendo de
+  // Revolut con un pago apuntado. La segunda arranca ya en la pregunta.
+  const pagoAbierto = pagandoA ?? pagoPendiente;
+  const cobrandoA = pagoAbierto
+    ? state.participants.find((p) => p.id === pagoAbierto.id) ?? null
+    : null;
 
   /*
     ¿Puse yo el dinero?
@@ -746,6 +765,12 @@ export default function SplitApp({
           participants={state.participants}
           payerId={state.ticket.payerId}
           meId={meId}
+          /* Sacar a alguien de la mesa le borra lo que tuviera marcado y mueve
+             las cuentas de todos, así que lo hace quien puso el dinero. Un
+             mirón que ni se ha unido, desde luego que no. Mientras nadie haya
+             dicho que pagó se deja abierto: la mesa se está montando y si no
+             habría que marcar pagador antes de poder corregir un nombre. */
+          puedeQuitar={Boolean(meId) && (soyElPagador || !hayPagador)}
           onUpdateAvatar={(participantId, avatar) =>
             void patchParticipant(participantId, { avatar })
           }
@@ -831,14 +856,19 @@ export default function SplitApp({
         />
       )}
 
-      {pagandoA && (
+      {pagoAbierto && cobrandoA && (
         <PagarSheet
-          a={state.participants.find((p) => p.id === pagandoA.id)!}
-          cents={pagandoA.cents}
+          a={cobrandoA}
+          cents={pagoAbierto.cents}
           currency={state.ticket.currency}
           place={state.ticket.place}
-          onEnviado={(via) => declararPago(pagandoA.id, pagandoA.cents, via)}
-          onClose={() => setPagandoA(null)}
+          volviendoDePagar={!pagandoA}
+          onEnviado={(via) => declararPago(pagoAbierto.id, pagoAbierto.cents, via)}
+          onAntesDeSalir={() => guardarPagoPendiente(code, pagoAbierto)}
+          onClose={() => {
+            setPagandoA(null);
+            olvidarPagoPendiente(code);
+          }}
         />
       )}
 
@@ -866,10 +896,21 @@ export default function SplitApp({
           }
           onRemovePayer={
             (!state.ticket.closed && soyElPagador) ? async () => {
-              await send("/payers", {
-                method: "PATCH",
-                body: JSON.stringify({ participantId: null, receiptId: null, by: meId }),
-              });
+              /*
+                De todos los tickets que uno haya puesto, no sólo del primero.
+                Con dos papeles podías ser el pagador del segundo, y esto
+                mandaba limpiar el original: no pasaba nada y parecía roto.
+              */
+              const mios: (string | null)[] = [
+                ...(state.ticket.payerId === meId || yo?.isPayer ? [null] : []),
+                ...receipts.filter((r) => r.payerId === meId).map((r) => r.id),
+              ];
+              for (const receiptId of mios) {
+                await send("/payers", {
+                  method: "PATCH",
+                  body: JSON.stringify({ participantId: null, receiptId, by: meId }),
+                });
+              }
             } : null
           }
           onConfigPayment={

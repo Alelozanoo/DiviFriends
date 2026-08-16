@@ -20,6 +20,7 @@ export default function TableSheet({
   participants,
   payerId,
   meId,
+  puedeQuitar = false,
   onUpdateAvatar,
   onRemove,
   onClose,
@@ -30,6 +31,8 @@ export default function TableSheet({
   participants: Participant[];
   payerId?: string | null;
   meId: string | null;
+  /** Si esta persona puede sacar a otros de la mesa. */
+  puedeQuitar?: boolean;
   onUpdateAvatar: (participantId: string, avatar: string) => void;
   onRemove: (participantId: string) => void;
   onClose: () => void;
@@ -95,7 +98,7 @@ export default function TableSheet({
                     </span>
                   )}
                 </span>
-                {(!(payerId || participants.find(p => p.isPayer)) || meId === (payerId || participants.find(p => p.isPayer)?.id) || person.id === meId) && (
+                {puedeQuitar && (
                   <button
                     type="button"
                     onClick={() => onRemove(person.id)}

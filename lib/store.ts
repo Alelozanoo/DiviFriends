@@ -265,10 +265,14 @@ export function setPayer(
       receipt.payerId = participantId;
     } else {
       doc.payerId = participantId;
-      // Por limpieza, quitamos el isPayer de todos los participantes si estamos usando payerId
-      if (participantId) {
-        for (const p of doc.participants) p.isPayer = false;
-      }
+      /*
+        El `isPayer` de las comandas viejas se limpia en los dos sentidos.
+        Sólo al asignar dejaba un rastro: al quitar el pagador, `payerId`
+        quedaba a null pero el `isPayer` seguía puesto y la pantalla —que mira
+        los dos— seguía viendo a la misma persona. O sea que quitarse no
+        quitaba nada.
+      */
+      for (const p of doc.participants) p.isPayer = false;
     }
 
     /*
