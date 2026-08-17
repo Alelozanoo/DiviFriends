@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { conceptoDe, enlaceRevolut, telefonoBonito } from "@/lib/cobro";
+import { conceptoDe, telefonoBonito } from "@/lib/cobro";
 import { money } from "@/lib/format";
 import { useT, rellena } from "@/lib/i18n";
 import type { Participant, Via } from "@/lib/types";
@@ -87,18 +87,19 @@ export default function PagarSheet({
         <div className="mt-5 grid gap-2.5">
           {a.revolut && (
             /*
-              Un botón y no un enlace, a propósito.
+              Se pasa por una pantalla nuestra, no directo a revolut.me.
 
-              `revolut.me` se reserva todos sus enlaces para su app: su fichero
-              de universal links dice `["NOT /money-request/*", "*"]`, así que
-              en iPhone cualquier enlace suyo que toques abre la app de Revolut
-              y te saca del navegador. Y ahí se pierde justo lo que nos
-              interesa, que es su página web: la que acepta tarjeta y Apple Pay
-              de quien no tiene Revolut, que son casi todos.
+              iOS se lleva a la app de Revolut cualquier enlace suyo que se
+              *toque* —su fichero de universal links dice `["NOT
+              /money-request/*", "*"]`, o sea todo menos esa ruta—, y probamos
+              que lanzar la navegación por JavaScript desde el propio botón
+              tampoco sirve: para iOS eso sigue siendo el gesto. Lo que no
+              cuenta como gesto es que una página cargue y se vaya sola, que es
+              lo que hace `/ir/revolut`.
 
-              iOS sólo se queda el enlace cuando el gesto es tocar un <a>. Si
-              la navegación la lanza el JavaScript, Safari se queda en el
-              navegador, que es exactamente lo que queremos.
+              Y queremos su web, no su app: la web ofrece Apple Pay y tarjeta de
+              un toque, mientras que la app, si no llevas saldo, te obliga a
+              recargar antes de poder enviar.
             */
             <button
               type="button"
@@ -106,7 +107,23 @@ export default function PagarSheet({
                 setVia("revolut");
                 setPaso("enviado");
                 onAntesDeSalir?.();
-                window.location.href = enlaceRevolut(a.revolut!, cents, currency, nota);
+                const params = new URLSearchParams({
+                  u: a.revolut!,
+                  c: String(Math.max(1, Math.round(cents))),
+                  m: (currency || "EUR").toUpperCase(),
+                  n: nota,
+                });
+                /*
+                  Recarga entera y no `router.push`, aunque el lint prefiera lo
+                  segundo: el navegador considera que sigues «activado» por el
+                  toque durante unos segundos, y con una navegación de cliente
+                  el documento es el mismo, así que el salto de después podría
+                  seguir contando como gesto tuyo — que es exactamente lo que
+                  hay que evitar. Cargar una página nueva deja esa activación a
+                  cero.
+                */
+                // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+                window.location.href = `/ir/revolut?${params}`;
               }}
               className="flex min-h-[52px] items-center justify-center rounded-xl bg-amber px-5 text-[15px] font-bold text-paper transition-transform active:scale-[0.98]"
             >
