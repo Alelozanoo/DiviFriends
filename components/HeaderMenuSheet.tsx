@@ -136,6 +136,21 @@ export function HeaderMenuSheet({
             </Opcion>
           )}
 
+          {/*
+            Con la mesa cerrada no queda ninguna: cambiar el pagador, tocar el
+            cobro o volver a cerrarla dejan de tener sentido en cuanto los
+            consumos están congelados. Pero callarse deja una hoja con el título
+            y nada debajo, que parece rota. Mejor decir por qué está vacía.
+          */}
+          {ticketClosed && (
+            <div className="rounded-xl border border-mint/40 bg-mint/[0.08] px-4 py-3.5">
+              <p className="text-[15px] font-bold text-mint">{t.cuentas.mesaCerrada}</p>
+              <p className="mt-1 text-[13px] leading-relaxed text-ink-soft">
+                {t.cuentas.mesaCerradaAviso}
+              </p>
+            </div>
+          )}
+
           <CerrarHoja onClick={onClose}>{t.mesa.cerrar}</CerrarHoja>
         </div>
       </Sheet>
