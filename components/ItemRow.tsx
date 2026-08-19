@@ -52,6 +52,20 @@ export default function ItemRow({
 
   const isMine = Boolean(mine);
   const full = breakdown.freeShares === 0;
+  /*
+    La línea que ya se ha pedido otro.
+
+    Se atenuaba la fila entera al 50 %, y eso no bajaba un escalón: dejaba el
+    renglón de debajo —el precio y el «completo»— en 2,26:1 sobre la tarjeta,
+    la peor cifra de la app y menos de la mitad del mínimo. Además parecía
+    desactivada, cuando se puede abrir igual que las demás para ver quién la
+    tiene o quitársela a alguien.
+
+    Ahora recede hundiéndose en la página en vez de desvaneciéndose: fondo del
+    color del papel, más oscuro que la tarjeta, y el nombre un punto por debajo
+    del blanco. Se lee menos, pero se lee.
+  */
+  const agotada = full && !isMine;
   // De un «9 × Caña» puedes haberte bebido tres, y el + las va sumando. Sólo
   // cuando cada parte es una unidad de verdad: en un «entre 2» una parte es
   // media línea y el + te duplicaría lo que pagas de un toque.
@@ -59,15 +73,38 @@ export default function ItemRow({
 
   /* El anillo de los avatares apilados va del color del fondo de la fila, que
      cambia con el estado. Se pasa como variable para no repetir el cálculo. */
-  const fondo = isMine ? (open ? "#282013" : "#241d13") : open ? "#262019" : "#1c1714";
+  const fondo = isMine
+    ? open
+      ? "#282013"
+      : "#241d13"
+    : agotada
+      ? open
+        ? "#1c1714"
+        : "#14100d"
+      : open
+        ? "#262019"
+        : "#1c1714";
 
-  const quedan = breakdown.freeShares > 0
-    ? rellena(t.linea.quedanN, { n: breakdown.freeShares })
-    : t.linea.completo;
-  const meta =
+  /*
+    «Completo» sobra cuando la línea es tuya.
+
+    A la derecha ya va el ✓ con la frase de quién la lleva, y en una línea de
+    tres cañas repartidas entre dos el renglón salía «3 × 2,50 € · comple…»:
+    se cortaba justo la palabra que menos falta hacía. Cuando la línea no es
+    tuya sí se queda, porque ahí es el dato que decide —dice que no queda nada
+    que pedirse.
+  */
+  const quedan =
+    breakdown.freeShares > 0
+      ? rellena(t.linea.quedanN, { n: breakdown.freeShares })
+      : isMine
+        ? ""
+        : t.linea.completo;
+  const precio =
     item.splitInto > 1
-      ? `${item.splitInto} × ${money(breakdown.perShareCents, currency)} · ${quedan}`
-      : `${money(item.totalCents, currency)} · ${quedan}`;
+      ? `${item.splitInto} × ${money(breakdown.perShareCents, currency)}`
+      : money(item.totalCents, currency);
+  const meta = quedan ? `${precio} · ${quedan}` : precio;
 
   /*
     Lo que la fila dice de tu parte, en palabras.
@@ -107,10 +144,14 @@ export default function ItemRow({
           ? open
             ? "border-amber bg-amber/[0.13]"
             : "border-amber bg-amber/[0.085]"
-          : open
-            ? "border-line-soft bg-paper-3"
-            : "border-line-soft bg-paper-2"
-      } ${full && !isMine ? "opacity-50" : ""}`}
+          : agotada
+            ? open
+              ? "border-line-soft bg-paper-2"
+              : "border-line-soft/50 bg-paper"
+            : open
+              ? "border-line-soft bg-paper-3"
+              : "border-line-soft bg-paper-2"
+      }`}
     >
       <button
         type="button"
@@ -120,7 +161,11 @@ export default function ItemRow({
         className="grid min-h-[70px] w-full gap-2 px-[13px] py-3 text-left"
       >
         <span className="flex items-baseline gap-2.5">
-          <span className="min-w-0 flex-1 text-[17px] font-semibold leading-tight tracking-[-0.01em]">
+          <span
+            className={`min-w-0 flex-1 text-[17px] font-semibold leading-tight tracking-[-0.01em] ${
+              agotada ? "text-ink-soft" : ""
+            }`}
+          >
             {item.name}
           </span>
           {/* La cifra de la derecha significa siempre lo mismo: lo que pagas tú. */}

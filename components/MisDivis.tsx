@@ -33,9 +33,16 @@ export default function MisDivis() {
 
   return (
     <section className="mt-6">
+      {/* Los dos rótulos, al mismo tono.
+
+          El de la derecha iba a `/70` para quedar por detrás del otro, y con eso
+          se caía a 3,3:1: `ink-faint` está calculado para dar 5,58:1 justo, no
+          le sobra nada que rebajar. Ya queda en segundo plano por lo que es —un
+          sello de once píxeles a la derecha del todo—, sin necesidad de que se
+          borre. */}
       <div className="mb-2 flex items-baseline justify-between gap-3 px-1">
         <p className="stamp text-ink-faint">{t.misDivis.titulo}</p>
-        <p className="stamp text-ink-faint/70">{t.misDivis.donde}</p>
+        <p className="stamp text-ink-faint">{t.misDivis.donde}</p>
       </div>
 
       <ul className="space-y-1.5">
@@ -157,7 +164,10 @@ function Fila({ divi, onQuitar, t }: { divi: DiviGuardado; onQuitar: () => void;
         type="button"
         onClick={() => setConfirmando(true)}
         aria-label={`Cerrar ${divi.place || divi.code}`}
-        className="absolute right-1 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full text-[0.7rem] text-ink-faint/60 transition-colors hover:bg-clay/15 hover:text-clay"
+        /* A tono pleno: estaba a `/60`, o sea 2,77:1, y es la única cosa de la
+           lista que borra algo. Lo que tiene que ser discreto es su peso, no su
+           legibilidad. */
+        className="absolute right-1 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full text-[0.7rem] text-ink-faint transition-colors hover:bg-clay/15 hover:text-clay"
       >
         ✕
       </button>
