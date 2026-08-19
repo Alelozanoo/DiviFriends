@@ -101,6 +101,16 @@ export default function ManualTicketForm({ demo }: { demo: boolean }) {
       <div className="rounded-2xl border border-line bg-paper-2 p-4">
         <p className="stamp mb-3 text-ink-faint">Consumiciones</p>
 
+        {/*
+          El nombre es la casilla ancha, y en el móvil no lo era.
+
+          En 375 px las tres casillas fijas —cantidad, precio y la equis— se
+          repartían el sitio y al plato le quedaban cien píxeles: se escribía
+          «Croquetas» y se veía «Croqueta». Es la única de las tres que no cabe
+          de un vistazo, porque las otras dos son números de cuatro cifras. Así
+          que en pantalla estrecha las fijas se estrechan y a partir de `sm`
+          vuelven a su medida, donde el sitio sobra.
+        */}
         <ul className="space-y-2">
           {rows.map((row) => (
             <li key={row.key} className="flex gap-2">
@@ -109,14 +119,14 @@ export default function ManualTicketForm({ demo }: { demo: boolean }) {
                 onChange={(event) => update(row.key, { qty: event.target.value })}
                 inputMode="numeric"
                 aria-label="Cantidad"
-                className="tnum w-14 rounded-xl border border-line bg-paper px-2 py-3 text-center focus:border-amber focus:outline-none"
+                className="tnum w-11 rounded-xl border border-line bg-paper px-1.5 py-3 text-center focus:border-amber focus:outline-none sm:w-14 sm:px-2"
               />
               <input
                 value={row.name}
                 onChange={(event) => update(row.key, { name: event.target.value })}
                 placeholder="Croquetas"
                 aria-label="Nombre del plato"
-                className="min-w-0 flex-1 rounded-xl border border-line bg-paper px-4 py-3 focus:border-amber focus:outline-none"
+                className="min-w-0 flex-1 rounded-xl border border-line bg-paper px-3 py-3 focus:border-amber focus:outline-none sm:px-4"
               />
               <input
                 value={row.price}
@@ -124,13 +134,16 @@ export default function ManualTicketForm({ demo }: { demo: boolean }) {
                 inputMode="decimal"
                 placeholder="4,90"
                 aria-label="Precio por unidad"
-                className="tnum w-24 rounded-xl border border-line bg-paper px-3 py-3 text-right focus:border-amber focus:outline-none"
+                className="tnum w-20 rounded-xl border border-line bg-paper px-2.5 py-3 text-right focus:border-amber focus:outline-none sm:w-24 sm:px-3"
               />
+              {/* Cuadrada y de la altura de la fila: con `px-2` medía veintiocho
+                  píxeles de ancho y era la única cosa de la app por debajo del
+                  dedo — y encima la que borra. */}
               <button
                 type="button"
                 onClick={() => setRows((prev) => prev.filter((r) => r.key !== row.key))}
                 aria-label="Quitar línea"
-                className="shrink-0 rounded-xl px-2 text-ink-faint transition-colors hover:text-clay"
+                className="grid w-9 shrink-0 place-items-center self-stretch rounded-xl text-ink-faint transition-colors hover:bg-paper-3 hover:text-clay"
               >
                 ✕
               </button>

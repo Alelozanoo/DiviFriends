@@ -596,7 +596,7 @@ export default function SplitApp({
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-3xl flex-1 px-[var(--gutter)] py-3">
+      <main id="contenido" className="mx-auto w-full max-w-3xl flex-1 px-[var(--gutter)] py-3">
         {error && (
           <p role="alert" className="mb-3 rounded-xl border border-clay/40 bg-clay/10 px-3 py-2.5 text-sm text-clay">
             {error}

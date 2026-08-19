@@ -139,7 +139,7 @@ export function Sheet({
       la pantalla de atrás pierde el foco de golpe.
     */
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 backdrop-blur-[3px]"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-[#0a0705]/85 backdrop-blur-[3px]"
       onClick={fijo ? undefined : onClose}
     >
       <div className="relative w-full max-w-md" onClick={(event) => event.stopPropagation()}>
@@ -154,7 +154,7 @@ export function Sheet({
             flotando sin bordes. `dvh` y no `vh` porque en el móvil la barra del
             navegador se mueve y con `vh` la hoja se cortaba por abajo.
           */
-          className="rise max-h-[92dvh] overflow-y-auto overscroll-contain rounded-t-[24px] border border-b-0 border-line bg-paper-2 px-[var(--gutter)] pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-2 shadow-[0_-24px_70px_rgba(0,0,0,0.65)]"
+          className="rise max-h-[92dvh] overflow-y-auto overscroll-contain rounded-t-[24px] border border-b-0 border-line bg-paper-2 px-[var(--gutter)] pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-2 shadow-[var(--sombra-hoja)]"
         >
           {fijo ? (
             <div className="h-3" />

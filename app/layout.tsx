@@ -63,6 +63,23 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="es" className={`${display.variable} ${figure.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
+        {/*
+          Lo primero que encuentra el tabulador.
+
+          Fuera de la portada, encima del contenido hay una cabecera con menú,
+          cambio de idioma y pestañas de tickets: quien navega con el teclado
+          los recorría todos cada vez que cambiaba de pantalla antes de llegar
+          a la comanda. El enlace no se ve hasta que recibe el foco, y entonces
+          baja desde el borde de arriba.
+        */}
+        <a href="#contenido" className="saltar">
+          {/* Las dos etiquetas van escritas, y el idioma de `<html>` esconde la
+              que sobra. Es la única manera de que la portada inglesa no diga
+              «Ir al contenido»: este enlace tiene que ser lo primero que toca
+              el tabulador, así que vive en el layout, que es común a las dos. */}
+          <span data-es>Ir al contenido</span>
+          <span data-en>Skip to content</span>
+        </a>
         {children}
         <Pixel />
         <Consent />

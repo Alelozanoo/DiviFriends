@@ -228,8 +228,8 @@ export default function Preguntas() {
           /* `details` nativo: se pliega sin JavaScript, el teclado y los
              lectores de pantalla ya lo entienden, y el texto sigue estando en
              el HTML aunque esté cerrado, así que los buscadores lo leen. */
-          <details key={p} className="group rounded-xl border border-line bg-paper-2/40">
-            <summary className="flex cursor-pointer list-none items-center gap-4 px-4 py-3.5 font-semibold [&::-webkit-details-marker]:hidden">
+          <details key={p} className="group rounded-xl border border-line bg-paper-2/40 transition-colors hover:border-line/80 hover:bg-paper-2/70">
+            <summary className="flex cursor-pointer list-none items-center gap-4 rounded-xl px-4 py-3.5 font-semibold transition-colors hover:text-amber [&::-webkit-details-marker]:hidden">
               <span className="flex-1">{p}</span>
               <span
                 aria-hidden

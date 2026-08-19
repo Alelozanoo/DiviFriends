@@ -19,7 +19,7 @@ export default async function NuevaPage({ searchParams }: Props) {
   const ingles = lang === "en";
 
   return (
-    <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8">
+    <main id="contenido" className="mx-auto w-full max-w-2xl flex-1 px-4 py-8">
       {/* La marca lleva sus colores fijos, así que `hover:text-amber` ya no
           teñía nada: la respuesta al pasar por encima va en la opacidad. */}
       <Link href={inicio(lang)} className="stamp text-ink-faint transition-opacity hover:opacity-75">

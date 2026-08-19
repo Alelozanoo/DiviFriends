@@ -38,7 +38,7 @@ export default function Consent() {
       aria-label="Cookies"
       className="fixed inset-x-0 bottom-0 z-50 p-3 sm:p-4"
     >
-      <div className="mx-auto flex max-w-2xl flex-col gap-3 rounded-2xl border border-line bg-paper-2 p-4 shadow-[0_24px_60px_-20px_rgba(0,0,0,0.9)]">
+      <div className="mx-auto flex max-w-2xl flex-col gap-3 rounded-2xl border border-line bg-paper-2 p-4 shadow-[var(--sombra-flotante)]">
         <p className="text-sm leading-relaxed text-ink-soft">
           {t.consent.aviso} <span className="text-ink">{t.consent.igualSiNo}</span>{" "}
           <Link href="/cookies" className="text-amber underline underline-offset-2">

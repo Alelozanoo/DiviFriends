@@ -39,7 +39,7 @@ export default async function MetricasPage({ searchParams }: Props) {
   const m = resumen(docs);
 
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8">
+    <main id="contenido" className="mx-auto w-full max-w-3xl flex-1 px-4 py-8">
       <header className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Las cuentas de la casa</h1>
         <p className="mt-1 text-sm text-ink-soft">

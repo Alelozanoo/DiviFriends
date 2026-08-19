@@ -32,7 +32,7 @@ function Cuerpo() {
   const t = useT();
   const lang = useLang();
   return (
-    <main className="flex flex-1 flex-col lg:block">
+    <main id="contenido" className="flex flex-1 flex-col lg:block">
       {/* ---------------------------------------------------------------- hero */}
       {/* En el móvil se estira para que el pie caiga abajo del todo, y lo de
           dentro va centrado: a quien entra por primera vez, sin divis guardados,

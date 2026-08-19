@@ -77,7 +77,7 @@ export default async function TicketPage({ params }: Props) {
   if (!state) {
     const ingles = lang === "en";
     return (
-      <main className="mx-auto flex max-w-md flex-1 flex-col justify-center px-6 py-20 text-center">
+      <main id="contenido" className="mx-auto flex max-w-md flex-1 flex-col justify-center px-6 py-20 text-center">
         {/* Si estaba en «tus divis», que deje de estarlo: ya no hay nada detrás. */}
         <OlvidarComanda code={code} />
         <p className="stamp text-ink-faint">{ingles ? "Code" : "Código"} {code}</p>

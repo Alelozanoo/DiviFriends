@@ -29,6 +29,21 @@
     salirse por la derecha, y por eso los filtros no cabían.
   */
   --gutter: 16px;
+
+  /*
+    Las sombras llevan el tono del papel, no negro puro.
+
+    Sobre un fondo café oscuro, una sombra de negro puro es un agujero gris:
+    apaga el calor de la página justo donde el elemento debería despegarse de
+    ella. Éstas son el mismo #14100d llevado a su versión más oscura, así que
+    lo que hacen es hundir el papel en vez de manchar el color.
+  */
+  --sombra-hoja: 0 -24px 70px rgba(8, 5, 3, 0.7), 0 -2px 0 rgba(244, 236, 224, 0.04);
+  --sombra-flotante: 0 24px 60px -20px rgba(8, 5, 3, 0.92);
+
+  /* La misma curva del `rise` y el `pop`, para que lo que se toca frene igual
+     que lo que entra. Sin esto cada botón usaba el `ease` del navegador. */
+  --curva: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 @theme inline {
@@ -49,6 +64,17 @@
   --color-white: #fff;
   --font-sans: var(--font-display);
   --font-mono: var(--font-figure);
+
+  /*
+    La curva de la casa para todo lo que se toca.
+
+    Tailwind trae la suya —una ease-in-out simétrica— y el `rise` de las hojas
+    usaba otra, así que una hoja entraba con una cadencia y el botón que la
+    abría respondía con otra. Cambiando el ajuste de fábrica, los sesenta
+    `transition-colors` y los treinta y cuatro `transition-transform` que hay
+    repartidos frenan todos igual, sin tocar ni una línea de los componentes.
+  */
+  --default-transition-timing-function: var(--curva);
 }
 
 html {
@@ -174,6 +200,94 @@ body {
     font: inherit;
     color: inherit;
   }
+
+  /*
+    Ninguna palabra sola en la última línea.
+
+    `balance` reparte los titulares para que no quede un «segunda» colgando
+    debajo de una línea llena, y `pretty` hace lo mismo con la última línea de
+    los párrafos. Va en base para que una clase de Tailwind pueda desactivarlo
+    donde no interese.
+  */
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  p,
+  li {
+    text-wrap: pretty;
+  }
+}
+
+/*
+  El aro del teclado, uno para toda la app.
+
+  No había ninguno: diecinueve casillas apagaban el del navegador con
+  `outline-none` y ningún botón ponía nada en su sitio, así que quien navega
+  con el tabulador no sabía nunca dónde estaba. Son dos aros —uno del color
+  del papel y otro ámbar— porque hay botones dentro de pastillas ámbar: sobre
+  ámbar se ve el oscuro, y sobre el fondo oscuro se ve el ámbar.
+
+  Va fuera de las capas a propósito: así gana a los `focus:outline-none` que
+  hay repartidos, que se pusieron para quitar el aro del ratón, no el del
+  teclado. `:focus-visible` sólo salta con el teclado, que es justo la
+  distinción que buscaban.
+*/
+:where(a, button, summary, input, select, textarea, [tabindex]):focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--paper),
+    0 0 0 4px var(--amber);
+}
+
+/*
+  El enlace que se salta la cabecera. Sólo existe para el tabulador: fuera de
+  foco no ocupa nada, y al recibirlo baja a su sitio como cualquier otra cosa
+  de la app.
+*/
+.saltar {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  z-index: 70;
+  transform: translate(-50%, -120%);
+  border-radius: 0 0 12px 12px;
+  background: var(--amber);
+  color: var(--paper);
+  padding: 10px 18px;
+  font-weight: 700;
+  transition: transform 0.2s var(--curva);
+}
+.saltar:focus-visible {
+  transform: translate(-50%, 0);
+}
+.saltar [data-en],
+html:lang(en) .saltar [data-es] {
+  display: none;
+}
+html:lang(en) .saltar [data-en] {
+  display: inline;
+}
+
+/*
+  El grano del papel.
+
+  La app se llama a sí misma un ticket térmico visto de noche y hasta ahora era
+  un plano de color liso: nada de lo que hay en pantalla tiene superficie. Esto
+  es una capa fija de ruido a un 3,5 %, ni un punto más, que basta para que el
+  fondo deje de ser un vacío digital y parezca papel. No recibe toques —está
+  por encima de todo— y desaparece al imprimir, donde el papel es de verdad.
+*/
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
 }
 
 /*
@@ -235,6 +349,9 @@ input[type="number"]::-webkit-inner-spin-button {
   body {
     background: #fff;
     color: #000;
+  }
+  body::after {
+    display: none;
   }
   .no-print {
     display: none !important;

@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 
 export default function CookiesPage() {
   return (
-    <main className="mx-auto w-full max-w-2xl flex-1 px-[var(--gutter)] py-12">
+    <main id="contenido" className="mx-auto w-full max-w-2xl flex-1 px-[var(--gutter)] py-12">
       <h1 className="text-[27px] font-bold leading-tight tracking-[-0.03em]">Cookies</h1>
       <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
         {HAY_PIXEL
