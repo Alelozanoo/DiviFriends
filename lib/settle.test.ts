@@ -164,18 +164,36 @@ test("el servicio del ticket se reparte en proporción a lo consumido", () => {
 test("quien pagó no se debe nada a sí mismo", () => {
   // Adelantó los 40 €, así que lo pendiente son sólo los 10 € del otro. Si su
   // propia parte contara, la pantalla pediría cobrar dinero que ya está pagado.
-  const s = state(
-    [item({ id: "i1", totalCents: 3000 }), item({ id: "i2", totalCents: 1000 })],
-    [person("pagador", { isPayer: true }), person("otro")],
-    [
-      { itemId: "i1", participantId: "pagador", shares: 1 },
-      { itemId: "i2", participantId: "otro", shares: 1 },
-    ],
-    4000,
+  const items = [item({ id: "i1", totalCents: 3000 }), item({ id: "i2", totalCents: 1000 })];
+  const claims: Claim[] = [
+    { itemId: "i1", participantId: "pagador", shares: 1 },
+    { itemId: "i2", participantId: "otro", shares: 1 },
+  ];
+  const out = computeSettlement(
+    state(items, [person("pagador", { isPayer: true }), person("otro")], claims, 4000),
   );
-  const out = computeSettlement(s);
   assert.equal(out.pendingCents, 1000);
-  assert.equal(out.byParticipant.find((p) => p.participantId === "pagador")!.settled, true);
+
+  // El saldo del pagador es lo que le deben, en negativo: comió 30 y puso 40.
+  // Se mira aquí y no en su parte porque desde que una mesa puede tener varios
+  // tickets con un pagador distinto cada uno, «lo que pusiste menos lo que
+  // comiste» es lo único que sigue significando lo mismo para todo el mundo.
+  assert.equal(owed(out, "pagador"), -1000);
+  assert.equal(owed(out, "otro"), 1000);
+  assert.deepEqual(out.transactions, [{ fromId: "otro", toId: "pagador", cents: 1000 }]);
+
+  // Y no está saldado mientras siga esperando su dinero: lo estará cuando el
+  // otro marque que ha pagado, no por el hecho de haber puesto la tarjeta.
+  // Antes se daba por saldado desde el principio, y la fila de quien todavía
+  // tenía diez euros que cobrar se veía igual que la de quien ya no esperaba
+  // nada.
+  assert.equal(out.byParticipant.find((p) => p.participantId === "pagador")!.settled, false);
+
+  const cobrado = computeSettlement(
+    state(items, [person("pagador", { isPayer: true }), person("otro", { settled: true })], claims, 4000),
+  );
+  assert.equal(cobrado.pendingCents, 0);
+  assert.equal(cobrado.byParticipant.find((p) => p.participantId === "pagador")!.settled, true);
 });
 
 test("marcar «he pagado» descuenta esa parte de lo pendiente", () => {
@@ -290,5 +308,16 @@ test("lo que cobra el pagador cuadra con el ticket hasta el último céntimo", (
   );
   const out = computeSettlement(s);
   assert.equal(out.unassignedCents, 0);
-  assert.equal(out.pendingCents + owed(out, "a"), 4833);
+
+  // Lo que le devuelven más lo que se comió él tiene que ser el ticket entero.
+  // Su parte se lee de `itemsCents`: `owesCents` ya no es lo que le toca pagar
+  // sino su saldo —lo comido menos lo puesto—, que en el pagador sale negativo.
+  const a = out.byParticipant.find((p) => p.participantId === "a")!;
+  assert.equal(a.itemsCents, 2434);
+  assert.equal(out.pendingCents, 2399);
+  assert.equal(out.pendingCents + a.itemsCents, 4833);
+
+  // Y por el otro lado: el saldo del pagador es exactamente lo que le deben.
+  assert.equal(owed(out, "a"), -2399);
+  assert.equal(owed(out, "b") + owed(out, "c"), 2399);
 });
