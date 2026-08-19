@@ -203,6 +203,12 @@ function Cuerpo() {
           <span className="flex items-center gap-4 [&_a]:py-2 [&_button]:py-2">
             <LangSwitch enPortada />
             <ComoFuncionaSheet />
+            <Link
+              href="/privacidad"
+              className="underline underline-offset-2 transition-colors hover:text-amber"
+            >
+              {t.cookies.privacidad}
+            </Link>
             <CambiarCookies className="underline underline-offset-2 transition-colors hover:text-amber" />
           </span>
         </div>

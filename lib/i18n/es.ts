@@ -475,6 +475,7 @@ export const es = {
 
   /* --------------------------------------------------- enlace de cookies */
   cookies: {
+    privacidad: "Privacidad",
     cambiar: "Cookies",
   },
 
