@@ -57,6 +57,9 @@ export default function PrivacidadPage() {
             <b className="text-ink">Cualquiera con el enlace o el código ve esa mesa.</b> No hay
             candado: el enlace <em>es</em> la llave.
           </Punto>
+          <Punto>
+            Las mesas <b className="text-ink">se borran solas a los 30 días</b> sin usarse.
+          </Punto>
           <Punto>No se vende nada a nadie. Nunca.</Punto>
         </ul>
       </Bloque>
@@ -142,13 +145,20 @@ export default function PrivacidadPage() {
 
       <Bloque titulo="Cuánto tiempo">
         <p className="text-[15px] leading-relaxed text-ink-soft">
-          Una comanda vive mientras exista: hoy no se borra sola. Puedes salirte de una mesa en
-          cualquier momento —los tres puntos, «Salirme de la mesa»— y con ello desaparecen tu
-          nombre, tu foto y lo que hubieras marcado.
+          Una comanda <b className="text-ink">se borra sola a los 30 días</b> sin que nadie la
+          toque. El reloj se reinicia con cada cambio, así que una mesa en uso no caduca; una
+          olvidada desaparece con todo lo que llevaba dentro.
         </p>
         <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
-          Si quieres que se borre una mesa entera, escribe a {RESPONSABLE.correo} con el código y se
-          hace.
+          También puedes salirte de una mesa cuando quieras —los tres puntos, «Salirme de la
+          mesa»— y con ello desaparecen tu nombre, tu foto y lo que hubieras marcado.
+        </p>
+        <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
+          Y si quieres que se borre una mesa entera antes de tiempo, escribe a{" "}
+          <a href={`mailto:${RESPONSABLE.correo}`} className="text-amber underline underline-offset-2">
+            {RESPONSABLE.correo}
+          </a>{" "}
+          con el código y se hace.
         </p>
       </Bloque>
 

@@ -372,6 +372,7 @@ export const en: Dict = {
     invitacion: "Pay your share of “{sitio}” here 👇",
     invitacionSinNombre: "We're splitting the bill here 👇 Tap what you had and pay your share.",
     quienEsta: "Who's here",
+    caduca: "Tables delete themselves after 30 days unused.",
     cerrar: "Close",
     tu: "(you)",
     quitarDeLaMesa: "Remove {name} from the table",

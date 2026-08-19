@@ -410,6 +410,7 @@ export const es = {
     invitacion: "Paga tu parte de «{sitio}» aquí 👇",
     invitacionSinNombre: "Repartimos la cuenta aquí 👇 Marca lo que te has tomado y paga tu parte.",
     quienEsta: "Quién está",
+    caduca: "Las mesas se borran solas a los 30 días sin usarse.",
     cerrar: "Cerrar",
     tu: "(tú)",
     quitarDeLaMesa: "Quitar a {name} de la mesa",

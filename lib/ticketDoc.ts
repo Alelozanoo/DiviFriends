@@ -1,3 +1,4 @@
+import type { Timestamp } from "firebase-admin/firestore";
 import type { ChangeEvent, Claim, Item, Pago, Participant, TicketState, Via } from "./types";
 
 /**
@@ -30,6 +31,21 @@ export interface TicketDoc {
   tipCents?: number;
   createdAt: string;
   updatedAt: string;
+  /**
+   * Cuándo se borra sola esta comanda.
+   *
+   * Firestore tiene borrado por caducidad: se le señala un campo de fecha y él
+   * va limpiando lo que se pasa. Aquí se mueve treinta días hacia adelante en
+   * cada cambio, así que una mesa viva no se muere nunca y una olvidada se va
+   * sin que nadie tenga que acordarse.
+   *
+   * Es un `Timestamp` de Firestore y no una cadena a propósito: el borrado por
+   * caducidad sólo entiende ese tipo, y con un texto ISO no haría nada.
+   *
+   * Opcional porque las comandas creadas antes de esto no lo traen. Se lo
+   * ponen en cuanto alguien las toca.
+   */
+  caducaEl?: Timestamp;
   receipts?: ReceiptDoc[];
   items: ItemDoc[];
   participants: ParticipantDoc[];

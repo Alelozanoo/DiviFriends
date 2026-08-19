@@ -292,6 +292,10 @@ export default function TableSheet({
           </>
         )}
 
+        {/* Que caduque no puede ser una sorpresa: quien vuelva en dos meses a por
+            una cuenta tiene derecho a saber por qué no está. */}
+        <p className="stamp text-center text-ink-faint">{t.mesa.caduca}</p>
+
         <CerrarHoja onClick={onClose}>{t.mesa.cerrar}</CerrarHoja>
       </div>
     </Sheet>

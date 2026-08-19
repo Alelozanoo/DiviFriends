@@ -8,6 +8,7 @@ import { I18nProvider } from "@/lib/i18n";
 import { getTicketState } from "@/lib/store";
 import { ticketQrSvg, ticketUrl } from "@/lib/ticketUrl";
 import SplitApp from "@/components/SplitApp";
+import OlvidarComanda from "@/components/OlvidarComanda";
 
 export const dynamic = "force-dynamic";
 
@@ -77,14 +78,16 @@ export default async function TicketPage({ params }: Props) {
     const ingles = lang === "en";
     return (
       <main className="mx-auto flex max-w-md flex-1 flex-col justify-center px-6 py-20 text-center">
+        {/* Si estaba en «tus divis», que deje de estarlo: ya no hay nada detrás. */}
+        <OlvidarComanda code={code} />
         <p className="stamp text-ink-faint">{ingles ? "Code" : "Código"} {code}</p>
         <h1 className="mt-4 text-3xl font-bold tracking-tight">
           {ingles ? "This bill doesn't exist" : "Esta comanda no existe"}
         </h1>
         <p className="mt-3 text-ink-soft">
           {ingles
-            ? "The code may be mistyped, or the bill may already have been deleted."
-            : "Puede que el código esté mal escrito o que la comanda ya se haya borrado."}
+            ? "The code may be mistyped, or the bill may have been deleted — they go after 30 days unused."
+            : "Puede que el código esté mal escrito, o que la comanda se haya borrado: las mesas se van a los 30 días sin usarse."}
         </p>
         <Link
           href={inicio(lang)}

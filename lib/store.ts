@@ -1,3 +1,4 @@
+import { Timestamp } from "firebase-admin/firestore";
 import { firestore, TICKETS } from "./firebaseAdmin";
 import { docToState, LIMITS, type EventDoc, type ItemDoc, type TicketDoc } from "./ticketDoc";
 import { colorFor, id, ticketCode } from "./format";
@@ -29,6 +30,20 @@ export async function getTicketState(code: string): Promise<TicketState | null> 
  * dos personas tocando el mismo plato a la vez no se pisan, y siempre se
  * devuelve el estado completo ya recalculado.
  */
+/**
+ * Cuánto vive una comanda sin que nadie la toque.
+ *
+ * Treinta días es de sobra para la vida real de una cuenta —se reparte esa
+ * noche y se salda en unos días— y evita guardar para siempre nombres, fotos y
+ * móviles de gente que ya se olvidó de esto. El reloj se reinicia con cada
+ * cambio, así que una mesa en uso no caduca nunca.
+ */
+const DIAS_DE_VIDA = 30;
+
+export function caducidad(): Timestamp {
+  return Timestamp.fromMillis(Date.now() + DIAS_DE_VIDA * 24 * 60 * 60 * 1000);
+}
+
 async function mutate(code: string, apply: (doc: TicketDoc) => void): Promise<TicketState> {
   const ref = firestore().collection(TICKETS).doc(code);
   const updated = await firestore().runTransaction(async (tx) => {
@@ -37,6 +52,8 @@ async function mutate(code: string, apply: (doc: TicketDoc) => void): Promise<Ti
     const doc = snap.data() as TicketDoc;
     apply(doc);
     doc.updatedAt = new Date().toISOString();
+    // Tocarla la mantiene viva otros treinta días.
+    doc.caducaEl = caducidad();
     tx.set(ref, doc);
     return doc;
   });
@@ -89,6 +106,7 @@ export async function createTicket(input: NewTicket): Promise<string> {
     totalCents: input.totalCents,
     createdAt: now,
     updatedAt: now,
+    caducaEl: caducidad(),
     items: input.items.slice(0, LIMITS.items).map((item, index) => ({
       id: id("itm"),
       name: item.name,
