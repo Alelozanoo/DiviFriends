@@ -29,6 +29,10 @@ export const metadata: Metadata = {
 
 const ACTUALIZADA = "18 de agosto de 2026";
 
+/* Si el píxel está apagado, decirlo en pasado y no prometer un consentimiento
+   que ya no se pide. La página se ajusta sola cuando vuelva. */
+const HAY_PIXEL = Boolean(process.env.NEXT_PUBLIC_META_PIXEL_ID);
+
 export default function PrivacidadPage() {
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-[var(--gutter)] py-12">
@@ -115,9 +119,19 @@ export default function PrivacidadPage() {
           Lee la foto del ticket y devuelve la lista de platos. Está en Estados Unidos, así que hay
           una transferencia internacional amparada en sus cláusulas contractuales tipo.
         </Dato>
-        <Dato k="Meta">
-          Sólo si aceptas la cookie, y sólo para saber si un anuncio funciona. Nunca van nombres,
-          importes ni el código de la mesa. Lo cuenta entero la{" "}
+        <Dato k="Publicidad">
+          {HAY_PIXEL ? (
+            <>
+              Hay un píxel de Meta, y sólo se carga si aceptas la cookie. Sirve para saber si un
+              anuncio funciona: nunca van nombres, importes ni el código de la mesa.
+            </>
+          ) : (
+            <>
+              Ninguna. No hay píxel de Meta ni de nadie, así que esta web{" "}
+              <b className="text-ink">no pone una sola cookie</b>.
+            </>
+          )}{" "}
+          Lo cuenta entero la{" "}
           <Link href="/cookies" className="text-amber underline underline-offset-2">
             página de cookies
           </Link>

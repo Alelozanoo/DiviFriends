@@ -47,9 +47,16 @@ env:
   # A propósito NO está en `.env.local`: en desarrollo se toca la app cien
   # veces al día y cada toque mandaría un evento falso a este mismo píxel.
   # Vacío en local significa que ni se descarga el script de Facebook.
-  - variable: NEXT_PUBLIC_META_PIXEL_ID
-    value: "1054021497541259"
-    availability: [BUILD, RUNTIME]
+  # Apagado desde el 18 de agosto de 2026: no hay campañas en marcha, y un
+  # píxel encendido «por si acaso» obliga a pedir consentimiento, a mantener un
+  # cartel de cookies y a explicarlo en la política, todo para no medir nada.
+  #
+  # Volver a encenderlo es descomentar estas dos líneas y desplegar. El código
+  # se queda entero: sin esta variable no se descarga ni una línea de Facebook,
+  # el cartel no aparece y las páginas de cookies y privacidad se ajustan solas.
+  # - variable: NEXT_PUBLIC_META_PIXEL_ID
+  #   value: "1054021497541259"
+  #   availability: [BUILD, RUNTIME]
 
   # La llave de /metricas. Va en Secret Manager y no aquí, así que este bloque
   # está comentado a propósito: descoméntalo DESPUÉS de crear el secreto, o el
