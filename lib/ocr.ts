@@ -299,11 +299,11 @@ function normalize(parsed: ParsedTicket): ParsedTicket {
  * proveedores es justamente compararlos: sin el nombre al lado, dos números
  * en el log no dicen de quién son.
  *
- * Los tokens de razonamiento se cobran como salida. Google los da aparte y no
- * documenta si `total_output_tokens` ya los lleva dentro, así que se imprimen
- * los dos y el total declarado: si `entrada + salida + pensamiento` cuadra con
- * el total, van por separado y el coste de aquí es el bueno; si se pasa, es que
- * ya estaban contados y hay que quitarlos de la fórmula.
+ * Los tokens de razonamiento se cobran como salida y van **aparte** de
+ * `total_output_tokens`: comprobado con una lectura real —1291 de entrada, 285
+ * de salida y 391 de pensamiento, que suman exactamente los 1967 del total que
+ * declara Google—, así que sumarlos aquí es lo correcto y no los cuenta dos
+ * veces. Se siguen imprimiendo los tres por si eso cambia.
  */
 function registra(cual: Proveedor, l: Lectura, ms: number): void {
   const tarifa = TARIFAS[cual];
