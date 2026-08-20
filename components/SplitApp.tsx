@@ -381,8 +381,18 @@ export default function SplitApp({
   return (
     <div className="flex min-h-full flex-col">
       {/* ------------------------------------------------------------ cabecera */}
-      <header className="sticky top-0 z-20 border-b border-line bg-paper/95 backdrop-blur">
-        <div className="mx-auto grid max-w-3xl gap-3 px-[var(--gutter)] pt-3 pb-2.5">
+      {/*
+        Opaca y hasta el borde de arriba del todo.
+
+        Iba al 95 % con `backdrop-blur`, y en el iPhone se leía la comanda por
+        detrás de la barra: el 5 % que dejaba pasar es suficiente para ver una
+        línea entera. Y como el `viewport` va con `viewport-fit=cover`, la
+        página se mete debajo del reloj y de la muesca, así que sin el
+        `safe-area-inset-top` esa franja no la pintaba nadie y allí también
+        asomaban las tarjetas. Ahora la cabecera llega hasta arriba y tapa.
+      */}
+      <header className="sticky top-0 z-20 border-b border-line bg-paper">
+        <div className="mx-auto grid max-w-3xl gap-3 px-[var(--gutter)] pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-2.5">
           {/*
             Cuatro botones redondos iguales y la marca a la izquierda.
 
@@ -665,7 +675,8 @@ export default function SplitApp({
       </main>
 
       {/* ---------------------------------------------------------- barra fija */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-paper-2/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
+      {/* Igual que la cabecera: opaca, que aquí se veía «plato patatas» por detrás. */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-paper-2 pb-[env(safe-area-inset-bottom)]">
         <div className="mx-auto flex max-w-3xl items-center gap-3.5 px-[var(--gutter)] py-3">
           <div className="min-w-0 flex-1">
             <p className="stamp text-ink-faint">{meId ? t.comanda.loTuyo : t.comanda.sinRepartir}</p>
@@ -1148,7 +1159,7 @@ export default function SplitApp({
 
       {/* Toast Animado: Alguien se ha unido */}
       {newFriend && (
-        <div className="pointer-events-none fixed inset-x-0 top-20 z-50 flex justify-center">
+        <div className="pointer-events-none fixed inset-x-0 top-[calc(env(safe-area-inset-top)+5rem)] z-50 flex justify-center">
           <div 
             key={newFriend.key}
             className="pointer-events-auto flex w-max items-center gap-3 rounded-full border border-amber/40 bg-paper-2/95 px-5 py-2.5 shadow-[0_12px_36px_rgba(232,176,75,0.15)] backdrop-blur-md"
