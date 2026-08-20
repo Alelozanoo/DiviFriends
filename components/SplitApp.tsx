@@ -402,6 +402,19 @@ export default function SplitApp({
           la cabecera está donde debe, cae fuera y no se ve; cuando no, tapa.
         */}
         <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-full h-[50vh] bg-paper" />
+        {/*
+          Y el desvanecido por debajo, que es otra cosa.
+
+          El faldón tapa; esto disuelve. Sin ello una línea de la comanda entra
+          bajo la cabecera cortada por la mitad con un filo recto, y se ve el
+          corte: media palabra, un precio partido. Con dos dedos de degradado
+          del mismo café, el renglón se apaga antes de llegar al borde y lo que
+          pasa por debajo deja de leerse.
+        */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-full h-6 bg-gradient-to-b from-paper to-transparent"
+        />
         <div className="mx-auto grid max-w-3xl gap-3 px-[var(--gutter)] pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-2.5">
           {/*
             Cuatro botones redondos iguales y la marca a la izquierda.
@@ -689,6 +702,12 @@ export default function SplitApp({
         {/* El mismo faldón, colgando hacia abajo: entre la barra y el borde de
             la pantalla no puede asomar ninguna línea de la comanda. */}
         <div aria-hidden className="pointer-events-none absolute inset-x-0 top-full h-[50vh] bg-paper-2" />
+        {/* El mismo desvanecido que en la cabecera, por el otro lado: lo que
+            baja hacia la barra se apaga en vez de meterse debajo de un filo. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-full h-10 bg-gradient-to-t from-paper to-transparent"
+        />
         <div className="mx-auto flex max-w-3xl items-center gap-3.5 px-[var(--gutter)] py-3">
           <div className="min-w-0 flex-1">
             <p className="stamp text-ink-faint">{meId ? t.comanda.loTuyo : t.comanda.sinRepartir}</p>

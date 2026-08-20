@@ -276,14 +276,26 @@ html:lang(en) .saltar [data-en] {
   La app se llama a sí misma un ticket térmico visto de noche y hasta ahora era
   un plano de color liso: nada de lo que hay en pantalla tiene superficie. Esto
   es una capa fija de ruido a un 3,5 %, ni un punto más, que basta para que el
-  fondo deje de ser un vacío digital y parezca papel. No recibe toques —está
-  por encima de todo— y desaparece al imprimir, donde el papel es de verdad.
+  fondo deje de ser un vacío digital y parezca papel. No recibe toques y
+  desaparece al imprimir, donde el papel es de verdad.
+
+  Va en z-index 5, o sea por encima de la comanda pero por debajo de todo lo
+  que se queda quieto en pantalla: la cabecera (20), la barra de abajo (30),
+  las hojas (50) y el enlace de saltar (70).
+
+  Esto no es una preferencia, es el arreglo de un fallo. Estaba en 60, encima
+  de todo, y en Safari de iOS una capa fija que cubre la pantalla entera te
+  cambia cómo se componen las demás: a la barra de abajo le recortaba el
+  faldón —el medio metro de café que le cuelga para tapar el hueco que deja
+  Safari al esconder su barra— y por ahí se veían las líneas de la comanda
+  pasando por debajo. La cabecera y la barra son chapa de la app, no papel:
+  no necesitan grano.
 */
 body::after {
   content: "";
   position: fixed;
   inset: 0;
-  z-index: 60;
+  z-index: 5;
   pointer-events: none;
   opacity: 0.035;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)'/%3E%3C/svg%3E");
