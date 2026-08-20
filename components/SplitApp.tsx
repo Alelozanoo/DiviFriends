@@ -392,6 +392,16 @@ export default function SplitApp({
         asomaban las tarjetas. Ahora la cabecera llega hasta arriba y tapa.
       */}
       <header className="sticky top-0 z-20 border-b border-line bg-paper">
+        {/*
+          El faldón de arriba.
+
+          `env(safe-area-inset-top)` no basta: Safari de iOS esconde su barra
+          al bajar, el viewport crece y durante ese baile la cabecera se queda
+          unos píxeles por debajo del borde. Por ese hueco se veía la comanda.
+          Esto es medio pantalla del mismo café colgando hacia arriba: cuando
+          la cabecera está donde debe, cae fuera y no se ve; cuando no, tapa.
+        */}
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-full h-[50vh] bg-paper" />
         <div className="mx-auto grid max-w-3xl gap-3 px-[var(--gutter)] pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-2.5">
           {/*
             Cuatro botones redondos iguales y la marca a la izquierda.
@@ -675,8 +685,10 @@ export default function SplitApp({
       </main>
 
       {/* ---------------------------------------------------------- barra fija */}
-      {/* Igual que la cabecera: opaca, que aquí se veía «plato patatas» por detrás. */}
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-paper-2 pb-[env(safe-area-inset-bottom)]">
+        {/* El mismo faldón, colgando hacia abajo: entre la barra y el borde de
+            la pantalla no puede asomar ninguna línea de la comanda. */}
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-full h-[50vh] bg-paper-2" />
         <div className="mx-auto flex max-w-3xl items-center gap-3.5 px-[var(--gutter)] py-3">
           <div className="min-w-0 flex-1">
             <p className="stamp text-ink-faint">{meId ? t.comanda.loTuyo : t.comanda.sinRepartir}</p>
