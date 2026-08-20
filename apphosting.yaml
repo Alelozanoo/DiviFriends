@@ -66,9 +66,28 @@ env:
   #   secret: metricas-token
   #   availability: [RUNTIME]
 
+  # --- Lectura de tickets ---------------------------------------------------
+  # Qué modelo lee la foto del ticket: `gemini` o `anthropic`. Es la única
+  # variable de coste que crece con los usuarios, así que se elige por
+  # configuración y volverse atrás es cambiar esta línea y desplegar.
+  #
+  # Sigue en `anthropic` hasta que exista el secreto de Gemini: App Hosting
+  # falla el despliegue si se referencia un secreto que no está creado.
+  #
+  #   1. Saca la clave en https://aistudio.google.com/apikey
+  #   2. firebase apphosting:secrets:set gemini-api-key --project divifriends-2964
+  #   3. Descomenta el bloque GEMINI_API_KEY de abajo y pon aquí `gemini`.
+  - variable: OCR_MODELO
+    value: anthropic
+    availability: [RUNTIME]
+
   # --- Secretos -------------------------------------------------------------
-  # Vive en Secret Manager, nunca en el repo. Sólo en RUNTIME: la clave no debe
-  # quedar incrustada en el bundle compilado.
+  # Viven en Secret Manager, nunca en el repo. Sólo en RUNTIME: las claves no
+  # deben quedar incrustadas en el bundle compilado.
   - variable: ANTHROPIC_API_KEY
     secret: anthropic-api-key
     availability: [RUNTIME]
+
+  # - variable: GEMINI_API_KEY
+  #   secret: gemini-api-key
+  #   availability: [RUNTIME]

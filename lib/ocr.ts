@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenAI, ApiError } from "@google/genai";
 
 export interface ParsedItem {
   name: string;
@@ -23,6 +24,8 @@ export class OcrError extends Error {
     super(message);
   }
 }
+
+export type MediaType = "image/jpeg" | "image/png" | "image/webp" | "image/gif";
 
 const SCHEMA = {
   type: "object",
@@ -76,11 +79,125 @@ Reglas:
   en lugar de omitir la línea.
 - Si la imagen no es un ticket de consumición, devuelve items vacío y total 0.`;
 
+/* ------------------------------------------------------------------ modelos */
+
+/**
+ * Qué modelo lee los tickets.
+ *
+ * Se elige con `OCR_MODELO` para poder cambiarlo sin tocar el código: la
+ * lectura es la **única variable que crece con los usuarios**, así que conviene
+ * poder probar otro modelo y volverse atrás en un despliegue.
+ *
+ * - `gemini`   → Gemini 3.7 Flash (por defecto desde el 20 de agosto de 2026)
+ * - `anthropic` → Claude Opus 5, que es lo que había antes
+ */
+type Proveedor = "gemini" | "anthropic";
+
+function proveedor(): Proveedor {
+  return process.env.OCR_MODELO?.trim().toLowerCase() === "anthropic" ? "anthropic" : "gemini";
+}
+
+/**
+ * Tarifas en dólares por millón de tokens.
+ *
+ * Gemini 3.7 Flash salió el 13 de agosto de 2026 con precio de estreno
+ * —0,38 / 1,88— que vale hasta el 31 de diciembre de 2026; a partir de ahí
+ * pasa a 1,50 / 7,50 y hay que corregir estos números o el log mentirá.
+ */
+const TARIFAS = {
+  gemini: { modelo: "gemini-3.7-flash", entrada: 0.38, salida: 1.88 },
+  anthropic: { modelo: "claude-opus-5", entrada: 5, salida: 25 },
+} as const;
+
+/** Lo que cuesta y lo que tarda una lectura, para poder comparar modelos. */
+interface Lectura {
+  json: string;
+  entrada: number;
+  salida: number;
+  /** Tokens de razonamiento. Sólo Gemini los separa; se cobran como salida. */
+  pensamiento: number;
+  /** Lo que dice el proveedor que suman todos. Sirve para ver si `pensamiento` ya iba dentro. */
+  totalDeclarado: number;
+}
+
+/* ------------------------------------------------------------------- lectura */
+
 /** Lee un ticket a partir de la imagen y devuelve las líneas estructuradas. */
 export async function parseTicketImage(
   base64: string,
-  mediaType: "image/jpeg" | "image/png" | "image/webp" | "image/gif",
+  mediaType: MediaType,
 ): Promise<ParsedTicket> {
+  const cual = proveedor();
+  const arranque = Date.now();
+
+  const lectura = cual === "gemini"
+    ? await leeConGemini(base64, mediaType)
+    : await leeConClaude(base64, mediaType);
+
+  registra(cual, lectura, Date.now() - arranque);
+
+  let parsed: ParsedTicket;
+  try {
+    parsed = JSON.parse(lectura.json) as ParsedTicket;
+  } catch {
+    throw new OcrError("No se ha podido leer el ticket.", "unreadable");
+  }
+  return normalize(parsed);
+}
+
+/* ------------------------------------------------------------------- Gemini */
+
+async function leeConGemini(base64: string, mediaType: MediaType): Promise<Lectura> {
+  try {
+    // Igual que con Anthropic: se construye aquí dentro para que la falta de
+    // credenciales se cuente como un fallo más de la lectura. El SDK coge la
+    // clave de GEMINI_API_KEY o de GOOGLE_API_KEY él solo.
+    const google = new GoogleGenAI({});
+
+    const interaction = await google.interactions.create({
+      model: TARIFAS.gemini.modelo,
+      input: [
+        { type: "image", data: base64, mime_type: mediaType },
+        { type: "text", text: PROMPT },
+      ],
+      response_format: { type: "text", mime_type: "application/json", schema: SCHEMA },
+      // Un ticket es una transcripción, no un problema: pensar de más aquí sólo
+      // añade segundos y tokens de razonamiento, que se cobran como salida.
+      generation_config: { thinking_level: "low" },
+    });
+
+    const json = interaction.output_text;
+    if (!json) throw new OcrError("No se ha podido leer el ticket.", "unreadable");
+
+    const uso = interaction.usage;
+    return {
+      json,
+      entrada: uso?.total_input_tokens ?? 0,
+      salida: uso?.total_output_tokens ?? 0,
+      pensamiento: uso?.total_thought_tokens ?? 0,
+      totalDeclarado: uso?.total_tokens ?? 0,
+    };
+  } catch (error) {
+    if (error instanceof OcrError) throw error;
+    const message = error instanceof Error ? error.message : "Error desconocido";
+    const estado = error instanceof ApiError ? error.status : 0;
+
+    if (estado === 401 || estado === 403 || /API key|GEMINI_API_KEY|GOOGLE_API_KEY/i.test(message)) {
+      throw new OcrError(
+        "El servidor no tiene configurada la clave de Gemini (GEMINI_API_KEY), así que no puedo leer la foto. Puedes escribir la comanda a mano.",
+        "no_api_key",
+      );
+    }
+    if (estado === 429) {
+      throw new OcrError("Demasiadas peticiones ahora mismo. Prueba en unos segundos.", "api_error");
+    }
+    throw new OcrError(`La lectura del ticket falló: ${message}`, "api_error");
+  }
+}
+
+/* ------------------------------------------------------------------- Claude */
+
+async function leeConClaude(base64: string, mediaType: MediaType): Promise<Lectura> {
   let response: Anthropic.Message;
   try {
     // Se construye aquí dentro a propósito: sin credenciales el constructor ya
@@ -90,7 +207,7 @@ export async function parseTicketImage(
     const anthropic = new Anthropic();
 
     response = await anthropic.messages.create({
-      model: "claude-opus-5",
+      model: TARIFAS.anthropic.modelo,
       max_tokens: 16000,
       output_config: {
         effort: "medium",
@@ -124,8 +241,6 @@ export async function parseTicketImage(
     throw new OcrError(`La lectura del ticket falló: ${message}`, "api_error");
   }
 
-  logCost(response.usage);
-
   if (response.stop_reason === "refusal") {
     throw new OcrError("No se ha podido procesar esta imagen.", "refused");
   }
@@ -135,9 +250,17 @@ export async function parseTicketImage(
     throw new OcrError("No se ha podido leer el ticket.", "unreadable");
   }
 
-  const parsed = JSON.parse(text.text) as ParsedTicket;
-  return normalize(parsed);
+  const uso = response.usage;
+  return {
+    json: text.text,
+    entrada: uso.input_tokens + (uso.cache_creation_input_tokens ?? 0),
+    salida: uso.output_tokens,
+    pensamiento: 0,
+    totalDeclarado: 0,
+  };
 }
+
+/* ------------------------------------------------------------------- limpieza */
 
 /** Rellena huecos previsibles del OCR para que el reparto cuadre desde el minuto uno. */
 function normalize(parsed: ParsedTicket): ParsedTicket {
@@ -166,22 +289,31 @@ function normalize(parsed: ParsedTicket): ParsedTicket {
   };
 }
 
+/* ---------------------------------------------------------------------- coste */
+
 /**
- * Cada ticket leído cuesta dinero, así que conviene verlo en los logs desde el
- * primer día: es la única variable que crece con los usuarios.
- * Tarifas de Claude Opus 5 en dólares por millón de tokens.
+ * Cada ticket leído cuesta dinero y tiempo, así que conviene verlo en los logs
+ * desde el primer día: es la única variable que crece con los usuarios.
+ *
+ * Sale también el modelo y los milisegundos porque el motivo de tener dos
+ * proveedores es justamente compararlos: sin el nombre al lado, dos números
+ * en el log no dicen de quién son.
+ *
+ * Los tokens de razonamiento se cobran como salida. Google los da aparte y no
+ * documenta si `total_output_tokens` ya los lleva dentro, así que se imprimen
+ * los dos y el total declarado: si `entrada + salida + pensamiento` cuadra con
+ * el total, van por separado y el coste de aquí es el bueno; si se pasa, es que
+ * ya estaban contados y hay que quitarlos de la fórmula.
  */
-const PRICE = { input: 5, output: 25, cacheRead: 0.5 } as const;
+function registra(cual: Proveedor, l: Lectura, ms: number): void {
+  const tarifa = TARIFAS[cual];
+  const dolares =
+    (l.entrada * tarifa.entrada + (l.salida + l.pensamiento) * tarifa.salida) / 1_000_000;
 
-function logCost(usage: Anthropic.Usage): void {
-  const inputTokens = usage.input_tokens + (usage.cache_creation_input_tokens ?? 0);
-  const dollars =
-    (inputTokens * PRICE.input +
-      usage.output_tokens * PRICE.output +
-      (usage.cache_read_input_tokens ?? 0) * PRICE.cacheRead) /
-    1_000_000;
-
+  const desglose = l.pensamiento ? ` · pensamiento ${l.pensamiento}` : "";
+  const declarado = l.totalDeclarado ? ` · total ${l.totalDeclarado}` : "";
   console.info(
-    `[ocr] entrada ${inputTokens} · salida ${usage.output_tokens} · ≈ ${(dollars * 100).toFixed(2)} ¢`,
+    `[ocr] ${tarifa.modelo} · ${(ms / 1000).toFixed(1)} s · entrada ${l.entrada} · salida ${l.salida}` +
+      `${desglose}${declarado} · ≈ ${(dolares * 100).toFixed(2)} ¢`,
   );
 }
