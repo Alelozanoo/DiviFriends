@@ -698,10 +698,22 @@ export default function SplitApp({
       </main>
 
       {/* ---------------------------------------------------------- barra fija */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-paper-2 pb-[env(safe-area-inset-bottom)]">
-        {/* El mismo faldón, colgando hacia abajo: entre la barra y el borde de
-            la pantalla no puede asomar ninguna línea de la comanda. */}
-        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-full h-[50vh] bg-paper-2" />
+      {/*
+        El faldón ya no es un hijo que se sale, es la propia barra.
+
+        La caja baja medio metro por debajo de la pantalla —`bottom` negativo—
+        y el mismo medio metro de relleno vuelve a subir el contenido a su
+        sitio, así que lo que se ve no se mueve ni un píxel. Lo que cambia es
+        quién pinta ese café de abajo: antes un `div` que desbordaba la barra,
+        ahora el fondo de la barra misma.
+
+        Y eso es justo lo que había que quitar de en medio. Un hijo que se sale
+        de un elemento fijo es lo primero que Safari de iOS recorta cuando le
+        cambias las capas de sitio, y entre eso y el grano se nos fueron tres
+        intentos de arreglar el mismo hueco. Un fondo no se puede recortar:
+        o se pinta la caja o no se pinta.
+      */}
+      <div className="fixed inset-x-0 bottom-[-50vh] z-30 border-t border-line bg-paper-2 pb-[calc(50vh+env(safe-area-inset-bottom))]">
         {/* El mismo desvanecido que en la cabecera, por el otro lado: lo que
             baja hacia la barra se apaga en vez de meterse debajo de un filo. */}
         <div
