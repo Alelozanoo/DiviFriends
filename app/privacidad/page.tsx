@@ -115,12 +115,15 @@ export default function PrivacidadPage() {
           compartirse en un grupo, así que <b className="text-ink">no metas ahí nada que no
           quieras que vea quien reenvíe ese enlace</b>.
         </Dato>
-        <Dato k="Google">
-          Firebase aloja la web y la base de datos. Actúa como encargado del tratamiento.
+        <Dato k="Quien aloja la web">
+          Un proveedor de infraestructura en la nube guarda la web y la base de datos. Actúa como
+          encargado del tratamiento: trabaja siguiendo nuestras instrucciones y{" "}
+          <b className="text-ink">no puede usar tus datos para lo suyo</b>.
         </Dato>
-        <Dato k="Anthropic">
-          Lee la foto del ticket y devuelve la lista de platos. Está en Estados Unidos, así que hay
-          una transferencia internacional amparada en sus cláusulas contractuales tipo.
+        <Dato k="Quien lee la foto">
+          Un proveedor de inteligencia artificial recibe la foto del ticket y devuelve la lista de
+          platos. Está en Estados Unidos, así que hay una transferencia internacional amparada en
+          sus cláusulas contractuales tipo.
         </Dato>
         <Dato k="Publicidad">
           {HAY_PIXEL ? (
@@ -141,6 +144,15 @@ export default function PrivacidadPage() {
           .
         </Dato>
         <Dato k="Nadie más">No se vende ni se cede a terceros para publicidad.</Dato>
+        <p className="mt-4 text-[13px] leading-relaxed text-ink-faint">
+          El RGPD deja decir la categoría de cada destinatario en vez de la empresa concreta
+          (artículo 13.1.e), que es lo que hay aquí arriba. Si quieres saber exactamente qué
+          empresa es cada una,{" "}
+          <a href={`mailto:${RESPONSABLE.correo}`} className="text-amber underline underline-offset-2">
+            pídelo por correo
+          </a>{" "}
+          y te lo decimos.
+        </p>
       </Bloque>
 
       <Bloque titulo="Cuánto tiempo">
