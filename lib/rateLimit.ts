@@ -49,8 +49,16 @@ const PRESUPUESTO_DIARIO = 10;
  * el tope de abajo, que es justo lo que se quiere: el freno lo pone el dinero,
  * no un número inventado.
  */
-const COSTE_POR_LECTURA =
-  process.env.OCR_MODELO?.trim().toLowerCase() === "anthropic" ? 0.0296 : 0.0018;
+const GEMINI = process.env.OCR_MODELO?.trim().toLowerCase() !== "anthropic";
+
+export const COSTE_POR_LECTURA = GEMINI ? 0.0018 : 0.0296;
+
+/**
+ * Cómo se llama el modelo que lee, para poder decirlo en las métricas sin
+ * arrastrar hasta la página los SDK de los dos proveedores. Espejo de `TARIFAS`
+ * en `lib/ocr.ts`: si allí se cambia de modelo, aquí también.
+ */
+export const MODELO_LECTOR = GEMINI ? "Gemini 3.7 Flash" : "Opus 5";
 
 export const TOPES = {
   /** Crear una comanda desde una foto. Cada una cuesta ~0,2 ¢ de API. */
@@ -146,6 +154,36 @@ export async function consume(quotas: Quota[]): Promise<Decision> {
     }
     return decision;
   });
+}
+
+/**
+ * Cuántas lecturas lleva la ventana global en curso.
+ *
+ * Es el único número exacto que hay del gasto: cuenta cada foto que se mandó a
+ * leer, incluidas las que el modelo no supo entender —que se pagan igual y no
+ * dejan comanda que contar—. Lo que se deduce de las comandas guardadas es una
+ * aproximación; esto es el marcador.
+ *
+ * Vive aquí y no en la página de métricas porque el significado del contador
+ * —cuándo empieza la ventana y cuándo caduca— es de este módulo: leerlo por
+ * fuera obligaría a repetir la aritmética y a que algún día dejaran de
+ * coincidir. Sólo lee: mirar el marcador no gasta cupo.
+ */
+export async function lecturasDelDia(now = Date.now()): Promise<{
+  hechas: number;
+  tope: number;
+  /** Cuándo arrancó la ventana. `null` si no hay ninguna viva. */
+  desde: string | null;
+}> {
+  const { firestore } = await import("./firebaseAdmin");
+  const snap = await firestore().collection("limits").doc("global_lecturas").get();
+  const counter = snap.data() as Counter | undefined;
+  const { max, windowMs } = TOPES.lecturaDeTicket.global;
+  // Una ventana caducada es una ventana a cero: la reabre la próxima lectura.
+  if (!counter || now - counter.windowStart >= windowMs) {
+    return { hechas: 0, tope: max, desde: null };
+  }
+  return { hechas: counter.count, tope: max, desde: new Date(counter.windowStart).toISOString() };
 }
 
 /**

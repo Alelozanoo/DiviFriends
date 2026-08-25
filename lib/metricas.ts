@@ -1,3 +1,4 @@
+import { COSTE_POR_LECTURA } from "./rateLimit";
 import type { EventDoc, TicketDoc } from "./ticketDoc";
 
 /**
@@ -56,6 +57,26 @@ export interface Metricas {
   /** Qué se hace dentro de un divi, contando los cambios que quedan grabados. */
   acciones: { etiqueta: string; n: number }[];
   recibos: { media: number; conVarios: number };
+  /**
+   * Lo que cuesta leer tickets, que es el único gasto que crece con la gente.
+   *
+   * En dólares, que es como facturan Google y Anthropic: pasarlo a euros aquí
+   * sería inventarse un cambio y que la página no cuadrase con el recibo.
+   *
+   * **Es un techo, no una factura.** Se cuenta una lectura por cada papel de
+   * cada divi, y una comanda escrita a mano no llamó a nadie ni costó nada. Por
+   * el otro lado se queda corto: las fotos que el modelo no supo leer se
+   * pagaron igual y no dejaron comanda que contar. El número exacto del día lo
+   * tiene el contador del tope, en `lecturasDelDia`.
+   */
+  coste: {
+    /** Dólares por lectura, con el modelo que esté puesto ahora mismo. */
+    porLectura: number;
+    lecturas: { hoy: number; semana: number; total: number };
+    hoy: number;
+    semana: number;
+    total: number;
+  };
   /** Cuántos de los que se apuntan eligen bicho. */
   avatares: number;
   /** Divis con alguien marcado como pagador. */
@@ -142,6 +163,8 @@ export function resumen(docs: TicketDoc[], ahora = new Date()): Metricas {
   let dosOMas = 0;
   let tresOMas = 0;
   let conVariosRecibos = 0;
+  let recibosHoy = 0;
+  let recibosSemana = 0;
   let conPagador = 0;
   let saldados = 0;
   let repartidos = 0;
@@ -178,8 +201,15 @@ export function resumen(docs: TicketDoc[], ahora = new Date()): Metricas {
 
     // Un divi con un solo recibo es lo de siempre; con dos o más es la
     // novedad en uso, que es justo lo que hay que vigilar.
-    const recibos = Math.max(1, doc.receipts?.length ?? 0);
+    //
+    // El ticket con el que nace la mesa no está en `receipts` —sus líneas son
+    // las que no llevan `receiptId`—, así que los papeles son ese más los que
+    // se hayan añadido después. Contando sólo el array, un divi de dos tickets
+    // parecía de uno y «con varios» empezaba a los tres.
+    const recibos = 1 + (doc.receipts?.length ?? 0);
     recibosTotal += recibos;
+    if (esDeHoy) recibosHoy += recibos;
+    if (esDeLaSemana) recibosSemana += recibos;
     if (recibos >= 2) conVariosRecibos += 1;
 
     lineasTotal += doc.items?.length ?? 0;
@@ -283,6 +313,13 @@ export function resumen(docs: TicketDoc[], ahora = new Date()): Metricas {
       .map(([kind, n]) => ({ etiqueta: ACCIONES[kind] ?? kind, n }))
       .sort((a, b) => b.n - a.n),
     recibos: { media: media(recibosTotal, total), conVarios: pct(conVariosRecibos, total) },
+    coste: {
+      porLectura: COSTE_POR_LECTURA,
+      lecturas: { hoy: recibosHoy, semana: recibosSemana, total: recibosTotal },
+      hoy: recibosHoy * COSTE_POR_LECTURA,
+      semana: recibosSemana * COSTE_POR_LECTURA,
+      total: recibosTotal * COSTE_POR_LECTURA,
+    },
     avatares: pct(conAvatar, participantes),
     conPagador: pct(conPagador, total),
     saldados: pct(saldados, total),

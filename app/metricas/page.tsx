@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { firestore, TICKETS } from "@/lib/firebaseAdmin";
 import { resumen } from "@/lib/metricas";
+import { lecturasDelDia, MODELO_LECTOR } from "@/lib/rateLimit";
 import type { TicketDoc } from "@/lib/ticketDoc";
 
 /**
@@ -37,6 +38,8 @@ export default async function MetricasPage({ searchParams }: Props) {
     .get();
   const docs = snap.docs.map((d) => d.data() as TicketDoc);
   const m = resumen(docs);
+  // El marcador del tope: un documento más, y es el único gasto exacto que hay.
+  const lecturas = await lecturasDelDia();
 
   return (
     <main id="contenido" className="mx-auto w-full max-w-3xl flex-1 px-4 py-8">
@@ -144,6 +147,32 @@ export default async function MetricasPage({ searchParams }: Props) {
         </p>
       </Bloque>
 
+      <Bloque titulo="Lo que cuesta" nota="Leer tickets es el único gasto que crece con la gente">
+        <div className="grid grid-cols-3 gap-3">
+          <Dinero dolares={m.coste.hoy} label="Hoy" destacado />
+          <Dinero dolares={m.coste.semana} label="Últimos 7 días" />
+          <Dinero dolares={m.coste.total} label="Desde el principio" />
+        </div>
+        <p className="mt-3 text-xs leading-relaxed text-ink-faint">
+          Cada papel que pasa por {MODELO_LECTOR} cuesta{" "}
+          <b className="text-ink">{centimos(m.coste.porLectura)} ¢</b>, así que la cuenta es
+          cuántos han pasado: {m.coste.lecturas.total.toLocaleString("es-ES")} desde el principio,{" "}
+          {m.coste.lecturas.semana.toLocaleString("es-ES")} en la última semana y{" "}
+          {m.coste.lecturas.hoy.toLocaleString("es-ES")} hoy.{" "}
+          <b className="text-ink-soft">Es un techo, no una factura:</b> una comanda escrita a
+          mano no llama a nadie y aquí cuenta igual, y las fotos que el modelo no supo leer se
+          pagaron y no dejaron divi que contar.
+        </p>
+        <p className="mt-2 text-xs leading-relaxed text-ink-faint">
+          <b className="text-ink-soft">El número exacto es el otro:</b> el contador del tope
+          lleva <b className="text-ink">{lecturas.hechas.toLocaleString("es-ES")}</b> lecturas de
+          las {lecturas.tope.toLocaleString("es-ES")} que caben en un día
+          {lecturas.desde ? ` —la ventana arrancó a las ${hora(lecturas.desde)}—` : ""}, que son
+          unos {Math.round(lecturas.tope * m.coste.porLectura)} $. Ese es el freno: el día que
+          alguien mande fotos en bucle, la factura para ahí.
+        </p>
+      </Bloque>
+
       <p className="mt-8 rounded-2xl border border-line bg-paper-2 px-4 py-3 text-xs leading-relaxed text-ink-faint">
         <b className="text-ink-soft">Lo que esto no puede saber:</b> si alguien vuelve. Una
         comanda no guarda quién la creó más allá de esa mesa, así que no hay forma de decir que
@@ -187,6 +216,49 @@ function Cifra({
       <p className="stamp mt-1 text-ink-faint">{label}</p>
     </div>
   );
+}
+
+/**
+ * Un importe en dólares, en la unidad en la que se puede leer.
+ *
+ * Por debajo de un dólar sale en céntimos: a este tamaño «0,00 $» no dice nada
+ * y «36 ¢» sí. Dólares y no euros porque es como factura Google; convertirlo
+ * aquí sería inventarse un cambio que no cuadraría con el recibo.
+ */
+function Dinero({
+  dolares,
+  label,
+  destacado = false,
+}: {
+  dolares: number;
+  label: string;
+  destacado?: boolean;
+}) {
+  const enCentimos = dolares < 1;
+  const n = enCentimos ? dolares * 100 : dolares;
+  return (
+    <Cifra
+      n={n}
+      label={label}
+      sufijo={enCentimos ? " ¢" : " $"}
+      decimales={enCentimos ? (n < 10 ? 1 : 0) : 2}
+      destacado={destacado}
+    />
+  );
+}
+
+/** Dólares a céntimos, con los decimales justos para que 0,0018 no sea «0». */
+function centimos(dolares: number): string {
+  return (dolares * 100).toLocaleString("es-ES", { maximumFractionDigits: 2 });
+}
+
+/** La hora de la mesa, no la del servidor. */
+function hora(iso: string): string {
+  return new Intl.DateTimeFormat("es-ES", {
+    timeZone: "Europe/Madrid",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(iso));
 }
 
 function Bloque({
