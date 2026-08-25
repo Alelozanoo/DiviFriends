@@ -17,7 +17,7 @@ import type { Metadata } from "next";
 const RESPONSABLE = {
   nombre: "Alejandro Lozano Martínez",
   nif: "44669980R",
-  correo: "alehandrolozano@gmail.com",
+  correo: "hola@divifriends.es",
 };
 
 export const metadata: Metadata = {
