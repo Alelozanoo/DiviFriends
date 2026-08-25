@@ -1,4 +1,4 @@
-import type { TicketDoc } from "./ticketDoc";
+import type { EventDoc, TicketDoc } from "./ticketDoc";
 
 /**
  * Las cuentas de la casa: lo que se puede saber mirando lo que ya está
@@ -21,7 +21,40 @@ export interface Metricas {
   semana: number;
   /** Últimos 14 días, del más viejo al más nuevo. */
   porDia: { etiqueta: string; n: number }[];
-  personas: { media: number; solo: number; dosOMas: number; tresOMas: number };
+  personas: {
+    media: number;
+    solo: number;
+    dosOMas: number;
+    tresOMas: number;
+    /**
+     * Cuánta gente se ha apuntado a un divi, sumando todas las mesas.
+     *
+     * **No son personas distintas.** Quien hace un divi el sábado y otro el
+     * domingo cuenta dos veces, porque una comanda no guarda quién la abrió más
+     * allá de esa mesa. Es el techo del número de usuarios, no el número.
+     */
+    total: number;
+    hoy: number;
+    semana: number;
+  };
+  /**
+   * Cuántos divis llegan a cada paso, del primero al último.
+   *
+   * Es la respuesta a «¿la usan o entran a mirar?»: la caída entre «se crea» y
+   * «alguien coge algo» son los que se asomaron y se fueron.
+   */
+  embudo: { etiqueta: string; n: number; pct: number }[];
+  /** Los divis que nadie llegó a usar. */
+  curiosos: {
+    /** Nadie se apuntó ni cogió nada. */
+    vacios: number;
+    /** No se volvieron a tocar después de crearse. */
+    efimeros: number;
+    /** Mediana de lo que pasa entre que se crea un divi y su último cambio. */
+    medianaMinutos: number;
+  };
+  /** Qué se hace dentro de un divi, contando los cambios que quedan grabados. */
+  acciones: { etiqueta: string; n: number }[];
   recibos: { media: number; conVarios: number };
   /** Cuántos de los que se apuntan eligen bicho. */
   avatares: number;
@@ -68,6 +101,21 @@ function franja(hora: number): Franja {
   return "noche";
 }
 
+/**
+ * Cómo se lee cada tipo de cambio del historial.
+ *
+ * Escrito a mano y no a partir del nombre técnico porque esta página la mira
+ * una persona: «item.add» no dice nada y «añaden una línea» sí.
+ */
+const ACCIONES: Record<EventDoc["kind"], string> = {
+  "item.add": "Añaden una línea",
+  "item.remove": "Quitan una línea",
+  "total.edit": "Corrigen el total",
+  "payer.set": "Marcan quién pagó",
+  "pago.ok": "Anuncian un pago",
+  "mesa.nombre": "Ponen nombre a la mesa",
+};
+
 const pct = (parte: number, total: number) => (total === 0 ? 0 : Math.round((parte / total) * 100));
 const media = (suma: number, total: number) => (total === 0 ? 0 : suma / total);
 
@@ -97,17 +145,30 @@ export function resumen(docs: TicketDoc[], ahora = new Date()): Metricas {
   let conPagador = 0;
   let saldados = 0;
   let repartidos = 0;
+  let personasHoy = 0;
+  let personasSemana = 0;
+  let conGente = 0;
+  let conReparto = 0;
+  let conPago = 0;
+  let vacios = 0;
+  let efimeros = 0;
+  const vidas: number[] = [];
+  const acciones = new Map<EventDoc["kind"], number>();
 
   for (const doc of docs) {
     const { hora, diaSemana, clave } = enMadrid(doc.createdAt);
     cuenta.set(clave, (cuenta.get(clave) ?? 0) + 1);
     porFranja[franja(hora)] += 1;
     semanaCuenta[diaSemana] += 1;
-    if (clave === hoyClave) hoy += 1;
-    if (new Date(doc.createdAt).getTime() >= desdeSemana) semana += 1;
+    const esDeHoy = clave === hoyClave;
+    const esDeLaSemana = new Date(doc.createdAt).getTime() >= desdeSemana;
+    if (esDeHoy) hoy += 1;
+    if (esDeLaSemana) semana += 1;
 
     const gente = doc.participants?.length ?? 0;
     personasTotal += gente;
+    if (esDeHoy) personasHoy += gente;
+    if (esDeLaSemana) personasSemana += gente;
     if (gente <= 1) solo += 1;
     if (gente >= 2) dosOMas += 1;
     if (gente >= 3) tresOMas += 1;
@@ -145,7 +206,36 @@ export function resumen(docs: TicketDoc[], ahora = new Date()): Metricas {
       (i) => (tomadas.get(i.id) ?? 0) < Math.max(1, i.splitInto),
     );
     if ((doc.items?.length ?? 0) > 0 && !huerfanas) repartidos += 1;
+
+    // ── quién llegó hasta dónde ──────────────────────────────────────
+    const cogidas = (doc.claims ?? []).length;
+    if (gente >= 1) conGente += 1;
+    if (cogidas > 0) conReparto += 1;
+    if ((doc.pagos ?? []).length > 0) conPago += 1;
+    // Nadie se apuntó y nadie cogió nada: se abrió el divi y ahí se quedó.
+    if (gente === 0 && cogidas === 0) vacios += 1;
+
+    // `updatedAt` se reescribe en cada cambio (ver `mutate` en store.ts), así
+    // que la distancia con `createdAt` es cuánto tiempo estuvo viva la mesa.
+    // Las comandas más viejas pueden no traerlo: sin él se cuenta como cero,
+    // que es justo lo que significa —nadie la tocó después de crearla.
+    const nacio = new Date(doc.createdAt).getTime();
+    const ultimo = new Date(doc.updatedAt ?? doc.createdAt).getTime();
+    const vida = Number.isFinite(nacio) && Number.isFinite(ultimo) ? Math.max(0, ultimo - nacio) : 0;
+    vidas.push(vida);
+    if (vida < 60_000) efimeros += 1;
+
+    for (const evento of doc.events ?? []) {
+      acciones.set(evento.kind, (acciones.get(evento.kind) ?? 0) + 1);
+    }
   }
+
+  // La mediana y no la media: un solo divi que alguien dejó abierto una semana
+  // arrastraría la media y diría que la mesa típica dura días.
+  const ordenadas = [...vidas].sort((a, b) => a - b);
+  const medianaMinutos = ordenadas.length
+    ? Math.round(ordenadas[Math.floor(ordenadas.length / 2)] / 60_000)
+    : 0;
 
   // ── los últimos catorce días, con sus huecos ──────────────────────
   const porDia: { etiqueta: string; n: number }[] = [];
@@ -176,7 +266,22 @@ export function resumen(docs: TicketDoc[], ahora = new Date()): Metricas {
       solo: pct(solo, total),
       dosOMas: pct(dosOMas, total),
       tresOMas: pct(tresOMas, total),
+      total: personasTotal,
+      hoy: personasHoy,
+      semana: personasSemana,
     },
+    embudo: [
+      { etiqueta: "Se crea el divi", n: total },
+      { etiqueta: "Alguien se apunta", n: conGente },
+      { etiqueta: "Alguien coge algo", n: conReparto },
+      { etiqueta: "Son dos o más", n: dosOMas },
+      { etiqueta: "Todo repartido", n: repartidos },
+      { etiqueta: "Alguien anuncia que paga", n: conPago },
+    ].map((paso) => ({ ...paso, pct: pct(paso.n, total) })),
+    curiosos: { vacios: pct(vacios, total), efimeros: pct(efimeros, total), medianaMinutos },
+    acciones: [...acciones.entries()]
+      .map(([kind, n]) => ({ etiqueta: ACCIONES[kind] ?? kind, n }))
+      .sort((a, b) => b.n - a.n),
     recibos: { media: media(recibosTotal, total), conVarios: pct(conVariosRecibos, total) },
     avatares: pct(conAvatar, participantes),
     conPagador: pct(conPagador, total),
