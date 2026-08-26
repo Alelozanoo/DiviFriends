@@ -378,6 +378,26 @@ function Titular({
     );
   }
 
+  /*
+    Que nadie deba nada no quiere decir que la cuenta esté hecha.
+
+    Con media carta sin coger, los que no han cogido nada deben cero y aquí
+    salía un «Todo cuadrado» en verde con la mesa a medias —y con la fila roja
+    de «sin repartir» tres centímetros más abajo, contradiciéndolo—. Lo que
+    falta no es que alguien pague: es que alguien diga de quién es lo que
+    queda.
+  */
+  if (unassignedCents > 0) {
+    return (
+      <Bloque
+        tono="aviso"
+        label={t.comanda.sinRepartir}
+        value={money(unassignedCents, currency)}
+        hint={t.cuentas.sinRepartirAviso}
+      />
+    );
+  }
+
   if (falta <= 0) {
     return (
       <Bloque
@@ -409,11 +429,7 @@ function Titular({
             : rellena(t.cuentas.faltaDevolver, { name: primerPagador.name })
       }
       value={money(falta, currency)}
-      hint={
-        unassignedCents > 0
-          ? rellena(t.cuentas.sinAsignar, { dinero: money(unassignedCents, currency) })
-          : rellena(t.cuentas.yaHanSaldado, { n: saldados, total: deudores.length })
-      }
+      hint={rellena(t.cuentas.yaHanSaldado, { n: saldados, total: deudores.length })}
     />
   );
 }
@@ -427,12 +443,16 @@ function Bloque({
   label: string;
   value: string;
   hint: string;
-  tono?: "normal" | "bien";
+  tono?: "normal" | "bien" | "aviso";
 }) {
   return (
     <section
       className={`rounded-[15px] border px-4 py-4 ${
-        tono === "bien" ? "border-mint/30 bg-mint/[0.08]" : "border-line-soft bg-paper"
+        tono === "bien"
+          ? "border-mint/30 bg-mint/[0.08]"
+          : tono === "aviso"
+            ? "border-clay/40 bg-clay/[0.08]"
+            : "border-line-soft bg-paper"
       }`}
     >
       <p className="stamp text-ink-faint">{label}</p>

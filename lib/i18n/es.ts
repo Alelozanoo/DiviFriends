@@ -320,6 +320,8 @@ export const es = {
     decirlo: "Decirlo",
     todoCuadrado: "Todo cuadrado",
     todosSaldados: "Todos han saldado su deuda.",
+    sinRepartirAviso:
+      "Vuelve a la comanda y reparte lo que queda: hasta entonces estas cuentas se quedan cortas.",
     faltaSaldar: "Falta por saldar",
     faltaDevolver: "Falta por devolverle a {name}",
     faltaDevolverAmi: "Falta que te paguen",

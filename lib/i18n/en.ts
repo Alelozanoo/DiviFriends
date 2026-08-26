@@ -287,6 +287,8 @@ export const en: Dict = {
     decirlo: "Say who",
     todoCuadrado: "All square",
     todosSaldados: "Everybody has settled up.",
+    sinRepartirAviso:
+      "Go back to the tab and assign what is left — until then these totals fall short.",
     faltaSaldar: "Left to settle",
     faltaDevolver: "Still owed to {name}",
     faltaDevolverAmi: "Still owed to you",
