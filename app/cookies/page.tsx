@@ -85,6 +85,9 @@ export default function CookiesPage() {
         <Link href="/privacidad" className="text-[15px] text-amber underline underline-offset-2">
           Privacidad
         </Link>
+        <Link href="/aviso-legal" className="text-[15px] text-amber underline underline-offset-2">
+          Aviso legal
+        </Link>
         <Link href="/" className="text-[15px] text-amber underline underline-offset-2">
           Volver
         </Link>

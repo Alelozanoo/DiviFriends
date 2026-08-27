@@ -436,6 +436,7 @@ export const en: Dict = {
   },
 
   cookies: {
+    avisoLegal: "Legal notice",
     privacidad: "Privacy",
     cambiar: "Cookies",
   },

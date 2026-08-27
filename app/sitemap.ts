@@ -35,5 +35,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "yearly",
       priority: 0.3,
     },
+    {
+      // El aviso legal, por lo mismo: la ley pide que se encuentre sin buscar.
+      url: `${SITIO}/aviso-legal`,
+      lastModified: new Date(),
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
   ];
 }

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { RESPONSABLE } from "@/lib/responsable";
 
 /**
  * La política de privacidad.
@@ -14,12 +15,6 @@ import type { Metadata } from "next";
   Quién responde de los datos. El RGPD obliga a decirlo, y la LSSI a que se
   encuentre sin buscar: por eso va arriba y no en una nota al pie.
 */
-const RESPONSABLE = {
-  nombre: "Alejandro Lozano Martínez",
-  nif: "44669980R",
-  correo: "hola@divifriends.es",
-};
-
 export const metadata: Metadata = {
   title: "Privacidad",
   description:
@@ -220,6 +215,9 @@ export default function PrivacidadPage() {
         </Link>
         <Link href="/cookies" className="text-[15px] text-amber underline underline-offset-2">
           Cookies
+        </Link>
+        <Link href="/aviso-legal" className="text-[15px] text-amber underline underline-offset-2">
+          Aviso legal
         </Link>
       </div>
     </main>

@@ -480,6 +480,7 @@ export const es = {
 
   /* --------------------------------------------------- enlace de cookies */
   cookies: {
+    avisoLegal: "Aviso legal",
     privacidad: "Privacidad",
     cambiar: "Cookies",
   },

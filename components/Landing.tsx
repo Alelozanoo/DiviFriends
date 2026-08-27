@@ -200,7 +200,7 @@ function Cuerpo() {
           </p>
           {/* Con hueco para el dedo: los tres enlaces del pie median 20 px de
               alto, la mitad de lo que hace falta para acertar sin mirar. */}
-          <span className="flex items-center gap-4 [&_a]:py-2 [&_button]:py-2">
+          <span className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 [&_a]:py-2 [&_button]:py-2">
             <LangSwitch enPortada />
             <ComoFuncionaSheet />
             <Link
@@ -208,6 +208,12 @@ function Cuerpo() {
               className="underline underline-offset-2 transition-colors hover:text-amber"
             >
               {t.cookies.privacidad}
+            </Link>
+            <Link
+              href="/aviso-legal"
+              className="underline underline-offset-2 transition-colors hover:text-amber"
+            >
+              {t.cookies.avisoLegal}
             </Link>
             <CambiarCookies className="underline underline-offset-2 transition-colors hover:text-amber" />
           </span>
