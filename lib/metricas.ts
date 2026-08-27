@@ -135,6 +135,7 @@ const ACCIONES: Record<EventDoc["kind"], string> = {
   "payer.set": "Marcan quién pagó",
   "pago.ok": "Anuncian un pago",
   "mesa.nombre": "Ponen nombre a la mesa",
+  "cobro.edit": "Cambian cómo se les paga",
 };
 
 const pct = (parte: number, total: number) => (total === 0 ? 0 : Math.round((parte / total) * 100));

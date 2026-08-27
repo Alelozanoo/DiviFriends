@@ -193,6 +193,15 @@ function Cuenta({ event, currency, t }: { event: ChangeEvent; currency: string; 
       </span>
     );
   }
+  if (event.kind === "cobro.edit") {
+    // En clay y no en gris: esto es lo único del historial que puede acabar
+    // mandando el dinero de la mesa a otro sitio.
+    return (
+      <span className="text-ink-soft">
+        {rellena(t.historial.cambioCobro, { via: event.what === "bizum" ? "Bizum" : "Revolut" })}
+      </span>
+    );
+  }
   // `what` guarda el total viejo en céntimos; `cents`, el nuevo.
   return (
     <span className="text-ink-soft">

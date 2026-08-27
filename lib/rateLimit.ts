@@ -75,6 +75,56 @@ export const TOPES = {
   },
 } as const;
 
+/**
+ * El tope de todo lo demás: por IP y por minuto.
+ *
+ * Marcar un plato o abrir una comanda no llama a ninguna IA, así que hasta
+ * ahora no tenía freno ninguno. Pero cada petición es una lectura o una
+ * escritura de Firestore, y eso se paga: sin tope, pedir la misma comanda en
+ * bucle es una factura que firmas tú sin haber pasado nada malo. De paso es lo
+ * que hace inviable ir probando códigos de seis letras a ver cuál existe.
+ *
+ * Va holgado por lo mismo que el tope por IP de las lecturas: en el wifi de un
+ * bar la mesa entera comparte una IP pública, y un móvil que se ha quedado sin
+ * escucha en vivo pregunta cada tres segundos. Ocho comensales así son 160
+ * peticiones por minuto, y eso tiene que caber sin rozar el tope.
+ */
+export const TOPE_API = { max: 300, windowMs: MINUTO };
+
+/**
+ * Los contadores de este tope viven en memoria, al revés que los de arriba.
+ *
+ * Es deliberado: apuntar en Firestore un contador por petición costaría una
+ * lectura y una escritura para ahorrarse una lectura, o sea que el remedio
+ * saldría más caro que la enfermedad. App Hosting levanta hasta tres
+ * instancias, así que el tope real puede ser el triple del que pone aquí —para
+ * frenar un abuso da igual, y a cambio no cuesta nada—. El tope que sí tiene
+ * que ser exacto, el del dinero de la IA, sigue en Firestore.
+ */
+const memoria = new Map<string, Counter>();
+
+/** Descuenta una petición del tope general. No toca la base de datos. */
+export function consumeEnMemoria(clave: string, now = Date.now()): Decision {
+  podar(now);
+  const decision = decide(now, [{ key: clave, ...TOPE_API }], [memoria.get(clave)]);
+  if (decision.ok && decision.writes[0]) memoria.set(clave, decision.writes[0]);
+  return decision;
+}
+
+/**
+ * Tira los contadores caducados cuando el mapa se hace grande.
+ *
+ * Sin esto, una instancia que lleva días en pie acaba guardando una entrada por
+ * cada IP que ha pasado por aquí. Se hace sólo al pasar de cierto tamaño para
+ * no recorrer el mapa entero en cada petición.
+ */
+function podar(now: number): void {
+  if (memoria.size < 5_000) return;
+  for (const [clave, contador] of memoria) {
+    if (now - contador.windowStart >= TOPE_API.windowMs) memoria.delete(clave);
+  }
+}
+
 export interface Quota {
   /** Documento donde vive el contador. */
   key: string;

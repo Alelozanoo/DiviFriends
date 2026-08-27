@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { decide, type Counter, type Quota } from "./rateLimit.ts";
+import { consumeEnMemoria, decide, TOPE_API, type Counter, type Quota } from "./rateLimit.ts";
 
 /*
  * `decide` es la aritmética de ventanas de los topes de uso. Se prueba aparte de
@@ -71,4 +71,43 @@ test("el tiempo de espera es el del tope que más tarda en liberarse", () => {
   ];
   const out = decide(AHORA, quotas, counters);
   assert.equal(out.ok === false && out.retryAfterSeconds, 22 * 3600);
+});
+
+/*
+ * El tope general de la API lleva su cuenta en memoria, así que se puede probar
+ * entera: lo que importa es que deje pasar una mesa normal y corte a quien
+ * insiste, y que cada IP tenga su propia cuenta y no herede la del vecino.
+ */
+
+test("el tope de la API deja pasar hasta el máximo y corta el siguiente", () => {
+  const clave = "ip_prueba_tope";
+  for (let i = 0; i < TOPE_API.max; i++) {
+    assert.equal(consumeEnMemoria(clave, AHORA).ok, true, `la petición ${i + 1} debería caber`);
+  }
+  const cortada = consumeEnMemoria(clave, AHORA);
+  assert.equal(cortada.ok, false);
+  assert.equal(cortada.ok === false && cortada.retryAfterSeconds, 60);
+});
+
+test("la ventana se reabre al minuto y no antes", () => {
+  const clave = "ip_prueba_ventana";
+  for (let i = 0; i < TOPE_API.max; i++) consumeEnMemoria(clave, AHORA);
+  assert.equal(consumeEnMemoria(clave, AHORA + 59_000).ok, false);
+  assert.equal(consumeEnMemoria(clave, AHORA + 60_000).ok, true);
+});
+
+test("cada IP lleva su propia cuenta", () => {
+  const una = "ip_prueba_una";
+  for (let i = 0; i < TOPE_API.max; i++) consumeEnMemoria(una, AHORA);
+  assert.equal(consumeEnMemoria(una, AHORA).ok, false);
+  assert.equal(consumeEnMemoria("ip_prueba_otra", AHORA).ok, true);
+});
+
+test("una mesa entera detrás del wifi del bar cabe de sobra", () => {
+  // Ocho móviles sin escucha en vivo preguntando cada tres segundos durante un
+  // minuto, todos con la misma IP pública: 160 peticiones.
+  const clave = "ip_prueba_bar";
+  for (let i = 0; i < 8 * 20; i++) {
+    assert.equal(consumeEnMemoria(clave, AHORA).ok, true);
+  }
 });

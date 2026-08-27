@@ -85,7 +85,15 @@ export interface Claim {
 export interface ChangeEvent {
   /** ISO. Sirve además de clave: dos cambios no caen en el mismo milisegundo. */
   at: string;
-  kind: "item.remove" | "item.add" | "total.edit" | "payer.set" | "pago.ok" | "mesa.nombre";
+  kind:
+    | "item.remove"
+    | "item.add"
+    | "total.edit"
+    | "payer.set"
+    | "pago.ok"
+    | "mesa.nombre"
+    /** Alguien ha cambiado a qué móvil o a qué usuario se le paga. */
+    | "cobro.edit";
   participantId: string | null;
   /**
    * El nombre congelado en el momento del cambio. Guardarlo duplicado es a

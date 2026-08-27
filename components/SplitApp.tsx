@@ -1476,6 +1476,22 @@ function JoinSheet({
           {t.entrar.volver}
         </button>
       )}
+
+      {/*
+        Dónde acaba lo que se teclea aquí.
+
+        El aviso de privacidad estaba sólo en la portada, y quien abre un
+        enlace de WhatsApp no pasa por la portada: entra directo a escribir su
+        nombre y a subir su cara. Informar en el momento en que se recogen los
+        datos es lo que pide el artículo 13 del RGPD, y además es lo que uno
+        querría saber antes de teclear, no después.
+      */}
+      <p className="mt-4 text-center text-[12px] leading-relaxed text-ink-faint">
+        {t.entrar.aviso}{" "}
+        <Link href="/privacidad" className="underline decoration-line underline-offset-4">
+          {t.cookies.privacidad}
+        </Link>
+      </p>
     </Sheet>
   );
 }

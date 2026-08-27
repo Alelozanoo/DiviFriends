@@ -70,8 +70,13 @@ export default function CookiesPage() {
           vez.
         </p>
         <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
-          Eso no es rastreo y no hace falta aceptarlo. Se borra vaciando los datos del sitio desde
-          tu navegador.
+          Hay además <b className="text-ink">una cookie</b>, <code className="tnum">divi.lang</code>:
+          guarda si prefieres la web en castellano o en inglés, dura un año y no viaja a ningún
+          sitio. Es lo que la ley llama técnica, y por eso no se pide permiso para ponerla.
+        </p>
+        <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
+          Nada de esto es rastreo y nada de esto hace falta aceptarlo. Se borra vaciando los datos
+          del sitio desde tu navegador.
         </p>
       </section>
 

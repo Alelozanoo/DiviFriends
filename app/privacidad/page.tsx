@@ -133,8 +133,11 @@ export default function PrivacidadPage() {
             </>
           ) : (
             <>
-              Ninguna. No hay píxel de Meta ni de nadie, así que esta web{" "}
-              <b className="text-ink">no pone una sola cookie</b>.
+              Ninguna. No hay píxel de Meta ni de nadie, así que{" "}
+              <b className="text-ink">nada de lo que hagas aquí se sigue fuera de aquí</b>. La
+              única cookie que existe se llama <code className="tnum">divi.lang</code> y guarda
+              en qué idioma quieres ver la web: es técnica, no mide nada y por eso no hace falta
+              aceptarla.
             </>
           )}{" "}
           Lo cuenta entero la{" "}

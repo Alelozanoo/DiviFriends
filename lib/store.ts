@@ -173,6 +173,49 @@ export function patchTicket(
 
 /* ------------------------------------------------------------- comensales */
 
+/**
+ * Una foto de perfil, o un bicho, y nada más.
+ *
+ * El navegador ya recorta la foto a 150 px y la comprime a JPEG, pero eso pasa
+ * en el móvil de quien la sube: la API se traga lo que le manden. Sin este
+ * filtro, una llamada a mano puede dejar novecientos kilobytes dentro del
+ * documento y pegarlo al límite de 1 MiB de Firestore —a partir de ahí esa mesa
+ * no se puede escribir más y se queda inservible para todos los de la cena—.
+ *
+ * Valen las dos formas que entiende `Avatar`: la imagen metida en la propia
+ * cadena, o el emoji que se elige en la app.
+ */
+const AVATAR_MAX = 40_000;
+
+function limpiaAvatar(raw: string): string {
+  const avatar = raw.trim();
+  if (avatar.startsWith("data:")) {
+    if (!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(avatar)) {
+      throw new StoreError("Esa imagen no vale como foto de perfil.");
+    }
+    // La del navegador ronda los 6 KB; esto deja sitio de sobra sin dejar sitio
+    // para reventar el documento.
+    if (avatar.length > AVATAR_MAX) throw new StoreError("Esa foto es demasiado grande.");
+    return avatar;
+  }
+  // Un bicho es un emoji: con los pares suplentes y los enlaces de ancho cero,
+  // dieciséis unidades es un techo generoso para uno solo.
+  if (avatar.length > 16) throw new StoreError("Ese avatar no vale.");
+  return avatar;
+}
+
+/** Un dato de cobro opcional: o falta, o está bien escrito. */
+function cobroValido(
+  raw: string | undefined,
+  limpia: (v: string) => string | null,
+  error: string,
+): string | undefined {
+  if (raw === undefined || raw.trim() === "") return undefined;
+  const limpio = limpia(raw);
+  if (!limpio) throw new StoreError(error);
+  return limpio;
+}
+
 export async function addParticipant(
   code: string,
   rawName: string,
@@ -182,6 +225,19 @@ export async function addParticipant(
 ): Promise<{ state: TicketState; participantId: string }> {
   const name = rawName.trim().slice(0, 40);
   if (!name) throw new StoreError("Escribe un nombre.");
+
+  /*
+    Apuntarse pasa por el mismo filtro que editarse después.
+
+    `patchParticipant` ya validaba el usuario de Revolut y el móvil del Bizum
+    —«se valida también aquí y no sólo en la pantalla»— pero esta puerta, que es
+    justo por donde la gente los escribe la primera vez, los guardaba tal cual.
+  */
+  const limpio = {
+    avatar: avatar === undefined ? undefined : limpiaAvatar(avatar),
+    bizum: cobroValido(bizum, limpiaTelefono, "Ese móvil no parece válido."),
+    revolut: cobroValido(revolut, limpiaRevolut, "Ese usuario de Revolut no parece válido."),
+  };
 
   let participantId = "";
   const state = await mutate(code, (doc) => {
@@ -202,9 +258,9 @@ export async function addParticipant(
     doc.participants.push({
       id: participantId,
       name,
-      avatar,
-      bizum,
-      revolut,
+      avatar: limpio.avatar,
+      bizum: limpio.bizum,
+      revolut: limpio.revolut,
       color: colorFor(doc.participants.length),
       isPayer: false,
       settled: false,
@@ -235,7 +291,7 @@ export function patchParticipant(
       if (!name) throw new StoreError("Escribe un nombre.");
       person.name = name;
     }
-    if (patch.avatar !== undefined) person.avatar = patch.avatar;
+    if (patch.avatar !== undefined) person.avatar = limpiaAvatar(patch.avatar);
     if (patch.settled !== undefined) person.settled = patch.settled;
 
     /*
@@ -246,21 +302,37 @@ export function patchParticipant(
       no guardarlo. Firestore no admite `undefined`, así que borrar es borrar
       la clave, no ponerla a nada.
     */
+    /*
+      Y cambiar la forma de cobrar de alguien queda escrito.
+
+      Aquí no hay sesiones: quien tenga el enlace puede editar la ficha de
+      cualquiera, y el único sitio donde eso mueve dinero de verdad es el móvil
+      al que la mesa hace el Bizum. Sin cuentas no hay forma de impedirlo, así
+      que se hace lo mismo que con las líneas que alguien borra: que se vea.
+      Sólo se anota cambiar algo que ya estaba puesto —ponerlo la primera vez es
+      lo normal y sería ruido—. La línea nombra a quien cobra y no a quien tocó
+      el dato, porque esto último no hay forma de saberlo: lo que tiene que
+      saltar a la vista es que el móvil de Ana ya no es el que era.
+    */
     if (patch.revolut !== undefined) {
+      const antes = person.revolut;
       if (patch.revolut === null || patch.revolut.trim() === "") delete person.revolut;
       else {
         const user = limpiaRevolut(patch.revolut);
         if (!user) throw new StoreError("Ese usuario de Revolut no parece válido.");
         person.revolut = user;
       }
+      if (antes && antes !== person.revolut) log(doc, "cobro.edit", person.id, "revolut", 0);
     }
     if (patch.bizum !== undefined) {
+      const antes = person.bizum;
       if (patch.bizum === null || patch.bizum.trim() === "") delete person.bizum;
       else {
         const tel = limpiaTelefono(patch.bizum);
         if (!tel) throw new StoreError("Ese móvil no parece válido.");
         person.bizum = tel;
       }
+      if (antes && antes !== person.bizum) log(doc, "cobro.edit", person.id, "bizum", 0);
     }
     if (patch.isPayer !== undefined) {
       // (Legacy) Sólo puede haber un pagador original
