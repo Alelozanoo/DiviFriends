@@ -1416,7 +1416,7 @@ function JoinSheet({
               aria-label={t.perfil.tuNombre}
               autoCapitalize="words"
               maxLength={40}
-              className="min-h-[52px] w-full min-w-0 rounded-xl border border-line bg-paper px-4 text-[15px] font-semibold focus:border-amber focus:outline-none"
+              className="min-h-[52px] w-full min-w-0 rounded-xl border border-line bg-paper px-4 text-[16px] font-semibold focus:border-amber focus:outline-none"
             />
           </div>
 

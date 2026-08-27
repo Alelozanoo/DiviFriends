@@ -117,7 +117,7 @@ export default function TableSheet({
               placeholder={t.mesa.nombreEjemplo}
               maxLength={40}
               aria-label={t.mesa.nombreMesa}
-              className="min-h-[52px] w-full rounded-xl border border-line bg-paper px-4 text-[15px] font-semibold focus:border-amber focus:outline-none"
+              className="min-h-[52px] w-full rounded-xl border border-line bg-paper px-4 text-[16px] font-semibold focus:border-amber focus:outline-none"
             />
             <p className="text-[13px] leading-relaxed text-ink-faint">{t.mesa.nombreAyuda}</p>
             <button

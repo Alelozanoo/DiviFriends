@@ -395,7 +395,7 @@ export default function ItemSheet({
               placeholder={t.repartir.anadeAQuienFalte}
               maxLength={40}
               aria-label={t.repartir.anadeAQuienFalte}
-              className="min-w-0 flex-1 rounded-xl border border-line bg-paper px-3.5 py-2.5 text-[15px] focus:border-amber focus:outline-none"
+              className="min-w-0 flex-1 rounded-xl border border-line bg-paper px-3.5 py-2.5 text-[16px] focus:border-amber focus:outline-none"
             />
             <button
               type="submit"

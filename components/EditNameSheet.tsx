@@ -123,7 +123,7 @@ export function EditNameSheet({
             autoCorrect="off"
             spellCheck={false}
             maxLength={20}
-            className="min-h-[52px] w-full min-w-0 rounded-xl border border-line bg-paper px-4 text-[15px] font-semibold focus:border-amber focus:outline-none"
+            className="min-h-[52px] w-full min-w-0 rounded-xl border border-line bg-paper px-4 text-[16px] font-semibold focus:border-amber focus:outline-none"
           />
         </div>
 
@@ -170,7 +170,7 @@ export function EditNameSheet({
               placeholder="600 000 000"
               type="tel"
               aria-label="Bizum"
-              className="w-full min-w-0 bg-transparent text-[15px] font-semibold focus:outline-none"
+              className="w-full min-w-0 bg-transparent text-[16px] font-semibold focus:outline-none"
             />
           </div>
           <div className="flex min-h-[52px] items-center gap-2.5 rounded-xl border border-line bg-paper px-4 transition-colors focus-within:border-amber">
@@ -185,7 +185,7 @@ export function EditNameSheet({
               autoComplete="off"
               autoCorrect="off"
               spellCheck={false}
-              className="w-full min-w-0 bg-transparent text-[15px] font-semibold focus:outline-none"
+              className="w-full min-w-0 bg-transparent text-[16px] font-semibold focus:outline-none"
             />
           </div>
         </div>

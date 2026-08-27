@@ -202,6 +202,27 @@ body {
   }
 
   /*
+    Nunca por debajo de 16 px en algo donde se escribe.
+
+    Safari en iPhone hace zoom al enfocar un campo cuya letra sea más pequeña, y
+    —esto es lo que fastidia— no lo deshace al salir: te quedas con la comanda
+    ampliada y con la barra de abajo fuera de la pantalla. La app está escrita a
+    15 px y los campos heredan del `body` por la regla de aquí arriba, así que
+    los disparaba todos: el nombre al entrar, el código, el total, el Bizum.
+
+    16 px es el número exacto que pide iOS. La otra salida es prohibir el zoom
+    en el viewport, y eso se lo quita también a quien lo necesita para leer.
+
+    Va en base y no suelto para que un campo pueda pedir más —el importe de una
+    línea se escribe en grande—; menos de 16 no debería pedirlo ninguno.
+  */
+  input:not([type="file"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  /*
     Ninguna palabra sola en la última línea.
 
     `balance` reparte los titulares para que no quede un «segunda» colgando
