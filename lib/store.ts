@@ -185,7 +185,18 @@ export function patchTicket(
  * Valen las dos formas que entiende `Avatar`: la imagen metida en la propia
  * cadena, o el emoji que se elige en la app.
  */
-const AVATAR_MAX = 40_000;
+/*
+  Veinticinco mil caracteres, medidos y no a ojo: de las 21 fotos que hay
+  guardadas ahora mismo, la mediana ocupa 9,7 KB y la mayor de las que hace la
+  app de hoy, 12,3 KB. Esto deja el doble de sitio para una foto con mucho
+  detalle sin dejar sitio para reventar nada — veinticinco comensales, que es el
+  tope de la mesa, caben así de sobra bajo el MiB de Firestore.
+
+  Las tres de 82, 96 y 113 KB que quedan por ahí son del 17 de agosto, de cuando
+  la foto se guardaba sin recortar. Siguen funcionando: abajo sólo se comprueba
+  lo que cambia.
+*/
+const AVATAR_MAX = 25_000;
 
 function limpiaAvatar(raw: string): string {
   const avatar = raw.trim();
@@ -245,9 +256,12 @@ export async function addParticipant(
     // el QR es el mismo para toda la mesa.
     const already = doc.participants.find((p) => p.name.toLowerCase() === name.toLowerCase());
     if (already) {
-      if (avatar) already.avatar = avatar; // Actualizar avatar si se proporciona uno nuevo
-      if (bizum !== undefined) already.bizum = bizum;
-      if (revolut !== undefined) already.revolut = revolut;
+      // Con lo ya limpio, no con lo que llegó: por aquí pasa quien vuelve a
+      // entrar desde otro móvil, y guardar el móvil tal y como lo teclea deja
+      // un Bizum con espacios que luego no sirve para pagar.
+      if (limpio.avatar) already.avatar = limpio.avatar;
+      if (limpio.bizum !== undefined) already.bizum = limpio.bizum;
+      if (limpio.revolut !== undefined) already.revolut = limpio.revolut;
       participantId = already.id;
       return;
     }
@@ -291,7 +305,12 @@ export function patchParticipant(
       if (!name) throw new StoreError("Escribe un nombre.");
       person.name = name;
     }
-    if (patch.avatar !== undefined) person.avatar = limpiaAvatar(patch.avatar);
+    // Sólo si cambia: la pantalla de perfil manda el bloque entero al guardar
+    // cualquier cosa, y sin esto quien lleve una de las fotos viejas y gordas no
+    // podría ni cambiarse el nombre.
+    if (patch.avatar !== undefined && patch.avatar !== person.avatar) {
+      person.avatar = limpiaAvatar(patch.avatar);
+    }
     if (patch.settled !== undefined) person.settled = patch.settled;
 
     /*
