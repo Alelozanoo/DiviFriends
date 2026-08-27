@@ -72,8 +72,10 @@ env:
   # configuración: volverse a Claude es cambiar esta línea y desplegar, sin
   # tocar una sola línea de código.
   #
-  # Gemini 3.7 Flash está de estreno a 0,38/1,88 $ por MTok hasta el 31 de
-  # diciembre de 2026. En enero pasa a 1,50/7,50 y hay que volver a medir.
+  # Qué modelo concreto lee está en `TARIFAS` de `lib/ocr.ts`. Desde el 27 de
+  # agosto de 2026 es Gemini 3.1 Flash Lite: el anterior tardaba más de un
+  # minuto por ticket y dejaba la app inservible. Si algún día vuelve a ir
+  # lenta, el log escupe una línea con la palabra LENTA.
   - variable: OCR_MODELO
     value: gemini
     availability: [RUNTIME]

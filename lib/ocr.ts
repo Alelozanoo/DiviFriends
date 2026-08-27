@@ -100,14 +100,43 @@ function proveedor(): Proveedor {
 /**
  * Tarifas en dólares por millón de tokens.
  *
- * Gemini 3.7 Flash salió el 13 de agosto de 2026 con precio de estreno
- * —0,38 / 1,88— que vale hasta el 31 de diciembre de 2026; a partir de ahí
- * pasa a 1,50 / 7,50 y hay que corregir estos números o el log mentirá.
+ * **El modelo se cambió el 27 de agosto de 2026, y el motivo importa.** Aquí
+ * ponía `gemini-3.7-flash`, que ni siquiera aparece en el catálogo de la cuenta
+ * (`models.list()`) pero que la API acepta igual: contestaba, y contestaba
+ * bien, a un token por segundo. Medido contra producción tres veces seguidas:
+ * 104, 111 y 133 segundos por ticket, con la barra de progreso clavada en el
+ * 95 % — o sea, roto para cualquiera que esté de pie en un bar. Y sin ruido en
+ * los logs, porque un número alto entre miles de líneas no lo mira nadie.
+ *
+ * `gemini-3.1-flash-lite` hace el mismo trabajo en 3,4 s. Comprobado con un
+ * ticket difícil —nueve líneas, cantidades, descuento, IVA y un total distinto
+ * del subtotal—: saca las nueve líneas, las cantidades y el total bueno, dos de
+ * dos veces. `gemini-3-flash-preview` va igual de bien y de rápido, pero lleva
+ * «preview» en el nombre y puede desaparecer sin avisar.
+ *
+ * **Estos dos números son un techo, no la tarifa publicada de este modelo.**
+ * Son los del modelo anterior, que era más caro: se dejan a propósito hasta
+ * comprobar el precio real en la web de Google, porque equivocarse por arriba
+ * sólo hace que el log exagere y que el tope diario de `lib/rateLimit.ts` corte
+ * antes de tiempo. Al revés sería una factura sorpresa.
  */
 const TARIFAS = {
-  gemini: { modelo: "gemini-3.7-flash", entrada: 0.38, salida: 1.88 },
+  gemini: { modelo: "gemini-3.1-flash-lite", entrada: 0.38, salida: 1.88 },
   anthropic: { modelo: "claude-opus-5", entrada: 5, salida: 25 },
 } as const;
+
+/**
+ * A partir de aquí, una lectura va mal aunque acabe saliendo bien.
+ *
+ * Con el modelo puesto son 3-4 segundos y con Opus 6, así que treinta es siete
+ * veces el tiempo normal: si se pasa, no es la foto ni la cobertura, es que el
+ * modelo está degradado. Se corta y se le dice a la persona que la escriba a
+ * mano, que es infinitamente mejor que dejarla dos minutos mirando una barra.
+ *
+ * El dinero de esa lectura ya está gastado —la petición sigue viva al otro
+ * lado— y se asume: perder dos céntimos es mejor que perder al comensal.
+ */
+const LENTA_MS = 30_000;
 
 /** Lo que cuesta y lo que tarda una lectura, para poder comparar modelos. */
 interface Lectura {
@@ -130,9 +159,9 @@ export async function parseTicketImage(
   const cual = proveedor();
   const arranque = Date.now();
 
-  const lectura = cual === "gemini"
-    ? await leeConGemini(base64, mediaType)
-    : await leeConClaude(base64, mediaType);
+  const lectura = await conPrisa(
+    cual === "gemini" ? leeConGemini(base64, mediaType) : leeConClaude(base64, mediaType),
+  );
 
   registra(cual, lectura, Date.now() - arranque);
 
@@ -143,6 +172,31 @@ export async function parseTicketImage(
     throw new OcrError("No se ha podido leer el ticket.", "unreadable");
   }
   return normalize(parsed);
+}
+
+/**
+ * Le pone reloj a la lectura. Si tarda más de la cuenta, se abandona.
+ *
+ * No se cancela la petición al proveedor: el SDK no siempre lo permite y el
+ * gasto ya está hecho de todas formas. Lo que se corta es la espera de quien
+ * está delante del móvil.
+ */
+function conPrisa(lectura: Promise<Lectura>): Promise<Lectura> {
+  return Promise.race([
+    lectura,
+    new Promise<never>((_, rechaza) =>
+      setTimeout(
+        () =>
+          rechaza(
+            new OcrError(
+              "La lectura está tardando demasiado. Prueba otra vez o escribe la comanda a mano.",
+              "api_error",
+            ),
+          ),
+        LENTA_MS,
+      ),
+    ),
+  ]);
 }
 
 /* ------------------------------------------------------------------- Gemini */
@@ -316,4 +370,19 @@ function registra(cual: Proveedor, l: Lectura, ms: number): void {
     `[ocr] ${tarifa.modelo} · ${(ms / 1000).toFixed(1)} s · entrada ${l.entrada} · salida ${l.salida}` +
       `${desglose}${declarado} · ≈ ${(dolares * 100).toFixed(2)} ¢`,
   );
+
+  /*
+    Y un grito si ha ido lenta.
+
+    Entre el 20 y el 27 de agosto de 2026 cada ticket tardó más de un minuto y
+    medio y nadie se enteró: el dato estaba en la línea de arriba, pero como una
+    cifra más. Un `warn` con la palabra LENTA se busca en los logs en dos
+    segundos y sale en cualquier alerta que se monte encima.
+  */
+  if (ms > LENTA_MS / 2) {
+    console.warn(
+      `[ocr] LENTA · ${(ms / 1000).toFixed(1)} s con ${tarifa.modelo}. Lo normal son 3-6 s: ` +
+        `comprueba si ese modelo sigue sirviéndose bien antes de que la gente lo note.`,
+    );
+  }
 }

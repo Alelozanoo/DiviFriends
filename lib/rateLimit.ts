@@ -39,10 +39,11 @@ const PRESUPUESTO_DIARIO = 10;
  *
  * Medidos con la configuración que hay en `lib/ocr.ts`, a 2000 px:
  *
- *   - Gemini 3.7 Flash con thinking bajo (2026-08-20): 1291 de entrada, 285 de
- *     salida y 391 de pensamiento salen a 0,0018 $. Es el precio de estreno,
- *     que vale hasta el 31 de diciembre de 2026; en enero se va a ~0,0070 $ y
- *     hay que corregirlo aquí y en las tarifas de `lib/ocr.ts`.
+ *   - Gemini 3.1 Flash Lite con thinking bajo (2026-08-27): ~1300 de entrada,
+ *     137 de salida y 107 de pensamiento. Se deja en 0,0018 $, que es lo que
+ *     costaba el modelo anterior —más caro— porque la tarifa de este todavía no
+ *     está comprobada contra la web de Google. Pasarse por arriba sólo aprieta
+ *     el tope de abajo; quedarse corto sería un susto en la factura.
  *   - Opus 5 con effort medium (2026-08-07): 0,0296 $.
  *
  * Cambiar de modelo o de resolución cambia este número, y con él se mueve solo
