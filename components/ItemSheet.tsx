@@ -83,6 +83,7 @@ export default function ItemSheet({
     return item.splitInto > 1 ? "quienes" : "cuantos";
   });
   const [custom, setCustom] = useState("");
+  const [customU, setCustomU] = useState("");
   const [nuevo, setNuevo] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -100,11 +101,20 @@ export default function ItemSheet({
     Los botones de «cuántas». Con muchas unidades no caben todas, así que a
     partir de doce se ofrecen las primeras once y «las N»: quien tiene veinte
     cañas o las reparte todas o separa unas pocas, no dieciséis.
+
+    Eso era verdad a medias, y por eso debajo hay un campo para escribirlo.
+    «O unas pocas o todas» deja fuera el caso más normal de una mesa grande:
+    catorce cañas para catorce personas de veinte que hay en el ticket. Con
+    sólo estos botones no había forma de decir catorce, y desde fuera se ve
+    como un tope de doce personas —así lo contó quien se lo encontró—.
   */
   const opcionesUnidades =
     item.qty <= 12
       ? Array.from({ length: item.qty }, (_, i) => i + 1)
       : [...Array.from({ length: 11 }, (_, i) => i + 1), item.qty];
+
+  const typedU = Number.parseInt(customU, 10);
+  const customUValid = Number.isFinite(typedU) && typedU >= 1 && typedU <= item.qty;
 
   const typed = Number.parseInt(custom, 10);
   const customValid =
@@ -202,6 +212,36 @@ export default function ItemSheet({
               </button>
             ))}
           </div>
+
+          {/* Sólo cuando la lista se ha recortado: con doce o menos están todas
+              y un campo aquí sería una pregunta ya contestada. */}
+          {item.qty > 12 && (
+            <form
+              className="mt-3 flex gap-2"
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (customUValid && !busy) void elegirUnidades(typedU);
+              }}
+            >
+              <input
+                value={customU}
+                onChange={(event) => setCustomU(event.target.value.replace(/\D/g, "").slice(0, 3))}
+                inputMode="numeric"
+                placeholder={t.repartir.otroNumero}
+                aria-label={t.repartir.cuantasUnidades}
+                className="tnum min-w-0 flex-1 rounded-xl border border-line bg-paper px-4 py-2.5 text-center focus:border-mint focus:outline-none"
+              />
+              <button
+                type="submit"
+                disabled={!customUValid || busy}
+                className="shrink-0 rounded-xl bg-mint px-4 text-[15px] font-bold text-paper disabled:opacity-30"
+              >
+                {customUValid
+                  ? money(Math.round((item.totalCents * typedU) / item.qty), currency)
+                  : t.repartir.repartirBoton}
+              </button>
+            </form>
+          )}
         </>
       ) : paso === "cuantos" ? (
         /* ------------------------------------------- paso 2: entre cuántos */
