@@ -45,9 +45,6 @@ export default async function MetricasPage({ searchParams }: Props) {
     <main id="contenido" className="mx-auto w-full max-w-3xl flex-1 px-4 py-8">
       <header className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Las cuentas de la casa</h1>
-        <p className="mt-1 text-sm text-ink-soft">
-          Lo que dice Firestore. Ni cookies ni píxel: esto no lo bloquea nadie.
-        </p>
       </header>
 
       <div className="grid grid-cols-3 gap-3">
@@ -89,11 +86,18 @@ export default async function MetricasPage({ searchParams }: Props) {
         </p>
       </Bloque>
 
-      <Bloque titulo="Las dos novedades" nota="Si se usan o no">
+      <Bloque titulo="Dos cosas que se pueden hacer" nota="Y cuánta gente las hace">
         <div className="grid grid-cols-2 gap-3">
-          <Cifra n={m.recibos.conVarios} label="Divis con varios tickets" sufijo="%" destacado />
-          <Cifra n={m.avatares} label="Se ponen bicho" sufijo="%" destacado />
+          <Cifra n={m.recibos.conVarios} label="Divis con más de un ticket" sufijo="%" destacado />
+          <Cifra n={m.avatares} label="Se ponen foto de perfil" sufijo="%" destacado />
         </div>
+        <p className="mt-3 text-xs leading-relaxed text-ink-faint">
+          Ojo, que cuentan cosas distintas. La primera es de <b className="text-ink">divis</b>:
+          cuántas mesas juntan dos papeles o más —la cena y luego las copas—. La segunda es de{" "}
+          <b className="text-ink">personas</b>: de toda la gente que se ha apuntado alguna vez a
+          una mesa, cuántos se pusieron una foto o un emoji en vez de quedarse con sus
+          iniciales.
+        </p>
       </Bloque>
 
       <Bloque titulo="Hasta dónde llegan" nota="Cuántos divis alcanzan cada paso">
