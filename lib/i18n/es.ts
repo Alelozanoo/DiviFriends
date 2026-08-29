@@ -83,6 +83,7 @@ export const es = {
     conFoto: "Entrar con una foto",
     conCodigo: "Entrar con un código",
     preparando: "Preparando la foto…",
+    abriendoMesa: "Abriendo la mesa…",
     analizando: "Analizando foto…",
     leyendo: "Leyendo comandas…",
     extrayendo: "Extrayendo precios…",

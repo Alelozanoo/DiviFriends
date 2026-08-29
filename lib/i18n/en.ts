@@ -70,6 +70,7 @@ export const en: Dict = {
     conFoto: "Start with a photo",
     conCodigo: "Join with a code",
     preparando: "Getting the photo ready…",
+    abriendoMesa: "Opening the tab…",
     analizando: "Looking at the photo…",
     leyendo: "Reading the lines…",
     extrayendo: "Pulling out the prices…",

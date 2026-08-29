@@ -46,6 +46,17 @@ async function toJpegBase64(
 
 type Phase = "idle" | "reading" | "parsing" | "error";
 
+/**
+ * Lo que se tarda en entrar en la mesa. A propósito, y ni un milisegundo menos.
+ *
+ * Abrir la comanda vacía tarda unos novecientos milisegundos, y saltar de golpe
+ * a la sala se siente a tirón, no a rápido: no da tiempo a ver que ha pasado
+ * algo. Segundo y medio es lo que dura un gesto que se entiende — la barra sale,
+ * se llena entera y en cuanto toca el final estás dentro. Si el servidor tarda
+ * más, manda el servidor; esto es un suelo, no un techo.
+ */
+const ENTRADA_MS = 1500;
+
 export default function TicketUploader({
   targetCode,
   onSuccess,
@@ -70,6 +81,8 @@ export default function TicketUploader({
   const [vista, setVista] = useState<string | null>(null);
   const [pidiendoCodigo, setPidiendoCodigo] = useState(false);
   const [progress, setProgress] = useState(0);
+  /** Cuándo se tocó el botón: la barra se mide desde ahí, no desde cada fase. */
+  const arranque = useRef(0);
 
   // Simula un progreso realista mientras la IA analiza la foto
   useEffect(() => {
@@ -78,24 +91,41 @@ export default function TicketUploader({
       setProgress(0);
       return;
     }
+    /*
+      Mesa nueva: la barra mide el camino entero y llega al final justo al
+      entrar. Puede hacerlo porque el camino se conoce —abrir un documento— y
+      dura lo que dura `ENTRADA_MS`; no hay nada que adivinar, así que la barra
+      no tiene que mentir.
+    */
+    if (!targetCode) {
+      const interval = setInterval(() => {
+        setProgress(Math.min(100, Math.round(((Date.now() - arranque.current) / ENTRADA_MS) * 100)));
+      }, 40);
+      return () => clearInterval(interval);
+    }
+
     if (phase === "reading") {
       setProgress(5);
       return;
     }
     if (phase === "parsing") {
+      // Añadir un ticket a una mesa que existe sí espera a la IA, y ahí no se
+      // sabe cuánto falta: la barra se acerca al 95 % sin llegar nunca.
       setProgress(15);
       let current = 15;
       const interval = setInterval(() => {
-        // Incrementa de forma asintótica hacia el 95%
         current += (96 - current) * 0.08;
         setProgress(Math.floor(current));
       }, 400);
       return () => clearInterval(interval);
     }
-  }, [phase]);
+  }, [phase, targetCode]);
 
   const getDynamicCopy = () => {
     if (phase === "reading") return t.subir.preparando;
+    // Aquí ya no se está leyendo el ticket —eso pasa dentro de la mesa—, así
+    // que decir «extrayendo precios» sería contar una película.
+    if (phase === "parsing" && !targetCode) return t.subir.abriendoMesa;
     if (phase === "parsing") {
       if (progress < 35) return t.subir.analizando;
       if (progress < 65) return t.subir.leyendo;
@@ -107,6 +137,7 @@ export default function TicketUploader({
 
   const upload = useCallback(
     async (file: File) => {
+      arranque.current = Date.now();
       setError(null);
       setVista(null);
       setPhase("reading");
@@ -162,7 +193,23 @@ export default function TicketUploader({
           // igual y se puede escribir a mano. Peor sería no entrar.
         }
         track(EV.creaDivi, { metodo: "foto" });
-        router.push(`/t/${data.code}?nuevo=1`);
+
+        /*
+          La mesa se pide mientras la barra todavía corre.
+
+          Sin esto, al llegar al 100 % había que esperar otros trescientos
+          milisegundos a que el servidor mandara la página: la barra llena y la
+          pantalla quieta, que es exactamente la sensación que se quería quitar.
+          Pidiéndola por adelantado, esos milisegundos caben dentro del segundo
+          y medio que ya se estaba esperando y el salto es instantáneo.
+        */
+        const destino = `/t/${data.code}?nuevo=1`;
+        router.prefetch(destino);
+
+        // Y que la barra termine su recorrido: entrar antes se ve a tirón.
+        const falta = ENTRADA_MS - (Date.now() - arranque.current);
+        if (falta > 0) await new Promise((listo) => setTimeout(listo, falta));
+        router.push(destino);
       } catch (cause) {
         setPhase("error");
         setError(cause instanceof Error ? cause.message : "Algo ha ido mal.");
@@ -256,8 +303,13 @@ export default function TicketUploader({
                   </div>
                   <div className="h-1.5 w-full overflow-hidden rounded-full bg-line">
                     <div
-                      className="h-full rounded-full bg-amber transition-all duration-300 ease-out"
-                      style={{ width: `${progress}%` }}
+                      className="h-full rounded-full bg-amber transition-all ease-linear"
+                      style={{
+                        width: `${progress}%`,
+                        // Pegada al número cuando el recorrido es corto; con
+                        // holgura cuando la barra va a saltos de 400 ms.
+                        transitionDuration: targetCode ? "300ms" : "90ms",
+                      }}
                     />
                   </div>
                 </div>
