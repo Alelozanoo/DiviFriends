@@ -69,6 +69,16 @@ export interface Metricas {
    * pagaron igual y no dejaron comanda que contar. El número exacto del día lo
    * tiene el contador del tope, en `lecturasDelDia`.
    */
+  /**
+   * Mesas que se abrieron y no llegaron a tener ni una línea.
+   *
+   * Desde el 29 de agosto de 2026 la comanda nace vacía y la foto se lee
+   * después, con la persona ya dentro: si cierra la pestaña antes de que
+   * termine, o si la lectura falla, queda una mesa sin nada. No son divis y no
+   * cuentan en ningún número de aquí arriba — pero conviene verlas, porque
+   * subir significa que algo se está rompiendo en ese camino.
+   */
+  nonatas: { hoy: number; semana: number; total: number };
   coste: {
     /** Dólares por lectura, con el modelo que esté puesto ahora mismo. */
     porLectura: number;
@@ -142,11 +152,34 @@ const pct = (parte: number, total: number) => (total === 0 ? 0 : Math.round((par
 const media = (suma: number, total: number) => (total === 0 ? 0 : suma / total);
 
 export function resumen(docs: TicketDoc[], ahora = new Date()): Metricas {
-  const total = docs.length;
-
   // ── cuántos y cuándo ──────────────────────────────────────────────
   const hoyClave = enMadrid(ahora.toISOString()).clave;
   const desdeSemana = ahora.getTime() - 7 * DIA;
+
+  /*
+    Fuera las que no llegaron a tener una línea.
+
+    Una comanda vacía no es una mesa: nadie podía repartir nada en ella. Colarla
+    en el resto de las cuentas ensuciaría todo a la vez —el embudo, la media de
+    gente, el porcentaje de los que no cogieron nada— y encima en la dirección
+    que engaña, haciendo parecer que la app se usa peor de lo que se usa.
+
+    Se cuentan aparte, y sí entran en el gasto: la foto que no llegó a dejar
+    líneas casi siempre se pagó igual.
+  */
+  const nonatas = { hoy: 0, semana: 0, total: 0 };
+  const nacidas: TicketDoc[] = [];
+  for (const doc of docs) {
+    if ((doc.items?.length ?? 0) > 0) {
+      nacidas.push(doc);
+      continue;
+    }
+    nonatas.total += 1;
+    if (enMadrid(doc.createdAt).clave === hoyClave) nonatas.hoy += 1;
+    if (new Date(doc.createdAt).getTime() >= desdeSemana) nonatas.semana += 1;
+  }
+
+  const total = nacidas.length;
 
   const cuenta = new Map<string, number>();
   const porFranja: Record<Franja, number> = { madrugada: 0, mañana: 0, tarde: 0, noche: 0 };
@@ -179,7 +212,7 @@ export function resumen(docs: TicketDoc[], ahora = new Date()): Metricas {
   const vidas: number[] = [];
   const acciones = new Map<EventDoc["kind"], number>();
 
-  for (const doc of docs) {
+  for (const doc of nacidas) {
     const { hora, diaSemana, clave } = enMadrid(doc.createdAt);
     cuenta.set(clave, (cuenta.get(clave) ?? 0) + 1);
     porFranja[franja(hora)] += 1;
@@ -314,12 +347,19 @@ export function resumen(docs: TicketDoc[], ahora = new Date()): Metricas {
       .map(([kind, n]) => ({ etiqueta: ACCIONES[kind] ?? kind, n }))
       .sort((a, b) => b.n - a.n),
     recibos: { media: media(recibosTotal, total), conVarios: pct(conVariosRecibos, total) },
+    nonatas,
     coste: {
       porLectura: COSTE_POR_LECTURA,
-      lecturas: { hoy: recibosHoy, semana: recibosSemana, total: recibosTotal },
-      hoy: recibosHoy * COSTE_POR_LECTURA,
-      semana: recibosSemana * COSTE_POR_LECTURA,
-      total: recibosTotal * COSTE_POR_LECTURA,
+      // Las nonatas suman una lectura cada una: la foto salió, aunque no
+      // dejara líneas. Es el mismo techo de siempre, no un número exacto.
+      lecturas: {
+        hoy: recibosHoy + nonatas.hoy,
+        semana: recibosSemana + nonatas.semana,
+        total: recibosTotal + nonatas.total,
+      },
+      hoy: (recibosHoy + nonatas.hoy) * COSTE_POR_LECTURA,
+      semana: (recibosSemana + nonatas.semana) * COSTE_POR_LECTURA,
+      total: (recibosTotal + nonatas.total) * COSTE_POR_LECTURA,
     },
     avatares: pct(conAvatar, participantes),
     conPagador: pct(conPagador, total),

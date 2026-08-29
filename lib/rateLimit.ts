@@ -59,7 +59,7 @@ export const COSTE_POR_LECTURA = GEMINI ? 0.0018 : 0.0296;
  * arrastrar hasta la página los SDK de los dos proveedores. Espejo de `TARIFAS`
  * en `lib/ocr.ts`: si allí se cambia de modelo, aquí también.
  */
-export const MODELO_LECTOR = GEMINI ? "Gemini 3.7 Flash" : "Opus 5";
+export const MODELO_LECTOR = GEMINI ? "Gemini 3.1 Flash Lite" : "Opus 5";
 
 export const TOPES = {
   /** Crear una comanda desde una foto. Cada una cuesta ~0,2 ¢ de API. */

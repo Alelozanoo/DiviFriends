@@ -321,3 +321,27 @@ test("lo que cobra el pagador cuadra con el ticket hasta el último céntimo", (
   assert.equal(owed(out, "a"), -2399);
   assert.equal(owed(out, "b") + owed(out, "c"), 2399);
 });
+
+test("un ticket con descuento no dice que hay dinero repartido antes de repartirlo", () => {
+  /*
+    El caso que se veía en pantalla: líneas por 63,10 € y un total impreso de
+    59,94 porque el bar aplicó un 5 % de descuento. Con la mesa vacía, la
+    cabecera decía «repartido −3,16 €» y «sin repartir 63,10 €», que es más
+    dinero del que hay en la mesa. Lo que no tiene dueño es el total entero.
+  */
+  const s = state([item({ id: "todo", totalCents: 6310 })], [person("a")], [], 5994);
+  const out = computeSettlement(s);
+  assert.equal(out.extrasCents, -316);
+  assert.equal(out.assignedCents, 0);
+  assert.equal(out.unassignedCents, 5994);
+  assert.equal(out.complete, false);
+
+  // Y en cuanto alguien la coge, el descuento se va con ella: paga los 59,94.
+  const conDueño = computeSettlement({
+    ...s,
+    claims: [{ itemId: "todo", participantId: "a", shares: 1 }],
+  });
+  assert.equal(owed(conDueño, "a"), 5994);
+  assert.equal(conDueño.assignedCents, 5994);
+  assert.equal(conDueño.unassignedCents, 0);
+});

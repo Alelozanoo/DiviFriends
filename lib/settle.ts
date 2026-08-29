@@ -174,7 +174,23 @@ export function computeSettlement(state: TicketState): Settlement {
   });
 
   const grandTotalCents = ticket.totalCents;
-  const assignedCents = participants.reduce((a, p) => a + (itemsCentsByParticipant.get(p.id) ?? 0), 0) + extrasCents;
+  /*
+    Repartido es lo que tiene dueño, extras incluidos — pero sólo la parte de
+    los extras que ha caído en alguien.
+
+    Aquí se sumaban los extras **enteros**, y con un ticket que trae descuento
+    eso era un disparate visible: nueve líneas que suman 63,10 con un total
+    impreso de 59,94 hacen −3,16 de extras, así que una mesa donde nadie había
+    cogido nada anunciaba «repartido −3,16 €» y «sin repartir 63,10 €» —más que
+    el total de la propia mesa—. `extrasSplit` ya reparte esa diferencia en
+    proporción a lo que come cada uno, dejando en la última casilla la parte que
+    corresponde a lo que aún no tiene dueño: es esa casilla la que no había que
+    contar.
+  */
+  const assignedCents = participants.reduce(
+    (a, p, i) => a + (itemsCentsByParticipant.get(p.id) ?? 0) + extrasSplit[i],
+    0,
+  );
   const unassignedCents = grandTotalCents - assignedCents;
 
   const transactions = calculateTransactions(byParticipant);
@@ -199,7 +215,7 @@ export function computeSettlement(state: TicketState): Settlement {
     itemsTotalCents,
     extrasCents,
     grandTotalCents,
-    unassignedCents: grandTotalCents - assignedCents,
+    unassignedCents,
     assignedCents,
     // pendingCents es la suma de los que tienen saldo positivo y aún no están saldados
     pendingCents: byParticipant.reduce((a, p) => (p.settled || p.owesCents <= 0 ? a : a + p.owesCents), 0),

@@ -163,6 +163,17 @@ export default async function MetricasPage({ searchParams }: Props) {
           mano no llama a nadie y aquí cuenta igual, y las fotos que el modelo no supo leer se
           pagaron y no dejaron divi que contar.
         </p>
+        {m.nonatas.total > 0 && (
+          <p className="mt-2 text-xs leading-relaxed text-ink-faint">
+            Ahí dentro van{" "}
+            <b className="text-ink">{m.nonatas.total.toLocaleString("es-ES")} mesas que se
+            abrieron y no llegaron a tener ni una línea</b> ({m.nonatas.hoy} hoy): alguien cerró
+            la pestaña antes de que la foto terminara de leerse, o la lectura falló. Se pagaron
+            igual, así que cuentan aquí — pero no son divis y no salen en ningún otro número de
+            esta página. Si esa cifra sube, es que algo se está rompiendo entre la foto y la
+            mesa.
+          </p>
+        )}
         <p className="mt-2 text-xs leading-relaxed text-ink-faint">
           <b className="text-ink-soft">El número exacto es el otro:</b> el contador del tope
           lleva <b className="text-ink">{lecturas.hechas.toLocaleString("es-ES")}</b> lecturas de
