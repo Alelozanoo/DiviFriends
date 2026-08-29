@@ -74,6 +74,8 @@ export const en: Dict = {
     leyendo: "Reading the lines…",
     extrayendo: "Pulling out the prices…",
     finalizando: "Almost there…",
+    mientrasLee: "While you type, the photo is being read.",
+    preparandoMesa: "Getting the tab ready…",
     tardo: "It takes a few seconds to read every line.",
     cuadrando: "Checking that the totals add up.",
     progreso: "Progress",

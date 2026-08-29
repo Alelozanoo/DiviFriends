@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { EV, track } from "@/lib/track";
 import { useT } from "@/lib/i18n";
 import JoinByCode from "./JoinByCode";
+import { useGlobalProfile } from "@/lib/useGlobalProfile";
 
 /**
  * Reduce la foto antes de subirla. Además de ahorrar ancho de banda, el canvas
@@ -35,7 +36,14 @@ async function toJpegBase64(
   return { base64: dataUrl.slice(dataUrl.indexOf(",") + 1), vista: dataUrl };
 }
 
-type Phase = "idle" | "reading" | "parsing" | "error";
+/**
+ * Las pantallas del subidor.
+ *
+ * `quien` es la que esconde la espera: la foto se está leyendo por detrás
+ * mientras se pregunta el nombre, que es algo que había que preguntar de todas
+ * formas y que se tarda en contestar más de lo que tarda la IA en leer.
+ */
+type Phase = "idle" | "reading" | "parsing" | "quien" | "entrando" | "error";
 
 export default function TicketUploader({
   targetCode,
@@ -61,6 +69,16 @@ export default function TicketUploader({
   const [vista, setVista] = useState<string | null>(null);
   const [pidiendoCodigo, setPidiendoCodigo] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [nombre, setNombre] = useState("");
+  const { profile, saveProfile } = useGlobalProfile();
+  /*
+    La lectura, que sigue viva mientras se pregunta el nombre.
+
+    Es una promesa guardada y no un `await`: eso es todo el truco. La petición
+    se manda al elegir la foto y nadie la espera; para cuando alguien ha
+    terminado de escribir «Alejandro» y darle a entrar, hace rato que llegó.
+  */
+  const lectura = useRef<Promise<{ code: string }> | null>(null);
 
   // Simula un progreso realista mientras la IA analiza la foto
   useEffect(() => {
@@ -107,32 +125,95 @@ export default function TicketUploader({
         setPhase("parsing");
 
         const endpoint = targetCode ? `/api/tickets/${targetCode}/receipts` : "/api/tickets";
-        const response = await fetch(endpoint, {
+        const peticion = fetch(endpoint, {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ image: base64, mediaType: "image/jpeg" }),
+        }).then(async (response) => {
+          const data = (await response.json()) as { code?: string; error?: string };
+          if (!response.ok || (!data.code && !targetCode)) {
+            throw new Error(data.error ?? "No se ha podido leer el ticket.");
+          }
+          return { code: data.code ?? "", receiptId: response.headers.get("x-receipt-id") };
         });
-        const data = (await response.json()) as { code?: string; error?: string };
 
-        if (!response.ok || (!data.code && !targetCode)) {
-          throw new Error(data.error ?? "No se ha podido leer el ticket.");
-        }
-        
-        if (targetCode && onSuccess) {
+        // Añadir un ticket a una mesa que ya existe no tiene nada que esconder:
+        // quien lo hace ya está dentro y ya sabe quién es.
+        if (targetCode) {
+          const { receiptId } = await peticion;
           track(EV.anadeTicket, { origen: "foto" });
-          onSuccess(response.headers.get("x-receipt-id"));
-        } else if (data.code) {
-          track(EV.creaDivi, { metodo: "foto" });
-          router.push(`/t/${data.code}`);
+          onSuccess?.(receiptId);
+          return;
         }
+
+        /*
+          Mesa nueva: aquí se deja de esperar.
+
+          Antes esto era un `await` y una barra de progreso, y la barra llegaba
+          al 95 % en diez segundos y ahí se quedaba. Ahora la pregunta que
+          venía después —quién eres— se adelanta a la espera, y para cuando
+          está contestada la comanda está leída. Si falla, se ve al momento
+          aunque nadie estuviera mirando.
+        */
+        lectura.current = peticion.then(({ code }) => ({ code }));
+        lectura.current.catch((cause) => {
+          setPhase("error");
+          setError(cause instanceof Error ? cause.message : "Algo ha ido mal.");
+        });
+        setNombre(profile?.name ?? "");
+        setPhase("quien");
       } catch (cause) {
         setPhase("error");
         setError(cause instanceof Error ? cause.message : "Algo ha ido mal.");
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [router],
+    [router, profile],
   );
+
+  /**
+   * Se apunta a quien acaba de subir la foto y le lleva a la mesa con el QR
+   * abierto.
+   *
+   * Se une desde aquí y no en la comanda a propósito: así llega dentro, sin
+   * volver a ver «¿quién eres?» al otro lado, y lo primero que se encuentra es
+   * el código para pasárselo a los demás.
+   */
+  async function entrar() {
+    const limpio = nombre.trim();
+    if (!limpio || !lectura.current || phase === "entrando") return;
+    saveProfile({ name: limpio });
+    setPhase("entrando");
+    try {
+      const { code } = await lectura.current;
+      track(EV.creaDivi, { metodo: "foto" });
+      try {
+        const alta = await fetch(`/api/tickets/${code}/participants`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            name: limpio,
+            avatar: profile?.avatar,
+            bizum: profile?.bizum,
+            revolut: profile?.revolut,
+          }),
+        });
+        const id = alta.headers.get("x-participant-id");
+        if (alta.ok && id) {
+          window.localStorage.setItem(`divifriends:me:${code}`, id);
+          track(EV.seApunta, { con_avatar: Boolean(profile?.avatar) });
+        }
+      } catch {
+        // Si apuntarse falla, la mesa existe igual: al llegar le saldrá la
+        // pantalla de siempre preguntándole el nombre. Mejor eso que quedarse
+        // aquí con la comanda ya hecha y sin poder entrar.
+      }
+      router.push(`/t/${code}?compartir=1`);
+    } catch (cause) {
+      setPhase("error");
+      setError(cause instanceof Error ? cause.message : "Algo ha ido mal.");
+    }
+  }
 
   const busy = phase === "reading" || phase === "parsing";
 
@@ -162,7 +243,50 @@ export default function TicketUploader({
           entera para escribir un código. Ahora la tarjeta se da la vuelta en su
           sitio y el pie de abajo cambia de palabra para volver.
         */}
-        {pidiendoCodigo ? (
+        {phase === "quien" || phase === "entrando" ? (
+          /*
+            La pantalla que tapa la espera.
+
+            Enseña la foto con el escáner encima —para que se vea que se está
+            trabajando en ella y que la que has hecho vale— y pide el nombre,
+            que es lo que la comanda iba a preguntar de todas formas nada más
+            entrar. Lo que se gana no es tiempo: es que el tiempo esté ocupado.
+          */
+          <div className="flex w-full flex-col items-center gap-3.5 px-[var(--gutter)] py-7 text-center">
+            {vista && <Escaner src={vista} />}
+            <span className="text-[21px] font-bold leading-tight tracking-[-0.025em]">
+              {t.entrar.titulo}
+            </span>
+            <span className="max-w-xs text-[13px] leading-relaxed text-ink-faint">
+              {t.subir.mientrasLee}
+            </span>
+            <form
+              className="w-full"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void entrar();
+              }}
+            >
+              <input
+                value={nombre}
+                onChange={(event) => setNombre(event.target.value)}
+                placeholder={t.entrar.tuNombre}
+                maxLength={40}
+                aria-label={t.entrar.tuNombre}
+                autoFocus
+                autoComplete="given-name"
+                className="min-h-[52px] w-full rounded-xl border border-line bg-paper px-4 text-center text-[16px] font-semibold focus:border-amber focus:outline-none"
+              />
+              <button
+                type="submit"
+                disabled={!nombre.trim() || phase === "entrando"}
+                className="mt-2.5 min-h-[52px] w-full rounded-xl bg-amber px-4 text-[15px] font-bold text-paper transition-transform active:scale-[0.98] disabled:opacity-40"
+              >
+                {phase === "entrando" ? t.subir.preparandoMesa : t.entrar.entrar}
+              </button>
+            </form>
+          </div>
+        ) : pidiendoCodigo ? (
           <div className="flex w-full flex-col items-center gap-3.5 px-[var(--gutter)] py-7 text-center">
             <span className="grid h-14 w-14 place-items-center rounded-2xl bg-amber text-[26px] font-bold text-paper" aria-hidden>
               #

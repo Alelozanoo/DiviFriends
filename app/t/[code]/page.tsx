@@ -12,7 +12,11 @@ import OlvidarComanda from "@/components/OlvidarComanda";
 
 export const dynamic = "force-dynamic";
 
-type Props = { params: Promise<{ code: string }> };
+type Props = {
+  params: Promise<{ code: string }>;
+  /** `compartir=1` lo pone el subidor: la mesa acaba de nacer y hay que repartir el enlace. */
+  searchParams: Promise<{ compartir?: string }>;
+};
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { code } = await params;
@@ -69,8 +73,9 @@ async function idioma(): Promise<Lang> {
   return idiomaDe((await cookies()).get(COOKIE)?.value);
 }
 
-export default async function TicketPage({ params }: Props) {
+export default async function TicketPage({ params, searchParams }: Props) {
   const { code: raw } = await params;
+  const { compartir } = await searchParams;
   const code = raw.toUpperCase();
   const [state, lang] = await Promise.all([getTicketState(code), idioma()]);
 
@@ -104,7 +109,12 @@ export default async function TicketPage({ params }: Props) {
   const url = await ticketUrl(code);
   return (
     <I18nProvider lang={lang}>
-      <SplitApp initial={state} shareUrl={url} qrSvg={await ticketQrSvg(url)} />
+      <SplitApp
+        initial={state}
+        shareUrl={url}
+        qrSvg={await ticketQrSvg(url)}
+        abrirCompartir={compartir === "1"}
+      />
     </I18nProvider>
   );
 }

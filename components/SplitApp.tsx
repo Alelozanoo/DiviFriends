@@ -40,10 +40,20 @@ export default function SplitApp({
   initial,
   shareUrl,
   qrSvg,
+  abrirCompartir = false,
 }: {
   initial: TicketState;
   shareUrl: string;
   qrSvg: string;
+  /**
+   * La mesa acaba de nacer de una foto y hay que repartir el enlace.
+   *
+   * Lo pone el subidor en la URL: quien sube el ticket ya ha dicho su nombre
+   * mientras se leía la foto, así que llega apuntado y lo único que le queda
+   * por hacer —lo único que hace falta para que esto sea un divi y no una
+   * calculadora— es pasarle el código a la mesa.
+   */
+  abrirCompartir?: boolean;
 }) {
   const code = initial.ticket.id;
   const t = useT();
@@ -54,7 +64,7 @@ export default function SplitApp({
   const [removing, setRemoving] = useState<string | null>(null);
   const [showingLog, setShowingLog] = useState(false);
   const [adding, setAdding] = useState(false);
-  const [sharing, setSharing] = useState(false);
+  const [sharing, setSharing] = useState(abrirCompartir);
   const [viewing, setViewing] = useState(false);
   const [guiding, setGuiding] = useState(false);
   const [uploadingAnother, setUploadingAnother] = useState(false);
@@ -67,6 +77,12 @@ export default function SplitApp({
   const [pagandoA, setPagandoA] = useState<{ id: string; cents: number } | null>(null);
   const [cobrando, setCobrando] = useState(false);
   const [preguntandoPagador, setPreguntandoPagador] = useState(false);
+  /*
+    Quien crea la mesa desde una foto ya no pasa por la hoja de entrar, que es
+    donde se preguntaba quién puso la tarjeta. Se le pregunta al cerrar el QR,
+    y una sola vez: insistir cada vez que abre «Compartir» sería perseguirle.
+  */
+  const pagadorPreguntado = useRef(false);
   // Qué ticket está esperando que alguien diga quién lo pagó. `receiptId` a
   // null es el ticket original, que no vive en `receipts` sino en el propio doc.
   const [preguntandoTicket, setPreguntandoTicket] = useState<{ receiptId: string | null } | null>(null);
@@ -940,7 +956,13 @@ export default function SplitApp({
           onRemove={(participantId) =>
             void removeParticipant(participantId)
           }
-          onClose={() => setSharing(false)}
+          onClose={() => {
+            setSharing(false);
+            if (abrirCompartir && meId && !hayPagador && !pagadorPreguntado.current) {
+              pagadorPreguntado.current = true;
+              setPreguntandoPagador(true);
+            }
+          }}
         />
       )}
 

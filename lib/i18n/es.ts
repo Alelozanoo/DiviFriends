@@ -87,6 +87,8 @@ export const es = {
     leyendo: "Leyendo comandas…",
     extrayendo: "Extrayendo precios…",
     finalizando: "Finalizando…",
+    mientrasLee: "Mientras lo escribes, la foto se está leyendo sola.",
+    preparandoMesa: "Preparando la mesa…",
     tardo: "Tardo unos segundos en reconocer cada línea.",
     cuadrando: "La IA está cuadrando los totales.",
     progreso: "Progreso",
