@@ -40,20 +40,20 @@ export default function SplitApp({
   initial,
   shareUrl,
   qrSvg,
-  abrirCompartir = false,
+  nuevo = false,
 }: {
   initial: TicketState;
   shareUrl: string;
   qrSvg: string;
   /**
-   * La mesa acaba de nacer de una foto y hay que repartir el enlace.
+   * La mesa acaba de nacer de una foto que todavía se está leyendo.
    *
-   * Lo pone el subidor en la URL: quien sube el ticket ya ha dicho su nombre
-   * mientras se leía la foto, así que llega apuntado y lo único que le queda
-   * por hacer —lo único que hace falta para que esto sea un divi y no una
-   * calculadora— es pasarle el código a la mesa.
+   * Lo pone el subidor en la URL. Cambia dos cosas: la foto guardada se manda a
+   * leer desde aquí —con la persona ya dentro de su sala en vez de mirando una
+   * barra en la portada—, y al apuntarse se abre el QR, porque pasar el código
+   * es lo único que separa un divi de una calculadora.
    */
-  abrirCompartir?: boolean;
+  nuevo?: boolean;
 }) {
   const code = initial.ticket.id;
   const t = useT();
@@ -64,7 +64,7 @@ export default function SplitApp({
   const [removing, setRemoving] = useState<string | null>(null);
   const [showingLog, setShowingLog] = useState(false);
   const [adding, setAdding] = useState(false);
-  const [sharing, setSharing] = useState(abrirCompartir);
+  const [sharing, setSharing] = useState(false);
   const [viewing, setViewing] = useState(false);
   const [guiding, setGuiding] = useState(false);
   const [uploadingAnother, setUploadingAnother] = useState(false);
@@ -140,6 +140,56 @@ export default function SplitApp({
     prevCount.current = state.participants.length;
   }, [state.participants, meId]);
 
+  /* --------------------------------------------------- la foto, por detrás */
+
+  const [leyendo, setLeyendo] = useState(false);
+  const [fallóLectura, setFallóLectura] = useState<string | null>(null);
+  const lecturaLanzada = useRef(false);
+
+  /**
+   * Manda a leer la foto que dejó el subidor.
+   *
+   * Vive aquí y no en el subidor porque aquí es donde se ve el resultado: si
+   * falla, lo cuenta la propia comanda y no una pantalla que ya no existe. La
+   * petición tarda sus segundos y a nadie le importa — mientras tanto se está
+   * escribiendo un nombre y enseñando un QR.
+   */
+  useEffect(() => {
+    if (!nuevo || lecturaLanzada.current || state.items.length > 0) return;
+    let guardada: string | null = null;
+    try {
+      guardada = window.sessionStorage.getItem(`divi:foto:${code}`);
+    } catch {
+      /* sin sessionStorage no hay foto que leer, y la mesa funciona a mano */
+    }
+    if (!guardada) return;
+
+    lecturaLanzada.current = true;
+    void (async () => {
+      setLeyendo(true);
+      try {
+        const response = await fetch(`/api/tickets/${code}/lectura`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: guardada,
+        });
+        const data = (await response.json()) as TicketState & { error?: string };
+        if (!response.ok) throw new Error(data.error ?? t.comanda.errorGuardar);
+        setServer(data);
+        // Leída y guardada: que un refresco no la vuelva a mandar.
+        try {
+          window.sessionStorage.removeItem(`divi:foto:${code}`);
+        } catch {}
+      } catch (cause) {
+        setFallóLectura(cause instanceof Error ? cause.message : t.comanda.errorGuardar);
+      } finally {
+        setLeyendo(false);
+      }
+    })();
+    // `setServer` y `t` no cambian nada aquí: el testigo de arriba manda.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nuevo, code, state.items.length]);
+
   /* -------------------------------------------------------------- acciones */
 
   async function send(path: string, init: RequestInit): Promise<TicketState | null> {
@@ -189,6 +239,18 @@ export default function SplitApp({
     track(EV.seApunta, { con_avatar: Boolean(avatar) });
     store(participantId);
     setJoinOverride(null);
+    /*
+      En una mesa recién creada, lo siguiente es el QR y no el pagador.
+
+      Quien acaba de subir la foto tiene delante a la mesa esperando, y lo que
+      hace falta para que esto sea un divi es que los demás entren. Lo de quién
+      puso la tarjeta se pregunta después, al cerrar el QR, que además es cuando
+      ya se sabe.
+    */
+    if (nuevo) {
+      setSharing(true);
+      return;
+    }
     if (!hayPagador) setPreguntandoPagador(true);
   }
 
@@ -663,6 +725,45 @@ export default function SplitApp({
             sitio, que es lo que se va comparando al bajar.
           */
           <ul className="grid list-none gap-[9px] pb-36">
+            {/*
+              El ticket que todavía se está leyendo.
+
+              Tres renglones que laten donde van a ir las líneas: dice «esto se
+              está llenando» sin una barra de progreso que mienta sobre cuánto
+              falta. Se va solo en cuanto llega la lectura, y si no llega, en su
+              sitio queda qué hacer con la mesa.
+            */}
+            {state.items.length === 0 && (leyendo || fallóLectura) && (
+              <li className="rounded-2xl border border-line bg-paper-2 px-4 py-4">
+                {fallóLectura ? (
+                  <>
+                    <p className="text-[15px] font-semibold text-clay">{fallóLectura}</p>
+                    <p className="mt-1.5 text-[13px] leading-relaxed text-ink-soft">
+                      {t.comanda.lecturaFallo}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-[15px] font-semibold text-amber">
+                      {t.comanda.leyendoTicket}
+                    </p>
+                    <p className="mt-1 text-[13px] leading-relaxed text-ink-faint">
+                      {t.comanda.leyendoAyuda}
+                    </p>
+                    <span aria-hidden className="mt-3.5 grid gap-2">
+                      {[92, 70, 84].map((ancho, i) => (
+                        <span
+                          key={ancho}
+                          className="h-3 animate-pulse rounded bg-line"
+                          style={{ width: `${ancho}%`, animationDelay: `${i * 140}ms` }}
+                        />
+                      ))}
+                    </span>
+                  </>
+                )}
+              </li>
+            )}
+
             {vistos.map((item) => (
               <ItemRow
                 key={item.id}
@@ -958,7 +1059,7 @@ export default function SplitApp({
           }
           onClose={() => {
             setSharing(false);
-            if (abrirCompartir && meId && !hayPagador && !pagadorPreguntado.current) {
+            if (nuevo && meId && !hayPagador && !pagadorPreguntado.current) {
               pagadorPreguntado.current = true;
               setPreguntandoPagador(true);
             }

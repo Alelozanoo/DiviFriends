@@ -146,6 +146,43 @@ function isAlreadyExists(error: unknown): boolean {
   );
 }
 
+/**
+ * Llena una comanda que nació vacía con lo que diga el ticket.
+ *
+ * Existe porque la mesa se crea **antes** de leer la foto: así el código
+ * existe a los trescientos milisegundos y quien sube el ticket está dentro de
+ * su sala repartiendo el enlace mientras la IA lee por detrás. Sin esto habría
+ * que esperar a la lectura para tener un código, que es justo la espera que se
+ * quiere esconder.
+ *
+ * Se niega si ya hay líneas: dos lecturas de la misma foto —un reintento que
+ * llega tarde, un doble toque— duplicarían la comanda entera.
+ */
+export function rellenaComanda(
+  code: string,
+  input: NewTicket,
+): Promise<TicketState> {
+  return mutate(code, (doc) => {
+    if (doc.items.length > 0) {
+      throw new StoreError("Esta comanda ya tiene líneas.", 409);
+    }
+    doc.place = input.place;
+    doc.tableLabel = input.tableLabel;
+    doc.currency = input.currency;
+    doc.totalCents = input.totalCents;
+    doc.items = input.items.slice(0, LIMITS.items).map((item, index) => ({
+      id: id("itm"),
+      name: item.name,
+      qty: item.qty,
+      unitCents: item.unitCents,
+      totalCents: item.totalCents,
+      splitInto: Math.max(1, Math.round(item.qty || 1)),
+      manualSplit: false,
+      position: index,
+    }));
+  });
+}
+
 export function patchTicket(
   code: string,
   patch: { totalCents?: number; place?: string; tableLabel?: string; closed?: boolean },

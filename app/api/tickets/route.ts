@@ -18,6 +18,8 @@ interface ManualItem {
 }
 
 interface CreateBody {
+  /** Crear la mesa ya, sin nada dentro: la foto se lee después, desde dentro. */
+  vacia?: boolean;
   image?: string;
   mediaType?: string;
   place?: string;
@@ -33,6 +35,36 @@ export async function POST(request: Request) {
     body = (await request.json()) as CreateBody;
   } catch {
     return bad("Cuerpo de la petición inválido.");
+  }
+
+  /*
+    Una mesa vacía, para entrar ya.
+
+    No llama a ninguna IA —sólo escribe un documento— así que gasta del mismo
+    cupo que una comanda escrita a mano. Lo que viene después, la lectura de la
+    foto, tiene su propio tope en `/lectura`, que es donde está el gasto.
+  */
+  if (body.vacia) {
+    const caller = callerKey(request);
+    try {
+      const gate = await consume([{ key: `manual_${caller}`, ...TOPES.comandaManual.porIp }]);
+      if (!gate.ok) {
+        return tooMany(
+          "Se han creado demasiadas comandas seguidas. Prueba de nuevo en un rato.",
+          gate.retryAfterSeconds,
+        );
+      }
+      const code = await createTicket({
+        place: null,
+        tableLabel: null,
+        currency: "EUR",
+        totalCents: 0,
+        items: [],
+      });
+      return NextResponse.json({ code }, { status: 201 });
+    } catch (error) {
+      return fail(error);
+    }
   }
 
   let parsed: ParsedTicket;

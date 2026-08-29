@@ -14,8 +14,8 @@ export const dynamic = "force-dynamic";
 
 type Props = {
   params: Promise<{ code: string }>;
-  /** `compartir=1` lo pone el subidor: la mesa acaba de nacer y hay que repartir el enlace. */
-  searchParams: Promise<{ compartir?: string }>;
+  /** `nuevo=1` lo pone el subidor: la mesa acaba de nacer y su foto está por leer. */
+  searchParams: Promise<{ nuevo?: string }>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -75,7 +75,7 @@ async function idioma(): Promise<Lang> {
 
 export default async function TicketPage({ params, searchParams }: Props) {
   const { code: raw } = await params;
-  const { compartir } = await searchParams;
+  const { nuevo } = await searchParams;
   const code = raw.toUpperCase();
   const [state, lang] = await Promise.all([getTicketState(code), idioma()]);
 
@@ -113,7 +113,7 @@ export default async function TicketPage({ params, searchParams }: Props) {
         initial={state}
         shareUrl={url}
         qrSvg={await ticketQrSvg(url)}
-        abrirCompartir={compartir === "1"}
+        nuevo={nuevo === "1"}
       />
     </I18nProvider>
   );
