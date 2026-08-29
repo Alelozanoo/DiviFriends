@@ -4,9 +4,23 @@ import { GoogleGenAI, ApiError } from "@google/genai";
 export interface ParsedItem {
   name: string;
   qty: number;
+  /** Sale de dividir: al modelo ya no se le pide (ver `Leido`). */
   unit_price: number;
   line_total: number;
 }
+
+/**
+ * Lo que contesta el modelo, que no es lo mismo que lo que usa la app.
+ *
+ * Se le dejó de pedir el precio por unidad el 29 de agosto de 2026: es
+ * `line_total` entre `qty`, o sea que lo sabemos sin preguntar, y era un campo
+ * por línea que había que escribir uno a uno. En un ticket de nueve líneas son
+ * 516 tokens de salida frente a 400, y la salida se genera de uno en uno: ahí
+ * es donde se va el tiempo de espera, no en leer la foto.
+ */
+type Leido = Omit<ParsedTicket, "items"> & {
+  items: (Omit<ParsedItem, "unit_price"> & { unit_price?: number })[];
+};
 
 export interface ParsedTicket {
   place: string | null;
@@ -50,10 +64,9 @@ const SCHEMA = {
         properties: {
           name: { type: "string", description: "Nombre del plato o bebida." },
           qty: { type: "number", description: "Unidades de esa línea. 1 si no se indica." },
-          unit_price: { type: "number", description: "Precio por unidad." },
           line_total: { type: "number", description: "Importe total de la línea." },
         },
-        required: ["name", "qty", "unit_price", "line_total"],
+        required: ["name", "qty", "line_total"],
         additionalProperties: false,
       },
     },
@@ -70,7 +83,7 @@ const PROMPT = `Extrae el contenido de este ticket de bar o restaurante.
 
 Reglas:
 - Una entrada de "items" por cada línea de consumición, en el mismo orden que el ticket.
-- Si una línea dice "2 x Cerveza 7,00", son qty 2 y line_total 7.00 (unit_price 3.50).
+- Si una línea dice "2 x Cerveza 7,00", son qty 2 y line_total 7.00.
 - Precios como números decimales en la moneda del ticket, sin símbolo: 12.50, no "12,50 €".
 - NO incluyas en "items" las líneas de subtotal, IVA, servicio, propina, descuento ni total.
   Esas diferencias se deducen del campo "total".
@@ -165,9 +178,9 @@ export async function parseTicketImage(
 
   registra(cual, lectura, Date.now() - arranque);
 
-  let parsed: ParsedTicket;
+  let parsed: Leido;
   try {
-    parsed = JSON.parse(lectura.json) as ParsedTicket;
+    parsed = JSON.parse(lectura.json) as Leido;
   } catch {
     throw new OcrError("No se ha podido leer el ticket.", "unreadable");
   }
@@ -215,9 +228,17 @@ async function leeConGemini(base64: string, mediaType: MediaType): Promise<Lectu
         { type: "text", text: PROMPT },
       ],
       response_format: { type: "text", mime_type: "application/json", schema: SCHEMA },
-      // Un ticket es una transcripción, no un problema: pensar de más aquí sólo
-      // añade segundos y tokens de razonamiento, que se cobran como salida.
-      generation_config: { thinking_level: "low" },
+      /*
+        Un ticket es una transcripción, no un problema: pensar de más aquí sólo
+        añade segundos y tokens de razonamiento, que se cobran como salida.
+
+        `minimal` en vez de `low` desde el 29 de agosto de 2026: son cero tokens
+        de pensamiento en vez de un centenar, y las nueve líneas del ticket de
+        prueba —con su descuento, su IVA y un total distinto del subtotal—
+        siguen saliendo bien en las tres vueltas. `none` y `off` no existen: la
+        API los rechaza.
+      */
+      generation_config: { thinking_level: "minimal" },
     });
 
     const json = interaction.output_text;
@@ -317,12 +338,16 @@ async function leeConClaude(base64: string, mediaType: MediaType): Promise<Lectu
 /* ------------------------------------------------------------------- limpieza */
 
 /** Rellena huecos previsibles del OCR para que el reparto cuadre desde el minuto uno. */
-function normalize(parsed: ParsedTicket): ParsedTicket {
+function normalize(parsed: Leido): ParsedTicket {
   const items = (parsed.items ?? [])
     .map((raw) => {
       const qty = Number.isFinite(raw.qty) && raw.qty > 0 ? raw.qty : 1;
       let lineTotal = Number.isFinite(raw.line_total) ? raw.line_total : 0;
-      let unitPrice = Number.isFinite(raw.unit_price) ? raw.unit_price : 0;
+      // El modelo ya no manda el precio por unidad, pero una comanda vieja
+      // reprocesada o el propio Claude podrían traerlo: si viene, se respeta;
+      // si no, sale de dividir, que es de donde salía igualmente.
+      let unitPrice =
+        typeof raw.unit_price === "number" && Number.isFinite(raw.unit_price) ? raw.unit_price : 0;
       if (lineTotal === 0 && unitPrice > 0) lineTotal = unitPrice * qty;
       if (unitPrice === 0 && lineTotal > 0) unitPrice = lineTotal / qty;
       return { name: (raw.name ?? "").trim() || "Sin nombre", qty, unit_price: unitPrice, line_total: lineTotal };

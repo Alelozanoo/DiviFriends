@@ -11,10 +11,19 @@ import { useGlobalProfile } from "@/lib/useGlobalProfile";
  * Reduce la foto antes de subirla. Además de ahorrar ancho de banda, el canvas
  * reescribe cualquier formato que el navegador sepa pintar (HEIC en iOS,
  * incluido) como JPEG, que es lo que acepta la API de visión.
+ *
+ * 1400 px y no 2000 desde el 29 de agosto de 2026, y el motivo es que medirlo
+ * sorprendió: el modelo cobra **los mismos 1232 tokens de entrada** con la foto
+ * a 2000, a 1400, a 1000 y a 700 px, porque la reescala él a su propia rejilla
+ * antes de mirarla. Los píxeles de más no los llega a ver nadie; lo único que
+ * hacen es tardar en subir. De 118 KB a 70, que en el 4G de un bar lleno es
+ * medio segundo largo. Por debajo de 1400 empezaría a preocuparme la letra
+ * pequeña de un ticket arrugado de verdad, y eso ya no lo prueba una foto
+ * dibujada por mí.
  */
 async function toJpegBase64(
   file: File,
-  maxEdge = 2000,
+  maxEdge = 1400,
 ): Promise<{ base64: string; vista: string }> {
   const bitmap = await createImageBitmap(file);
   const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
