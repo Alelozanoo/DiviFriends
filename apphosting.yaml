@@ -72,9 +72,10 @@ env:
   # configuración: volverse a Claude es cambiar esta línea y desplegar, sin
   # tocar una sola línea de código.
   #
-  # Qué modelo concreto lee está en `TARIFAS` de `lib/ocr.ts`. Desde el 27 de
-  # agosto de 2026 es Gemini 3.1 Flash Lite: el anterior tardaba más de un
-  # minuto por ticket y dejaba la app inservible. Si algún día vuelve a ir
+  # Qué modelo concreto lee está en `TARIFAS` de `lib/ocr.ts`. Desde el 29 de
+  # agosto de 2026 es Gemini 3.5 Flash Lite. Lo de *lite* no es por ahorrar:
+  # está medido que los Flash grandes tardan el doble y no leen mejor, porque
+  # un ticket es una transcripción y no un problema. Si algún día vuelve a ir
   # lenta, el log escupe una línea con la palabra LENTA.
   - variable: OCR_MODELO
     value: gemini

@@ -39,7 +39,7 @@ const PRESUPUESTO_DIARIO = 10;
  *
  * Medidos con la configuración que hay en `lib/ocr.ts`, a 2000 px:
  *
- *   - Gemini 3.1 Flash Lite con thinking bajo (2026-08-27): ~1300 de entrada,
+ *   - Gemini 3.5 Flash Lite sin pensamiento (2026-08-29): ~1230 de entrada,
  *     137 de salida y 107 de pensamiento. Se deja en 0,0018 $, que es lo que
  *     costaba el modelo anterior —más caro— porque la tarifa de este todavía no
  *     está comprobada contra la web de Google. Pasarse por arriba sólo aprieta
@@ -59,7 +59,7 @@ export const COSTE_POR_LECTURA = GEMINI ? 0.0018 : 0.0296;
  * arrastrar hasta la página los SDK de los dos proveedores. Espejo de `TARIFAS`
  * en `lib/ocr.ts`: si allí se cambia de modelo, aquí también.
  */
-export const MODELO_LECTOR = GEMINI ? "Gemini 3.1 Flash Lite" : "Opus 5";
+export const MODELO_LECTOR = GEMINI ? "Gemini 3.5 Flash Lite" : "Opus 5";
 
 export const TOPES = {
   /** Crear una comanda desde una foto. Cada una cuesta ~0,2 ¢ de API. */

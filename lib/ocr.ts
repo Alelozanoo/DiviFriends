@@ -121,11 +121,26 @@ function proveedor(): Proveedor {
  * 95 % — o sea, roto para cualquiera que esté de pie en un bar. Y sin ruido en
  * los logs, porque un número alto entre miles de líneas no lo mira nadie.
  *
- * `gemini-3.1-flash-lite` hace el mismo trabajo en 3,4 s. Comprobado con un
- * ticket difícil —nueve líneas, cantidades, descuento, IVA y un total distinto
- * del subtotal—: saca las nueve líneas, las cantidades y el total bueno, dos de
- * dos veces. `gemini-3-flash-preview` va igual de bien y de rápido, pero lleva
- * «preview» en el nombre y puede desaparecer sin avisar.
+ * Ahora lee `gemini-3.5-flash-lite`, y la palabra que importa es **lite**.
+ *
+ * Medido el 29 de agosto de 2026 con el mismo ticket difícil —nueve líneas,
+ * cantidades, descuento, IVA y un total distinto del subtotal—, y otra vez con
+ * una copia cutre a 900 px y calidad 18, peor que nada que salga de un móvil:
+ *
+ *   - 3.5-flash-lite  3,3 s · 4 de 4 perfectas con la foto mala
+ *   - 3.1-flash-lite  3,1 s · 4 de 4   (lo que había antes; empatan)
+ *   - 3.5-flash       4,6 s · 2 de 4   (se inventó una «COCO-COLA», dos veces)
+ *   - 3.6-flash       4,6 s · 4 de 4
+ *   - 3.7-flash       9,0 s
+ *
+ * O sea que el Flash grande no es más rápido ni más fino, y es la intuición
+ * que todo el mundo tiene. El motivo es que esto no es un problema, es una
+ * transcripción: no hay nada que razonar, hay que copiar nueve líneas. Los
+ * modelos grandes están hechos para pensar, y aquí pensar sólo añade tokens que
+ * se escriben de uno en uno.
+ *
+ * Si algún día hay que volver a elegir: prueba la familia *lite* primero, mide
+ * con una foto mala y no te fíes del número de versión.
  *
  * **Estos dos números son un techo, no la tarifa publicada de este modelo.**
  * Son los del modelo anterior, que era más caro: se dejan a propósito hasta
@@ -134,7 +149,7 @@ function proveedor(): Proveedor {
  * antes de tiempo. Al revés sería una factura sorpresa.
  */
 const TARIFAS = {
-  gemini: { modelo: "gemini-3.1-flash-lite", entrada: 0.38, salida: 1.88 },
+  gemini: { modelo: "gemini-3.5-flash-lite", entrada: 0.38, salida: 1.88 },
   anthropic: { modelo: "claude-opus-5", entrada: 5, salida: 25 },
 } as const;
 
