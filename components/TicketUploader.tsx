@@ -52,10 +52,18 @@ type Phase = "idle" | "reading" | "parsing" | "error";
  * Abrir la comanda vacía tarda unos novecientos milisegundos, y saltar de golpe
  * a la sala se siente a tirón, no a rápido: no da tiempo a ver que ha pasado
  * algo. Segundo y medio es lo que dura un gesto que se entiende — la barra sale,
- * se llena entera y en cuanto toca el final estás dentro. Si el servidor tarda
- * más, manda el servidor; esto es un suelo, no un techo.
+ * se llena entera y estás dentro.
+ *
+ * Son 1300 y no 1500 porque el número que se mira es el otro: **cuándo estás
+ * dentro**. Entre que la barra toca el final y aparece la mesa hay un salto de
+ * unos 200 ms que `router.prefetch` no llega a quitar —la comanda es una página
+ * dinámica, así que de verdad no se puede pedir hasta pulsar—. Medido tres
+ * veces contra producción: 0,15, 0,16 y 0,27 s. Descontados aquí, entrar cae
+ * donde tenía que caer.
+ *
+ * Si el servidor tarda más, manda el servidor: esto es un suelo, no un techo.
  */
-const ENTRADA_MS = 1500;
+const ENTRADA_MS = 1300;
 
 export default function TicketUploader({
   targetCode,
