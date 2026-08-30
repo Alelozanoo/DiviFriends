@@ -37,8 +37,8 @@ export default function ItemSheet({
   currency,
   onSetShares,
   onPick,
+  onSetPartes,
   onSplitUnits,
-  onUndoSplit,
   onAddPerson,
   onClose,
 }: {
@@ -50,13 +50,13 @@ export default function ItemSheet({
   /** `into` parte la línea en un trozo más para hacer sitio a quien no cabía. */
   onSetShares: (participantId: string, shares: number, into?: number) => void;
   onPick: (into: number) => void;
+  /** Cambia en cuántas partes se reparte, sin cogerse ninguna. */
+  onSetPartes: (into: number) => void;
   /**
    * Separa `qty` unidades a su propia línea. Devuelve si salió bien; la hoja
    * se queda entonces con la línea nueva, que es la que se va a repartir.
    */
   onSplitUnits: (qty: number) => Promise<boolean>;
-  /** Deshace el reparto: vuelve a las unidades que traía el ticket. */
-  onUndoSplit: () => void;
   /** Apunta a alguien a la mesa y devuelve su ficha para darle su parte. */
   onAddPerson: (name: string) => Promise<string | null>;
   onClose: () => void;
@@ -67,94 +67,92 @@ export default function ItemSheet({
     —1,025— no cuenta, porque ahí no hay unidades que separar.
   */
   const multiUnidad = Number.isInteger(item.qty) && item.qty > 1;
-  /*
-    Al separar unidades la hoja pasa a hablar de la línea nueva, que ya es de
-    una sola: sin esto el rótulo cantaba «paso 1 de 2» justo después de haber
-    hecho el 1 de 3, y parecía que el recorrido hubiera vuelto a empezar.
-  */
-  const [desdeUnidades, setDesdeUnidades] = useState(false);
-  const pasos = multiUnidad || desdeUnidades ? 3 : 2;
 
-  const [paso, setPaso] = useState<"unidades" | "cuantos" | "quienes">(() => {
-    // Una línea que ya se repartió a mano entra directamente por el «¿con
-    // quién?»: lo demás está decidido y lo que se viene a tocar es la lista.
-    if (item.manualSplit) return "quienes";
-    if (multiUnidad) return "unidades";
-    return item.splitInto > 1 ? "quienes" : "cuantos";
-  });
-  const [custom, setCustom] = useState("");
-  const [customU, setCustomU] = useState("");
+  /*
+    Dos pantallas, no tres.
+
+    Había una para las unidades, otra para «entre cuántos» y otra para «con
+    quién», y las dos primeras eran rejillas de números iguales que significaban
+    cosas distintas —dos mariscadas y dos personas—. Además la tercera volvía a
+    preguntar lo de la segunda: decías «entre 4» y luego tocabas a cuatro. Ahora
+    el número y los nombres son lo mismo, porque el número se dibuja en huecos.
+
+    La de las unidades sobrevive aparte por un motivo de fondo: separar unidades
+    parte la línea en dos y eso no se deshace, así que merece su momento y su
+    botón. Lo demás se guarda solo al tocarlo, como todo en esta app.
+  */
+  const [paso, setPaso] = useState<"unidades" | "reparto">(
+    multiUnidad && !item.manualSplit ? "unidades" : "reparto",
+  );
+  const [unidades, setUnidades] = useState(item.qty);
+  const [eligiendo, setEligiendo] = useState<number | null>(null);
   const [nuevo, setNuevo] = useState("");
   const [busy, setBusy] = useState(false);
 
-  // Partes ya repartidas, no personas: si Sofía lleva tres cañas y Ana dos, el
-  // reparto no puede bajar de cinco aunque sólo haya dos nombres. Contando
-  // cabezas, «entre 3» salía pulsable y el servidor lo corregía en silencio.
-  const repartidas = breakdown.takenShares;
-  const natural = Math.max(1, Math.round(item.qty || 1));
-  // Cuando cada parte es una unidad de verdad —nueve cañas partidas en nueve—
-  // se puede decir «Ana tomó tres». En un «entre 4» una parte es un cuarto de
-  // paella y ese contador sólo servía para duplicarte el precio sin querer.
-  const porUnidades = item.qty > 1 && item.splitInto === item.qty;
+  const porId = new Map(participants.map((p) => [p.id, p]));
 
   /*
-    Los botones de «cuántas». Con muchas unidades no caben todas, así que a
-    partir de doce se ofrecen las primeras once y «las N»: quien tiene veinte
-    cañas o las reparte todas o separa unas pocas, no dieciséis.
+    Los huecos salen del reparto que ya hay, no de un estado aparte.
 
-    Eso era verdad a medias, y por eso debajo hay un campo para escribirlo.
-    «O unas pocas o todas» deja fuera el caso más normal de una mesa grande:
-    catorce cañas para catorce personas de veinte que hay en el ticket. Con
-    sólo estos botones no había forma de decir catorce, y desde fuera se ve
-    como un tope de doce personas —así lo contó quien se lo encontró—.
+    `splitInto` son las partes y cada parte es un hueco; los que tienen dueño
+    salen de los claims y el resto quedan libres. Quien lleva dos partes ocupa
+    dos huecos, que es la verdad y se ve. Al no guardar nada por duplicado, lo
+    que otro marque desde su móvil aparece aquí solo.
   */
-  const opcionesUnidades =
-    item.qty <= 12
-      ? Array.from({ length: item.qty }, (_, i) => i + 1)
-      : [...Array.from({ length: 11 }, (_, i) => i + 1), item.qty];
+  const huecos: (string | null)[] = [
+    ...breakdown.shares.flatMap((s) => Array<string>(s.shares).fill(s.participantId)),
+    ...Array<null>(Math.max(0, breakdown.freeShares)).fill(null),
+  ];
 
-  const typedU = Number.parseInt(customU, 10);
-  const customUValid = Number.isFinite(typedU) && typedU >= 1 && typedU <= item.qty;
+  const esTodaLaMesa =
+    participants.length > 0 &&
+    breakdown.freeShares === 0 &&
+    participants.every((p) => breakdown.shares.some((s) => s.participantId === p.id));
 
-  const typed = Number.parseInt(custom, 10);
-  const customValid =
-    Number.isFinite(typed) && typed >= Math.max(2, repartidas) && typed <= LIMITS.splitInto;
+  /** Una parte para cada uno de los que están en la mesa, de un toque. */
+  function repartirEntreTodos() {
+    const gente = participants.map((p) => p.id);
+    onPick(gente.length);
+    for (const id of gente) {
+      if (!breakdown.shares.some((s) => s.participantId === id)) onSetShares(id, 1, gente.length);
+    }
+    setEligiendo(null);
+  }
 
-  function repartirEntre(n: number) {
-    onPick(n);
-    setPaso("quienes");
+  /** Mete a alguien en un hueco libre. Si no queda ninguno, abre uno más. */
+  function ponerEnHueco(participantId: string) {
+    const suyas = breakdown.shares.find((s) => s.participantId === participantId)?.shares ?? 0;
+    onSetShares(
+      participantId,
+      suyas + 1,
+      breakdown.freeShares > 0 ? undefined : item.splitInto + 1,
+    );
+    setEligiendo(null);
+  }
+
+  /** Lo saca de un hueco. Con varias partes, le quita una. */
+  function quitarDelHueco(participantId: string) {
+    const suyas = breakdown.shares.find((s) => s.participantId === participantId)?.shares ?? 0;
+    onSetShares(participantId, Math.max(0, suyas - 1));
+    setEligiendo(null);
   }
 
   /**
-   * Cuántas de las que hay se van a repartir.
+   * Cierra el paso de las unidades.
    *
-   * Elegirlas todas no separa nada: la línea entera se reparte como siempre.
-   * Elegir menos las saca a una línea propia, y a partir de ahí la hoja habla
-   * de esa línea nueva —por eso no hace falta tocar `item` aquí: llega solo en
-   * el siguiente renderizado.
+   * Repartirlas todas no separa nada. Elegir menos las saca a su propia línea,
+   * y a partir de ahí la hoja habla de la línea nueva: llega sola en el
+   * siguiente renderizado, por eso aquí no hay que tocar `item`.
    */
-  async function elegirUnidades(n: number) {
-    setDesdeUnidades(true);
-    if (n >= item.qty) {
-      setPaso("cuantos");
+  async function seguirDesdeUnidades() {
+    if (unidades >= item.qty) {
+      setPaso("reparto");
       return;
     }
     setBusy(true);
-    const hecho = await onSplitUnits(n);
+    const hecho = await onSplitUnits(unidades);
     setBusy(false);
-    if (hecho) setPaso("cuantos");
-  }
-
-  /**
-   * Le da su parte a alguien, y si la línea estaba llena la parte en un trozo
-   * más para hacerle sitio.
-   *
-   * Aquí sí puede crecer sola, al revés que al tocar la burbuja: allí es un
-   * roce y le cambiaría lo que paga a otro sin querer; aquí lo estás diciendo
-   * con el dedo encima de un nombre.
-   */
-  function darParte(participantId: string) {
-    onSetShares(participantId, 1, breakdown.freeShares > 0 ? undefined : item.splitInto + 1);
+    if (hecho) setPaso("reparto");
   }
 
   return (
@@ -184,9 +182,11 @@ export default function ItemSheet({
       </div>
 
       {paso === "unidades" ? (
-        /* ------------------------------------------ paso 1: cuántas de ellas */
+        /* ------------------------------------ cuántas de ellas se reparten */
         <>
-     <p className="text-[12px] mt-5 text-amber">{rellena(t.repartir.paso, { n: 1, total: pasos })}</p>
+          <p className="text-[12px] mt-5 text-amber">
+            {rellena(t.repartir.paso, { n: 1, total: 2 })}
+          </p>
           <h3 className="mt-1 text-[17px] font-bold tracking-[-0.02em]">
             {t.repartir.cuantasUnidades}
           </h3>
@@ -194,277 +194,217 @@ export default function ItemSheet({
             {rellena(t.repartir.cuantasAyuda, { n: item.qty })}
           </p>
 
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            {opcionesUnidades.map((n) => (
-              <button
-                key={n}
-                type="button"
-                disabled={busy}
-                onClick={() => void elegirUnidades(n)}
-                className="flex flex-col items-center gap-0.5 rounded-bloque border-2 border-line py-3 transition-colors hover:border-mint active:bg-paper-3 disabled:opacity-40"
-              >
-                <span className="tnum text-[21px] font-bold">
-                  {n === item.qty ? rellena(t.repartir.lasN, { n }) : n}
-                </span>
-                <span className="tnum text-[11px] text-ink-soft">
-                  {money(Math.round((item.totalCents * n) / item.qty), currency)}
-                </span>
-              </button>
-            ))}
+          {/*
+            Un contador y no once botones.
+
+            Aquí había una rejilla de números —1, 2, 3… hasta 11 y «las 20»—
+            idéntica a la del paso siguiente, donde los números son personas.
+            Dos preguntas seguidas con la misma pinta y distinto significado:
+            el «2» de aquí son dos mariscadas y el de allí, dos comensales.
+            Un más y un menos no se confunde con una lista de opciones, y de
+            paso deja decir catorce, que con los botones no se podía.
+          */}
+          <div className="mt-3.5 flex items-center gap-3">
+            <Contador valor={unidades} min={1} max={item.qty} onCambia={setUnidades} />
+            <span className="text-[15px] text-ink-soft">
+              {unidades === item.qty
+                ? t.repartir.todas
+                : rellena(t.repartir.deN, { n: item.qty })}{" "}
+              ·{" "}
+              <b className="tnum font-bold text-ink">
+                {money(Math.round((item.totalCents * unidades) / item.qty), currency)}
+              </b>
+            </span>
           </div>
 
-          {/* Sólo cuando la lista se ha recortado: con doce o menos están todas
-              y un campo aquí sería una pregunta ya contestada. */}
-          {item.qty > 12 && (
-            <form
-              className="mt-3 flex gap-2"
-              onSubmit={(event) => {
-                event.preventDefault();
-                if (customUValid && !busy) void elegirUnidades(typedU);
-              }}
-            >
-              <input
-                value={customU}
-                onChange={(event) => setCustomU(event.target.value.replace(/\D/g, "").slice(0, 3))}
-                inputMode="numeric"
-                placeholder={t.repartir.otroNumero}
-                aria-label={t.repartir.cuantasUnidades}
-                className="tnum min-w-0 flex-1 rounded-xl border border-line bg-paper px-4 py-2.5 text-center focus:border-mint focus:outline-none"
-              />
-              <button
-                type="submit"
-                disabled={!customUValid || busy}
-                className="shrink-0 rounded-xl bg-mint px-4 text-[15px] font-bold text-paper disabled:opacity-30"
-              >
-                {customUValid
-                  ? money(Math.round((item.totalCents * typedU) / item.qty), currency)
-                  : t.repartir.repartirBoton}
-              </button>
-            </form>
+          {unidades < item.qty && (
+            <p className="mt-2.5 text-[13px] leading-relaxed text-ink-faint">
+              {item.qty - unidades === 1
+                ? t.repartir.laOtraAparte
+                : rellena(t.repartir.lasOtrasAparte, { n: item.qty - unidades })}
+            </p>
           )}
         </>
-      ) : paso === "cuantos" ? (
-        /* ------------------------------------------- paso 2: entre cuántos */
+      ) : (
+        /* ------------------- entre cuántos y con quién, en la misma pantalla */
         <>
-          {/* Volver a elegir cuántas: sólo si todavía queda más de una que
-              separar en esta línea. */}
+          {/*
+            La vuelta a las unidades, con el número puesto. Sólo cuando hay
+            varias: si la línea es una sola cosa, no hubo primer paso.
+          */}
           {multiUnidad && (
             <button
               type="button"
               onClick={() => setPaso("unidades")}
-       className="text-[12px] mt-5 inline-flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1 text-ink-faint transition-colors hover:border-amber hover:text-amber"
+              className="text-[12px] mt-5 inline-flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1 text-ink-faint transition-colors hover:border-amber hover:text-amber"
             >
               ← {rellena(t.repartir.unidadesCambiar, { n: item.qty })}
             </button>
           )}
-     <p className={`text-[12px] text-amber ${multiUnidad ? "mt-3" : "mt-5"}`}>
-            {rellena(t.repartir.paso, { n: pasos - 1, total: pasos })}
-          </p>
-          <h3 className="mt-1 text-[17px] font-bold tracking-[-0.02em]">{t.repartir.entreCuantos}</h3>
-          <p className="mt-1.5 text-[13px] leading-relaxed text-ink-soft">
-            {t.repartir.entreCuantosAyuda}
-          </p>
 
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            {[2, 3, 4, 5, 6, 7].map((n) => {
-              // Partir en menos trozos de los ya repartidos dejaría a alguien fuera.
-              const blocked = n < repartidas;
-              return (
-                <button
-                  key={n}
-                  type="button"
-                  disabled={blocked}
-                  onClick={() => repartirEntre(n)}
-                  className={`flex flex-col items-center gap-0.5 rounded-bloque border-2 py-3 transition-colors disabled:opacity-25 ${
-                    item.splitInto === n
-                      ? "border-mint bg-mint/10"
-                      : "border-line hover:border-mint active:bg-paper-3"
-                  }`}
-                >
-                  <span className="tnum text-[21px] font-bold">{n}</span>
-                  <span className="tnum text-[11px] text-ink-soft">
-                    {money(Math.round(item.totalCents / n), currency)}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+          <h3 className={`text-[17px] font-bold tracking-[-0.02em] ${multiUnidad ? "mt-3" : "mt-5"}`}>
+            {t.repartir.entreCuantos}
+          </h3>
 
-          {/* Mesas grandes: el menú rápido se queda corto a partir de 7. */}
-          <form
-            className="mt-3 flex gap-2"
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (customValid) repartirEntre(typed);
-            }}
-          >
-            <input
-              value={custom}
-              onChange={(event) => setCustom(event.target.value.replace(/\D/g, "").slice(0, 2))}
-              inputMode="numeric"
-              placeholder={t.repartir.otroNumero}
-              aria-label={t.repartir.entreCuantos}
-              className="tnum min-w-0 flex-1 rounded-xl border border-line bg-paper px-4 py-2.5 text-center focus:border-mint focus:outline-none"
-            />
-            <button
-              type="submit"
-              disabled={!customValid}
-              className="shrink-0 rounded-xl bg-mint px-4 text-[15px] font-bold text-paper disabled:opacity-30"
-            >
-              {customValid ? money(Math.round(item.totalCents / typed), currency) : t.repartir.repartirBoton}
-            </button>
-          </form>
+          {/*
+            Toda la mesa de un toque, y el número al lado.
 
-          {/* Sólo cuando hay un reparto pedido a mano que deshacer. */}
-          {/* Oculto cuando ya hay más partes repartidas que unidades trae el
-              ticket: ahí el servidor no puede bajar el reparto sin dejar a
-              alguien fuera, y el botón no haría nada. */}
-          {item.manualSplit && repartidas <= natural && (
+            «Toda la mesa» es lo que pasa nueve de cada diez veces —una paella
+            entre los que están— y era tres o cuatro toques: elegir el número y
+            luego ir tocando a cada uno. El contador queda para cuando sois más
+            de los que hay dentro.
+          */}
+          <div className="mt-3 flex items-center gap-2">
             <button
               type="button"
-              onClick={onUndoSplit}
-              className="mt-3 w-full min-h-[46px] rounded-xl border border-line text-[15px] font-semibold text-ink transition-colors hover:border-amber hover:text-amber"
+              onClick={() => repartirEntreTodos()}
+              disabled={participants.length === 0 || busy}
+              className={`min-h-[46px] flex-1 rounded-pieza border text-[15px] font-semibold transition-colors disabled:opacity-30 ${
+                esTodaLaMesa
+                  ? "border-amber bg-amber/12 text-amber"
+                  : "border-line text-ink-soft active:bg-paper-3"
+              }`}
             >
-              {natural > 1 ? rellena(t.repartir.volverAUnidades, { n: natural }) : t.repartir.dejarDeCompartir}
+              {rellena(t.repartir.todaLaMesa, { n: participants.length })}
             </button>
-          )}
-        </>
-      ) : (
-        /* ------------------------------------------------ paso 2: con quién */
-        <>
-          {/* La vuelta al número, con el número puesto: se ve dónde estás sin
-              tener que acordarte de lo que acabas de pulsar. */}
-          <button
-            type="button"
-            onClick={() => setPaso("cuantos")}
-      className="text-[12px] mt-5 inline-flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1 text-ink-faint transition-colors hover:border-amber hover:text-amber"
-          >
-            ← {rellena(t.repartir.entreCambiar, { n: item.splitInto })}
-          </button>
+            <Contador
+              valor={item.splitInto}
+              min={Math.max(1, breakdown.takenShares)}
+              max={LIMITS.splitInto}
+              onCambia={(n) => onSetPartes(n)}
+            />
+          </div>
 
-          <h3 className="mt-3 text-[17px] font-bold tracking-[-0.02em]">{t.repartir.conQuien}</h3>
-          <p className="mt-1 text-[15px] leading-relaxed text-ink-soft">
-            {t.repartir.conQuienAyuda}
-          </p>
+          {/*
+            Los huecos, que es la idea entera.
 
-          {participants.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {participants.map((person) => {
-                const share = breakdown.shares.find((s) => s.participantId === person.id);
-                return (
-                  <span
-                    key={person.id}
-                    className={`flex items-center rounded-xl border-2 transition-colors ${
-                      share ? "border-amber bg-amber/12" : "border-line"
+            «Entre 4» era un número y ya: decías cuatro y no veías a nadie, y
+            hacía falta otra pantalla para preguntar quiénes. Aquí el número se
+            dibuja. Cuatro partes son cuatro huecos, se rellenan tocándolos, y
+            los que quedan vacíos dicen en voz alta lo que significan: que
+            esperan a quien entre por el enlace más tarde. Eso último es la
+            mitad de las mesas de un bar, gente que va llegando.
+          */}
+          <ul className="mt-3 grid list-none grid-cols-4 gap-2">
+            {huecos.map((quien, i) => {
+              const persona = quien ? porId.get(quien) : null;
+              return (
+                <li key={`${quien ?? "libre"}-${i}`}>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() =>
+                      persona ? quitarDelHueco(persona.id) : setEligiendo(eligiendo === i ? null : i)
+                    }
+                    aria-label={persona ? persona.name : t.repartir.hueco}
+                    className={`grid h-[74px] w-full place-items-center gap-1 rounded-bloque border-2 px-1 transition-colors disabled:opacity-40 ${
+                      persona
+                        ? "border-amber bg-amber/10"
+                        : eligiendo === i
+                          ? "border-amber border-dashed text-amber"
+                          : "border-dashed border-line text-ink-faint active:bg-paper-3"
                     }`}
                   >
-                    <button
-                      type="button"
-                      aria-pressed={Boolean(share)}
-                      onClick={() => (share ? onSetShares(person.id, 0) : darParte(person.id))}
-                      className="flex items-center gap-1.5 py-2 pl-2 pr-2.5"
-                    >
-                      <Avatar name={person.name} avatar={person.avatar} color={person.color} size={22} />
-                      <span className="max-w-28 truncate text-[15px] font-semibold">
-                        {person.name}
-                        {person.id === meId && (
-                          <span className="ml-1 text-[13px] font-normal text-ink-faint">{t.mesa.tu}</span>
-                        )}
-                      </span>
-                      <span
-                        aria-hidden
-                        className={`text-[15px] font-bold leading-none ${
-                          share ? "text-amber" : "text-ink-faint"
-                        }`}
-                      >
-                        {share ? "✓" : "+"}
-                      </span>
-                    </button>
-
-                    {share && porUnidades && (
-                      <span className="flex items-center pr-1">
-                        <Step
-                          label={rellena(t.repartir.quitarleUnidad, { name: person.name })}
-                          onClick={() => onSetShares(person.id, share.shares - 1)}
-                        >
-                          −
-                        </Step>
-                        <span className="tnum w-4 text-center text-[13px] font-bold">
-                          {share.shares}
+                    {persona ? (
+                      <>
+                        <Avatar
+                          name={persona.name}
+                          avatar={persona.avatar}
+                          color={persona.color}
+                          size={26}
+                        />
+                        <span className="max-w-full truncate text-[12px] font-semibold">
+                          {persona.id === meId ? t.mesa.tu : persona.name}
                         </span>
-                        <Step
-                          label={rellena(t.repartir.darleUnidad, { name: person.name })}
-                          disabled={breakdown.freeShares === 0}
-                          onClick={() => onSetShares(person.id, share.shares + 1)}
-                        >
-                          +
-                        </Step>
-                      </span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-[21px] leading-none">+</span>
+                        <span className="text-[11px] leading-none">{t.repartir.hueco}</span>
+                      </>
                     )}
-                  </span>
-                );
-              })}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+
+          {/* Quién ocupa el hueco que acabas de tocar. */}
+          {eligiendo !== null && (
+            <div className="mt-3 rounded-bloque border border-line bg-paper p-3">
+              <p className="text-[13px] text-ink-faint">{t.repartir.quienOcupa}</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {participants.map((persona) => (
+                  <button
+                    key={persona.id}
+                    type="button"
+                    disabled={busy}
+                    onClick={() => ponerEnHueco(persona.id)}
+                    className="flex items-center gap-2 rounded-pieza border border-line px-3 py-2 text-[15px] font-semibold transition-colors active:bg-paper-3 disabled:opacity-40"
+                  >
+                    <Avatar
+                      name={persona.name}
+                      avatar={persona.avatar}
+                      color={persona.color}
+                      size={20}
+                    />
+                    {persona.id === meId ? t.mesa.tu : persona.name}
+                  </button>
+                ))}
+              </div>
+
+              {/*
+                Apuntar a alguien sin salir de aquí. Antes había que cerrar la
+                hoja, abrir «Compartir», escribir el nombre y volver a buscar el
+                plato: cuatro pantallas para decir que la paella también era de
+                Sofía.
+              */}
+              <form
+                className="mt-2.5 flex gap-2"
+                onSubmit={async (event) => {
+                  event.preventDefault();
+                  const name = nuevo.trim();
+                  if (!name || busy) return;
+                  setBusy(true);
+                  const participantId = await onAddPerson(name);
+                  setBusy(false);
+                  setNuevo("");
+                  if (participantId) ponerEnHueco(participantId);
+                }}
+              >
+                <input
+                  value={nuevo}
+                  onChange={(event) => setNuevo(event.target.value)}
+                  placeholder={t.repartir.anadeAQuienFalte}
+                  maxLength={40}
+                  aria-label={t.repartir.anadeAQuienFalte}
+                  className="min-w-0 flex-1 rounded-pieza border border-line bg-paper px-3.5 py-2.5 text-[16px] focus:border-amber focus:outline-none"
+                />
+                <button
+                  type="submit"
+                  disabled={busy || !nuevo.trim()}
+                  className="shrink-0 rounded-pieza bg-amber px-4 text-[15px] font-bold text-paper disabled:opacity-30"
+                >
+                  {t.repartir.anadir}
+                </button>
+              </form>
             </div>
           )}
 
-          {/*
-            Apuntar a alguien sin salir de aquí. Antes había que cerrar la hoja,
-            abrir «Compartir», escribir el nombre y volver a buscar el plato:
-            cuatro pantallas para decir que la paella también era de Sofía.
-          */}
-          <form
-            className="mt-2.5 flex gap-2"
-            onSubmit={async (event) => {
-              event.preventDefault();
-              const name = nuevo.trim();
-              if (!name || busy) return;
-              setBusy(true);
-              const participantId = await onAddPerson(name);
-              setBusy(false);
-              setNuevo("");
-              // Si ya estaba en la mesa y ya tenía su parte, no se le toca:
-              // volver a dársela partiría la línea en un trozo de más.
-              if (participantId && !breakdown.shares.some((s) => s.participantId === participantId)) {
-                darParte(participantId);
-              }
-            }}
-          >
-            <input
-              value={nuevo}
-              onChange={(event) => setNuevo(event.target.value)}
-              placeholder={t.repartir.anadeAQuienFalte}
-              maxLength={40}
-              aria-label={t.repartir.anadeAQuienFalte}
-              className="min-w-0 flex-1 rounded-xl border border-line bg-paper px-3.5 py-2.5 text-[16px] focus:border-amber focus:outline-none"
-            />
-            <button
-              type="submit"
-              disabled={busy || !nuevo.trim()}
-              className="shrink-0 rounded-xl bg-amber px-4 text-[15px] font-bold text-paper disabled:opacity-30"
-            >
-              {t.repartir.anadir}
-            </button>
-          </form>
-
-          {/* La cuenta de lo que queda: es lo único que dice si ya has terminado. */}
-          <p className="mt-3 rounded-xl bg-paper px-3.5 py-2.5 text-[15px] leading-relaxed text-ink-soft">
-            {breakdown.freeShares > 0 ? (
-              <span dangerouslySetInnerHTML={{ __html: rellena(t.repartir.quedanSinDueno, {
-                libres: `<b class="tnum font-bold text-ink">${breakdown.freeShares}`,
-                total: `${item.splitInto}</b>`,
-                dinero: `<span class="tnum">${money(breakdown.unassignedCents, currency)}</span>`
-              }) }} />
-            ) : porUnidades ? (
-              <span dangerouslySetInnerHTML={{ __html: rellena(t.repartir.repartidasUnidades, {
-                n: item.qty,
-                dinero: `<span class="tnum font-bold text-mint">${money(breakdown.perShareCents, currency)}</span>`
-              }) }} />
-            ) : (
-              <span dangerouslySetInnerHTML={{ __html: rellena(t.repartir.repartidoEntre, {
-                n: item.splitInto,
-                dinero: `<span class="tnum font-bold text-mint">${money(breakdown.perShareCents, currency)}</span>`
-              }) }} />
-            )}
+          {/* La cuenta de lo que queda: es lo único que dice si has terminado. */}
+          <p className="mt-3 rounded-bloque bg-paper px-3.5 py-2.5 text-[15px] leading-relaxed text-ink-soft">
+            {breakdown.freeShares === 0
+              ? rellena(t.repartir.cadaUnoPaga, {
+                  dinero: money(breakdown.perShareCents, currency),
+                })
+              : breakdown.freeShares === 1
+                ? rellena(t.repartir.huecoEspera, {
+                    dinero: money(breakdown.perShareCents, currency),
+                  })
+                : rellena(t.repartir.huecosEsperan, {
+                    n: breakdown.freeShares,
+                    dinero: money(breakdown.perShareCents, currency),
+                  })}
           </p>
         </>
       )}
@@ -481,23 +421,20 @@ export default function ItemSheet({
       */}
       <div className="mt-4" />
       {/*
-        En los pasos de en medio la acción está arriba —elegir un número—, así
-        que abajo sólo hay una salida discreta. El botón grande aparece cuando
-        de verdad hay algo que empujar hacia adelante o que dar por terminado.
+        Nunca «Cancelar»: cada toque de aquí arriba se guarda al momento, así
+        que no hay nada que deshacer al salir. La única excepción es el paso de
+        las unidades, que sí necesita un botón porque separar una línea en dos
+        no tiene vuelta atrás y no se hace de un roce.
+
+        Quitar la línea no vive aquí: estaba bajo una raya al final de una hoja
+        que va de repartir, y no tenía nada que ver. Es la ✕ de la burbuja.
       */}
-      {paso === "quienes" ? (
+      {paso === "unidades" ? (
         <button
           type="button"
-          onClick={onClose}
-          className="mt-3 w-full min-h-[52px] rounded-xl bg-amber text-[15px] font-bold text-paper transition-transform active:scale-[0.98]"
-        >
-          {t.repartir.listo}
-        </button>
-      ) : paso === "cuantos" && item.splitInto > 1 ? (
-        <button
-          type="button"
-          onClick={() => setPaso("quienes")}
-          className="mt-3 w-full min-h-[52px] rounded-xl bg-amber text-[15px] font-bold text-paper transition-transform active:scale-[0.98]"
+          onClick={() => void seguirDesdeUnidades()}
+          disabled={busy}
+          className="mt-3 w-full min-h-[52px] rounded-pieza bg-amber text-[15px] font-bold text-paper transition-transform active:scale-[0.98] disabled:opacity-50"
         >
           {t.repartir.seguirConQuien}
         </button>
@@ -505,35 +442,58 @@ export default function ItemSheet({
         <button
           type="button"
           onClick={onClose}
-          className="mt-3 w-full min-h-[46px] rounded-xl border border-line text-[15px] font-semibold text-ink"
+          className="mt-3 w-full min-h-[52px] rounded-pieza bg-amber text-[15px] font-bold text-paper transition-transform active:scale-[0.98]"
         >
-          {t.repartir.cerrar}
+          {t.repartir.listo}
         </button>
       )}
     </Sheet>
   );
 }
 
-function Step({
-  children,
-  label,
-  disabled,
-  onClick,
+/**
+ * Un más y un menos.
+ *
+ * Sustituye a las rejillas de números que había en los dos primeros pasos. Un
+ * contador dice «esto es una cantidad que subes y bajas»; una rejilla dice
+ * «elige una de estas opciones», y cuando había dos rejillas seguidas con
+ * significados distintos —unidades y personas— nadie sabía cuál estaba
+ * contestando. De paso deja llegar a catorce, que con once botones no se podía.
+ */
+function Contador({
+  valor,
+  min,
+  max,
+  onCambia,
+  disabled = false,
 }: {
-  children: React.ReactNode;
-  label: string;
+  valor: number;
+  min: number;
+  max: number;
+  onCambia: (n: number) => void;
   disabled?: boolean;
-  onClick: () => void;
 }) {
   return (
-    <button
-      type="button"
-      aria-label={label}
-      disabled={disabled}
-      onClick={onClick}
-      className="grid h-7 w-5 place-items-center text-[15px] font-bold transition-colors hover:text-amber disabled:opacity-25"
-    >
-      {children}
-    </button>
+    <span className="flex shrink-0 items-center rounded-pieza border border-line">
+      <button
+        type="button"
+        aria-label="−"
+        disabled={disabled || valor <= min}
+        onClick={() => onCambia(valor - 1)}
+        className="grid h-[46px] w-11 place-items-center text-[21px] leading-none text-ink-soft transition-colors active:bg-paper-3 disabled:opacity-25"
+      >
+        −
+      </button>
+      <span className="tnum w-9 text-center text-[19px] font-bold">{valor}</span>
+      <button
+        type="button"
+        aria-label="+"
+        disabled={disabled || valor >= max}
+        onClick={() => onCambia(valor + 1)}
+        className="grid h-[46px] w-11 place-items-center text-[21px] leading-none text-ink-soft transition-colors active:bg-paper-3 disabled:opacity-25"
+      >
+        +
+      </button>
+    </span>
   );
 }

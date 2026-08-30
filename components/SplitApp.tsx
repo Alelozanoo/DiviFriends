@@ -970,13 +970,11 @@ export default function SplitApp({
           }
           onAddPerson={addPerson}
           onSplitUnits={(qty) => splitUnits(editingItem.id, qty)}
+          onSetPartes={(into) => void setSplitInto(editingItem.id, into)}
           onPick={(into) => {
             if (meId) claim(editingItem.id, 1, into);
             else void setSplitInto(editingItem.id, into);
           }}
-          onUndoSplit={() =>
-            void setSplitInto(editingItem.id, Math.max(1, Math.round(editingItem.qty || 1)))
-          }
         />
       )}
 
