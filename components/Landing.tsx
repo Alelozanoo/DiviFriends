@@ -4,7 +4,7 @@ import Link from "next/link";
 import Logo, { Wordmark } from "@/components/Logo";
 import TicketUploader from "@/components/TicketUploader";
 import { CambiarCookies } from "@/components/Consent";
-import { PASOS } from "@/components/ComoVa";
+import { PASOS, PasoMarcar } from "@/components/ComoVa";
 import Preguntas from "@/components/Preguntas";
 import MisDivis from "@/components/MisDivis";
 import ComoFuncionaSheet from "@/components/ComoFuncionaSheet";
@@ -98,30 +98,27 @@ function Cuerpo() {
               <MisDivis />
 
               {/*
-                Los cuatro pasos, en corto y sólo en el móvil.
+                La app, en vez de cuatro frases que la describen.
 
-                Debajo de la tarjeta quedaba un palmo de negro hasta el pie:
-                centrar el bloque lo repartía arriba y abajo, pero seguía siendo
-                hueco. Aquí van los titulares de los cuatro pasos, sin los
-                dibujos —que son de ordenador y pesan— y con los filetes de la
-                comanda entre uno y otro, así que se lee como lo que es: la
-                lista de un ticket.
+                Aquí había una lista numerada —«1 le haces una foto», «2
+                seleccionas lo que has tomado»— y era el bloque más templado de
+                toda la web: cualquier landing del mundo tiene esa lista. Y
+                encima estaba explicando con palabras algo que se entiende
+                mirando, en un producto que es cien por cien visual y del que
+                no se veía ni una pantalla.
+
+                El dibujo ya existía, sólo que puesto para ordenador. Es la
+                comanda de verdad, recortada a cuatro líneas: una marcada en
+                ámbar con tu ficha y la barra de abajo con lo que te toca. En un
+                golpe de vista se entiende lo que la lista tardaba cuatro
+                renglones en contar. Los cuatro pasos siguen enteros a un toque,
+                en «¿Cómo funciona?» del pie.
               */}
               <div className="mt-7 lg:hidden">
-                <p className="stamp text-ink-faint">{t.pasos.titulo}</p>
-                <ol className="mt-2.5 grid">
-                  {t.pasos.resumen.map((paso, i) => (
-                    <li key={paso}>
-                      {i > 0 && <div className="rule" />}
-                      <p className="flex items-baseline gap-3 py-2.5">
-                        <span className="tnum shrink-0 text-[13px] font-bold text-amber">
-                          {i + 1}
-                        </span>
-                        <span className="text-[15px] font-semibold leading-snug">{paso}</span>
-                      </p>
-                    </li>
-                  ))}
-                </ol>
+                <PasoMarcar sinMarco />
+                <p className="mt-3 text-balance text-center text-[13px] leading-relaxed text-ink-soft">
+                  {t.pasos.asiSeVe}
+                </p>
               </div>
             </div>
 

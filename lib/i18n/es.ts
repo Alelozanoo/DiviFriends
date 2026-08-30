@@ -30,6 +30,7 @@ export const es = {
 
   /* ------------------------------------------------- los cuatro pasos */
   pasos: {
+    asiSeVe: "Cada uno marca lo suyo y ve lo que le toca. Al final sale quién le paga a quién.",
     titulo: "Cómo funciona",
     entradilla: "De la foto del papel a quién le paga a quién.",
     uno: {

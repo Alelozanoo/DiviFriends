@@ -27,6 +27,7 @@ export const en: Dict = {
   },
 
   pasos: {
+    asiSeVe: "Everyone taps what they had and sees their share. At the end, who pays whom.",
     titulo: "How it works",
     entradilla: "From the photo of the receipt to who pays whom.",
     uno: {
