@@ -151,35 +151,6 @@ export default async function MetricasPage({ searchParams }: Props) {
         </p>
       </Bloque>
 
-      <Bloque titulo="Lo que traen los vídeos" nota="Mesas abiertas desde la cuenta de un reel">
-        {m.origenes.length ? (
-          <div className="space-y-2">
-            {m.origenes.map((o) => (
-              <div
-                key={o.slug}
-                className="flex items-baseline justify-between gap-4 rounded-caja border border-line bg-paper-2 px-4 py-3"
-              >
-                <span className="font-semibold">/reparte/{o.slug}</span>
-        <span className="text-[12px] text-ink-faint">
-                  <b className="tnum text-base text-ink">{o.dosOMas}</b> de{" "}
-                  <span className="tnum">{o.n}</span> llegan a dos
-                </span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="rounded-caja border border-line bg-paper-2 px-4 py-3 text-sm text-ink-faint">
-            Todavía no ha entrado nadie por la cuenta de un vídeo.
-          </p>
-        )}
-        <p className="mt-3 text-xs leading-relaxed text-ink-faint">
-          El número que vale es el primero:{" "}
-          <b className="text-ink">cuántas de esas mesas llegan a dos personas</b>. Una mesa de uno
-          solo es alguien que tocó un botón, y eso ya lo cuentan las reproducciones; que llegue a
-          dos significa que pasó el enlace, que es lo único que convierte un vídeo en gente usando
-          esto.
-        </p>
-      </Bloque>
 
       <Bloque titulo="Lo que cuesta" nota="Leer tickets es el único gasto que crece con la gente">
         <div className="grid grid-cols-3 gap-3">
