@@ -4,7 +4,7 @@ import Link from "next/link";
 import Logo, { Wordmark } from "@/components/Logo";
 import TicketUploader from "@/components/TicketUploader";
 import { CambiarCookies } from "@/components/Consent";
-import { PASOS, PasoMarcar } from "@/components/ComoVa";
+import { PASOS } from "@/components/ComoVa";
 import Preguntas from "@/components/Preguntas";
 import MisDivis from "@/components/MisDivis";
 import ComoFuncionaSheet from "@/components/ComoFuncionaSheet";
@@ -98,28 +98,23 @@ function Cuerpo() {
               <MisDivis />
 
               {/*
-                La app, en vez de cuatro frases que la describen.
+                Una frase, y ya.
 
-                Aquí había una lista numerada —«1 le haces una foto», «2
-                seleccionas lo que has tomado»— y era el bloque más templado de
-                toda la web: cualquier landing del mundo tiene esa lista. Y
-                encima estaba explicando con palabras algo que se entiende
-                mirando, en un producto que es cien por cien visual y del que
-                no se veía ni una pantalla.
+                Aquí hubo dos cosas y ninguna valía. Primero una lista numerada
+                —«1 le haces una foto», «2 seleccionas lo que has tomado»—, que
+                es el bloque más templado que existe: lo tiene cualquier landing
+                del mundo, y encima explicaba con palabras algo que se entiende
+                mirando. Después el dibujo de la comanda, que enseñaba el
+                producto pero le robaba el sitio a lo único que hay que tocar.
 
-                El dibujo ya existía, sólo que puesto para ordenador. Es la
-                comanda de verdad, recortada a cuatro líneas: una marcada en
-                ámbar con tu ficha y la barra de abajo con lo que te toca. En un
-                golpe de vista se entiende lo que la lista tardaba cuatro
-                renglones en contar. Los cuatro pasos siguen enteros a un toque,
-                en «¿Cómo funciona?» del pie.
+                Queda la frase. Dice lo que hacen los cuatro pasos en un
+                renglón, no compite con la tarjeta y deja la pantalla en lo que
+                tiene que ser: subir la foto. Los cuatro pasos con sus dibujos
+                siguen enteros a un toque, en «¿Cómo funciona?» del pie.
               */}
-              <div className="mt-7 lg:hidden">
-                <PasoMarcar sinMarco />
-                <p className="mt-3 text-balance text-center text-[13px] leading-relaxed text-ink-soft">
-                  {t.pasos.asiSeVe}
-                </p>
-              </div>
+              <p className="mt-6 text-balance text-center text-[13px] leading-relaxed text-ink-soft lg:hidden">
+                {t.pasos.asiSeVe}
+              </p>
             </div>
 
             {/*

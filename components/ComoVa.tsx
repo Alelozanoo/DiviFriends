@@ -134,19 +134,10 @@ export function PasoTickets() {
 /*  03 · tocas lo tuyo                                                         */
 /* -------------------------------------------------------------------------- */
 
-/**
- * @param sinMarco En la portada del móvil va sin caja.
- *
- * Ahí arriba está la tarjeta de subir la foto, que es lo que hay que tocar. Si
- * el dibujo lleva su propio borde y su propio fondo, quedan dos cajas iguales
- * una encima de otra y ninguna manda: la que se toca y la que sólo se mira
- * pesan lo mismo. Desnudo, se lee como lo que es —una muestra— y la tarjeta
- * recupera el turno.
- */
-export function PasoMarcar({ sinMarco = false }: { sinMarco?: boolean } = {}) {
+export function PasoMarcar() {
   const t = useT();
-  const dentro = (
-    <>
+  return (
+    <Marco>
       <div className="grid w-full max-w-[15rem] grid-cols-2 gap-2.5">
         <Linea nombre="Ensaladilla" precio="7,50" />
         {/* La marcada: borde ámbar, importe en ámbar y tu ficha. Es exactamente
@@ -161,13 +152,8 @@ export function PasoMarcar({ sinMarco = false }: { sinMarco?: boolean } = {}) {
         <span className="stamp text-ink-faint">{t.pasos.loTuyo}</span>
         <span className="tnum text-lg font-bold">21,40 €</span>
       </div>
-    </>
+    </Marco>
   );
-
-  if (sinMarco) {
-    return <div className="flex flex-col items-center">{dentro}</div>;
-  }
-  return <Marco>{dentro}</Marco>;
 }
 
 function Linea({
