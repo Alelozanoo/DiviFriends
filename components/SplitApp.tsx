@@ -520,11 +520,22 @@ export default function SplitApp({
               className="flex min-w-0 shrink items-center gap-2"
             >
               <Logo size={64} className="h-8 w-8 shrink-0" />
-              {/* El nombre, no el código. El código está en grande en la hoja
-                  de compartir, que es adonde vas cuando quieres dárselo a
-                  alguien; aquí lo que hace falta es saber de qué app es esto.
-                  Por debajo de 390 no cabe con las caras, y se queda el logo. */}
-              <span className="hidden truncate text-[15px] font-bold leading-tight tracking-[-0.02em] min-[390px]:block">
+              {/*
+                El nombre, no el código. El código está en grande en la hoja de
+                compartir, que es adonde vas cuando quieres dárselo a alguien;
+                aquí lo que hace falta es saber de qué app es esto.
+
+                El corte estaba en 390 y sobraba: se puso cuando la cabecera
+                llevaba las tres caras y la palabra «Compartir» sueltas, y desde
+                que eso vive dentro de un botón hay sitio de sobra. Medido: a
+                360 px quedan 107 libres y la palabra ocupa 76; a 375, 122.
+                Estaba escondiéndose en móviles donde cabía holgada —el nombre
+                de la app desaparecía en un iPhone SE y en medio Android— y por
+                eso dentro de una comanda sólo se veía el símbolo.
+
+                A 320 sí falta sitio: nueve píxeles. Ahí se queda el logo solo.
+              */}
+              <span className="hidden truncate text-[15px] font-bold leading-tight tracking-[-0.02em] min-[350px]:block">
                 Divi<span className="text-amber">Friends</span>
               </span>
             </Link>
