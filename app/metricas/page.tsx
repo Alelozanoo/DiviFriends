@@ -160,7 +160,7 @@ export default async function MetricasPage({ searchParams }: Props) {
                 className="flex items-baseline justify-between gap-4 rounded-caja border border-line bg-paper-2 px-4 py-3"
               >
                 <span className="font-semibold">/reparte/{o.slug}</span>
-                <span className="stamp text-ink-faint">
+        <span className="text-[12px] text-ink-faint">
                   <b className="tnum text-base text-ink">{o.dosOMas}</b> de{" "}
                   <span className="tnum">{o.n}</span> llegan a dos
                 </span>
@@ -258,7 +258,7 @@ function Cifra({
         })}
         {sufijo}
       </p>
-      <p className="stamp mt-1 text-ink-faint">{label}</p>
+   <p className="text-[12px] mt-1 text-ink-faint">{label}</p>
     </div>
   );
 }

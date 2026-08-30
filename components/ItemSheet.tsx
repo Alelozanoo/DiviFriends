@@ -186,7 +186,7 @@ export default function ItemSheet({
       {paso === "unidades" ? (
         /* ------------------------------------------ paso 1: cuántas de ellas */
         <>
-          <p className="stamp mt-5 text-amber">{rellena(t.repartir.paso, { n: 1, total: pasos })}</p>
+     <p className="text-[12px] mt-5 text-amber">{rellena(t.repartir.paso, { n: 1, total: pasos })}</p>
           <h3 className="mt-1 text-[17px] font-bold tracking-[-0.02em]">
             {t.repartir.cuantasUnidades}
           </h3>
@@ -252,12 +252,12 @@ export default function ItemSheet({
             <button
               type="button"
               onClick={() => setPaso("unidades")}
-              className="stamp mt-5 inline-flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1 text-ink-faint transition-colors hover:border-amber hover:text-amber"
+       className="text-[12px] mt-5 inline-flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1 text-ink-faint transition-colors hover:border-amber hover:text-amber"
             >
               ← {rellena(t.repartir.unidadesCambiar, { n: item.qty })}
             </button>
           )}
-          <p className={`stamp text-amber ${multiUnidad ? "mt-3" : "mt-5"}`}>
+     <p className={`text-[12px] text-amber ${multiUnidad ? "mt-3" : "mt-5"}`}>
             {rellena(t.repartir.paso, { n: pasos - 1, total: pasos })}
           </p>
           <h3 className="mt-1 text-[17px] font-bold tracking-[-0.02em]">{t.repartir.entreCuantos}</h3>
@@ -337,7 +337,7 @@ export default function ItemSheet({
           <button
             type="button"
             onClick={() => setPaso("cuantos")}
-            className="stamp mt-5 inline-flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1 text-ink-faint transition-colors hover:border-amber hover:text-amber"
+      className="text-[12px] mt-5 inline-flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1 text-ink-faint transition-colors hover:border-amber hover:text-amber"
           >
             ← {rellena(t.repartir.entreCambiar, { n: item.splitInto })}
           </button>

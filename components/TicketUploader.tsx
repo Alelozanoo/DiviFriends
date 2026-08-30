@@ -305,7 +305,7 @@ export default function TicketUploader({
             <div className="min-h-[52px] w-full">
               {busy ? (
                 <div className="w-full pt-2 text-left">
-                  <div className="stamp mb-2 flex justify-between text-amber">
+         <div className="text-[12px] mb-2 flex justify-between text-amber">
                     <span>{t.subir.progreso}</span>
                     <span className="tnum">{progress}%</span>
                   </div>

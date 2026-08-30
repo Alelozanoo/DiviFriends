@@ -99,7 +99,7 @@ export default function ManualTicketForm({ demo }: { demo: boolean }) {
       </div>
 
       <div className="rounded-caja border border-line bg-paper-2 p-4">
-        <p className="stamp mb-3 text-ink-faint">Consumiciones</p>
+    <p className="text-[12px] mb-3 text-ink-faint">Consumiciones</p>
 
         {/*
           El nombre es la casilla ancha, y en el móvil no lo era.
@@ -203,7 +203,7 @@ export default function ManualTicketForm({ demo }: { demo: boolean }) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="stamp mb-2 block text-ink-faint">{label}</span>
+   <span className="text-[12px] mb-2 block text-ink-faint">{label}</span>
       {children}
     </label>
   );

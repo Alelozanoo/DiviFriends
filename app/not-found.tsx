@@ -48,7 +48,7 @@ export default function NoEncontrada() {
         esta app enseña cifras grandes. Así el error se lee dentro del mismo
         idioma visual y no como una pantalla prestada de otro sitio.
       */}
-      <p className="stamp text-ink-faint">Error</p>
+   <p className="text-[12px] text-ink-faint">Error</p>
       <p className="tnum mt-2 text-[64px] font-bold leading-none tracking-[-0.04em] text-amber">
         404
       </p>

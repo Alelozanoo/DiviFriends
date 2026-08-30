@@ -65,7 +65,7 @@ export function Stat({
     tone === "good" ? "text-mint" : tone === "warn" ? "text-clay" : "text-ink";
   return (
     <div>
-      <p className="stamp text-ink-faint">{label}</p>
+   <p className="text-[12px] text-ink-faint">{label}</p>
       <p className={`tnum mt-1 text-xl font-bold ${color}`}>{value}</p>
     </div>
   );

@@ -294,7 +294,7 @@ function Fila({
           {person.name}
           {esYo && <span className="ml-1.5 text-[13px] font-semibold text-amber">{t.mesa.tu}</span>}
         </span>
-        {pie && <span className="stamp mt-1 block text-ink-faint">{pie}</span>}
+    {pie && <span className="text-[12px] mt-1 block text-ink-faint">{pie}</span>}
       </span>
       <span
         className={`tnum shrink-0 text-[17px] font-bold ${
@@ -318,7 +318,7 @@ function Fila({
           {t.cuentas.pagarAhora}
         </button>
       ) : leDebo != null && yaDicho ? (
-        <span className="stamp shrink-0 text-mint">{t.cobro.esperandoCorto}</span>
+    <span className="text-[12px] shrink-0 text-mint">{t.cobro.esperandoCorto}</span>
       ) : puedoSaldarle ? (
         <button
           type="button"
@@ -335,11 +335,11 @@ function Fila({
       ) : leDeben ? (
         /* En tu propia fila no: el titular de arriba ya dice «falta que te
            paguen», y repetirlo al lado de tu nombre sólo añade ruido. */
-        esYo ? null : <span className="stamp shrink-0 text-mint">{t.cuentas.seLeDebe}</span>
+    esYo ? null : <span className="text-[12px] shrink-0 text-mint">{t.cuentas.seLeDebe}</span>
       ) : person.owesCents === 0 ? (
-        <span className="stamp shrink-0 text-ink-faint">{t.cuentas.noDebeNada}</span>
+    <span className="text-[12px] shrink-0 text-ink-faint">{t.cuentas.noDebeNada}</span>
       ) : person.settled ? (
-        <span className="stamp shrink-0 text-mint">{t.cuentas.pagado}</span>
+    <span className="text-[12px] shrink-0 text-mint">{t.cuentas.pagado}</span>
       ) : null}
     </li>
   );

@@ -68,7 +68,7 @@ export function PagadorTicketSheet({
 
       {otros.length > 0 && (
         <>
-          <p className="stamp mt-5 text-ink-faint">{t.pagadorTicket.fueOtro}</p>
+     <p className="text-[12px] mt-5 text-ink-faint">{t.pagadorTicket.fueOtro}</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {otros.map((person) => (
               <button

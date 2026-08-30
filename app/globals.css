@@ -124,7 +124,23 @@ body {
   font-feature-settings: "tnum";
 }
 
-/* Micro-etiquetas de ticket: MESA 12 · SUBTOTAL · IVA */
+/*
+  Micro-etiquetas de ticket: MESA 12 · SUBTOTAL · TOTAL.
+
+  Con cuentagotas, y aquí está el porqué. Llegó a estar en sesenta y un sitios
+  —el rótulo de cada sección, cada estado de cada fila, las fechas, los títulos
+  de los formularios— y a esa escala deja de leerse como un ticket y pasa a
+  leerse como un panel de control cualquiera. Es el tic tipográfico por el que
+  más se reconoce una interfaz hecha con IA.
+
+  La regla, si hay dudas: **¿esa palabra estaría impresa en el papel?** TOTAL DEL
+  TICKET sí. MESA 12 sí. LO TUYO y REPARTIDO son de la casa, pero hablan el
+  mismo idioma y van encima de una cifra. «Paso 1 de 3», «Progreso», «Empieza
+  aquí» o la fecha de un cambio, no: son palabras de aplicación, y en minúscula
+  se leen antes y molestan menos.
+
+  Quedan once.
+*/
 .stamp {
   font-family: var(--font-figure), ui-monospace, monospace;
   text-transform: uppercase;

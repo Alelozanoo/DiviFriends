@@ -153,7 +153,7 @@ function FormaDeCobro({
   return (
     <div className="mt-5">
       <label className="block">
-        <span className="stamp flex items-center gap-1.5 text-ink-faint">
+    <span className="text-[12px] flex items-center gap-1.5 text-ink-faint">
           <MarcaRevolut height={11} />
           <span>{t.cobro.tuRevolut}</span>
         </span>
@@ -173,7 +173,7 @@ function FormaDeCobro({
       </label>
 
       <label className="mt-4 block">
-        <span className="stamp flex items-center gap-1.5 text-ink-faint">
+    <span className="text-[12px] flex items-center gap-1.5 text-ink-faint">
           <MarcaBizum height={11} />
           <span>{t.cobro.tuBizum}</span>
         </span>

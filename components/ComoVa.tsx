@@ -115,7 +115,7 @@ export function PasoTickets() {
               </span>
               {/* Que cada ticket lo pague otro es justo lo que hay que contar:
                   es la mitad del porqué de la pantalla siguiente. */}
-              <span className="stamp block text-[0.5rem] text-ink-faint">{t.pasos.pago} {recibo.quien}</span>
+       <span className="block text-[0.5rem] text-ink-faint">{t.pasos.pago} {recibo.quien}</span>
             </span>
             <span className="tnum shrink-0 whitespace-nowrap text-xs font-bold">{recibo.total} €</span>
           </div>
@@ -197,7 +197,7 @@ function Linea({
           {t.pasos.tu}
         </span>
       ) : (
-        <span className="stamp mt-1 block text-[0.5rem] text-mint">{entre ?? t.pasos.libre}</span>
+    <span className="mt-1 block text-[0.5rem] text-mint">{entre ?? t.pasos.libre}</span>
       )}
     </div>
   );

@@ -83,7 +83,7 @@ function Cuerpo() {
                 el rótulo va fuera, como el sello de una sección, y debajo hay
                 un solo bloque con las dos maneras de empezar.
               */}
-              <p className="stamp mb-2.5 text-ink-faint lg:px-2">{t.home.empiezaAqui}</p>
+       <p className="text-[12px] mb-2.5 text-ink-faint lg:px-2">{t.home.empiezaAqui}</p>
               <TicketUploader />
 
               {/*

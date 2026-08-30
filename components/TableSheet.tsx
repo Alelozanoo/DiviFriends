@@ -102,7 +102,7 @@ export default function TableSheet({
         {/* ------------------------------------------------ cómo se llama */}
         {editandoNombre ? (
           <div className="grid gap-2.5 rounded-bloque border border-amber/40 bg-amber/[0.06] p-3.5">
-            <p className="stamp text-ink-faint">{t.mesa.nombreMesa}</p>
+      <p className="text-[12px] text-ink-faint">{t.mesa.nombreMesa}</p>
             <input
               autoFocus
               value={borrador}
@@ -138,7 +138,7 @@ export default function TableSheet({
             className="flex min-h-[54px] w-full items-center gap-3 rounded-bloque border border-line-soft bg-paper px-3.5 text-left transition-colors active:bg-paper-3"
           >
             <span className="min-w-0 flex-1">
-              <span className="stamp block text-ink-faint">{t.mesa.nombreMesa}</span>
+       <span className="text-[12px] block text-ink-faint">{t.mesa.nombreMesa}</span>
               <span
                 className={`mt-1 block truncate text-[15px] font-semibold ${
                   place ? "text-ink" : "text-ink-faint"
@@ -171,7 +171,7 @@ export default function TableSheet({
             dangerouslySetInnerHTML={{ __html: qrSvg }}
           />
           <div className="min-w-0">
-            <p className="stamp text-[#776a5c]">{t.mesa.comoUnirse}</p>
+      <p className="text-[12px] text-[#776a5c]">{t.mesa.comoUnirse}</p>
             <p className="tnum mt-1.5 text-[21px] font-bold tracking-[0.16em] text-[#14100d]">
               {code}
             </p>
@@ -207,7 +207,7 @@ export default function TableSheet({
         {/* ------------------------------------------------- quién ya está */}
         {participants.length > 0 && (
           <>
-            <p className="stamp mt-1 text-ink-faint">{t.mesa.quienEsta}</p>
+      <p className="text-[12px] mt-1 text-ink-faint">{t.mesa.quienEsta}</p>
             <ul className="-mt-1 grid gap-1.5">
               {participants.map((person) => (
                 <li
@@ -236,7 +236,7 @@ export default function TableSheet({
                         <span className="shrink-0 text-[13px] text-amber">{t.mesa.tu}</span>
                       )}
                       {(person.isPayer || person.id === payerId) && (
-                        <span className="stamp shrink-0 rounded border border-mint/20 bg-mint/10 px-1.5 py-1 text-mint">
+            <span className="text-[12px] shrink-0 rounded border border-mint/20 bg-mint/10 px-1.5 py-1 text-mint">
                           {t.mesa.pagadorEtiqueta}
                         </span>
                       )}
@@ -294,7 +294,7 @@ export default function TableSheet({
 
         {/* Que caduque no puede ser una sorpresa: quien vuelva en dos meses a por
             una cuenta tiene derecho a saber por qué no está. */}
-        <p className="stamp text-center text-ink-faint">{t.mesa.caduca}</p>
+    <p className="text-[12px] text-center text-ink-faint">{t.mesa.caduca}</p>
 
         <CerrarHoja onClick={onClose}>{t.mesa.cerrar}</CerrarHoja>
       </div>

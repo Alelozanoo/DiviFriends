@@ -152,7 +152,7 @@ export default function AvisoLegalPage() {
         </p>
       </Bloque>
 
-      <p className="stamp mt-8 text-ink-faint">Actualizada el {ACTUALIZADA}</p>
+   <p className="text-[12px] mt-8 text-ink-faint">Actualizada el {ACTUALIZADA}</p>
 
       <div className="mt-6 flex flex-wrap items-center gap-4">
         <Link
@@ -196,7 +196,7 @@ function Bloque({
 function Dato({ k, children }: { k: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1 border-t border-line-soft pt-3 first:border-0 first:pt-0 sm:flex-row sm:gap-4 [&+&]:mt-3">
-      <dt className="stamp shrink-0 pt-1 text-ink-faint sm:w-36">{k}</dt>
+   <dt className="text-[12px] shrink-0 pt-1 text-ink-faint sm:w-36">{k}</dt>
       <dd className="text-[15px] leading-relaxed text-ink-soft">{children}</dd>
     </div>
   );

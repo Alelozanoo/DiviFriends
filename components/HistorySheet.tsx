@@ -128,7 +128,7 @@ function Fila({
           {mio && <span className="ml-1 text-[13px] text-amber">{t.mesa.tu}</span>}{" "}
           <Cuenta event={event} currency={currency} t={t} />
         </p>
-        <p className="stamp mt-0.5 text-ink-faint">{cuando(event.at, t)}</p>
+    <p className="text-[12px] mt-0.5 text-ink-faint">{cuando(event.at, t)}</p>
       </div>
     </li>
   );

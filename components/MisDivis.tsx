@@ -41,8 +41,8 @@ export default function MisDivis() {
           sello de once píxeles a la derecha del todo—, sin necesidad de que se
           borre. */}
       <div className="mb-2 flex items-baseline justify-between gap-3 px-1">
-        <p className="stamp text-ink-faint">{t.misDivis.titulo}</p>
-        <p className="stamp text-ink-faint">{t.misDivis.donde}</p>
+    <p className="text-[12px] text-ink-faint">{t.misDivis.titulo}</p>
+    <p className="text-[12px] text-ink-faint">{t.misDivis.donde}</p>
       </div>
 
       <ul className="space-y-1.5">
@@ -55,7 +55,7 @@ export default function MisDivis() {
         <button
           type="button"
           onClick={() => setTodos(true)}
-          className="stamp mt-2 w-full rounded-xl border border-line py-2 text-ink-faint transition-colors hover:border-amber hover:text-amber"
+     className="text-[12px] mt-2 w-full rounded-xl border border-line py-2 text-ink-faint transition-colors hover:border-amber hover:text-amber"
         >
           {t.misDivis.verTodos} {divis.length}
         </button>
@@ -117,7 +117,7 @@ function Fila({ divi, onQuitar, t }: { divi: DiviGuardado; onQuitar: () => void;
           </span>
 
           <span className="mt-1 flex items-center gap-2">
-            <span className="stamp shrink-0 text-ink-faint">{cuando(divi.at, t)}</span>
+      <span className="text-[12px] shrink-0 text-ink-faint">{cuando(divi.at, t)}</span>
             {divi.gente.length > 0 && (
               <span className="flex items-center -space-x-1.5">
                 {divi.gente.slice(0, 4).map((p, i) => (
@@ -137,7 +137,7 @@ function Fila({ divi, onQuitar, t }: { divi: DiviGuardado; onQuitar: () => void;
             estás sin tener que leer la línea de abajo. */}
         <span className="shrink-0 text-right">
           {divi.saldado || divi.cents === 0 ? (
-            <span className="stamp block text-mint">{t.misDivis.cuadrado}</span>
+      <span className="text-[12px] block text-mint">{t.misDivis.cuadrado}</span>
           ) : (
             <>
               <span
@@ -150,7 +150,7 @@ function Fila({ divi, onQuitar, t }: { divi: DiviGuardado; onQuitar: () => void;
               {/* «Debes» sólo cuando hay a quién: mientras nadie haya marcado
                   quién puso la tarjeta no le debes nada a nadie todavía, eso
                   es sólo tu parte de la cuenta. */}
-              <span className="stamp block text-ink-faint">
+       <span className="text-[12px] block text-ink-faint">
                 {cobra ? t.misDivis.teDeben : divi.aQuien ? `${t.misDivis.a} ${divi.aQuien}` : t.misDivis.loTuyo}
               </span>
             </>

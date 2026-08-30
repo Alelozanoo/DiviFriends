@@ -99,7 +99,7 @@ export default function CookiesPage() {
 function Fila({ k, children }: { k: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1 border-t border-line-soft pt-2 first:border-0 first:pt-0 sm:flex-row sm:gap-4">
-      <dt className="stamp shrink-0 pt-1 text-ink-faint sm:w-32">{k}</dt>
+   <dt className="text-[12px] shrink-0 pt-1 text-ink-faint sm:w-32">{k}</dt>
       <dd className="text-[15px] leading-relaxed text-ink-soft">{children}</dd>
     </div>
   );

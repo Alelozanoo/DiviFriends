@@ -154,7 +154,7 @@ export function EditNameSheet({
           </button>
         )}
 
-        <p className="stamp mt-1 text-ink-faint">{t.perfil.datosPago}</p>
+    <p className="text-[12px] mt-1 text-ink-faint">{t.perfil.datosPago}</p>
         <div className="-mt-2 flex flex-col gap-2">
           {/*
             Sin el «+34» delante. Es un móvil español y el prefijo no se teclea

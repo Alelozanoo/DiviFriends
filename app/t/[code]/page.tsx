@@ -85,7 +85,7 @@ export default async function TicketPage({ params, searchParams }: Props) {
       <main id="contenido" className="mx-auto flex max-w-md flex-1 flex-col justify-center px-6 py-20 text-center">
         {/* Si estaba en «tus divis», que deje de estarlo: ya no hay nada detrás. */}
         <OlvidarComanda code={code} />
-        <p className="stamp text-ink-faint">{ingles ? "Code" : "Código"} {code}</p>
+    <p className="text-[12px] text-ink-faint">{ingles ? "Code" : "Código"} {code}</p>
         <h1 className="mt-4 text-3xl font-bold tracking-tight">
           {ingles ? "This bill doesn't exist" : "Esta comanda no existe"}
         </h1>
