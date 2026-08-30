@@ -104,7 +104,7 @@ export default function CuentasSheet({
           <button
             type="button"
             onClick={() => onDecirPagador(ticketsSinPagador[0].id)}
-            className="flex w-full items-center justify-between gap-3 rounded-[15px] border border-clay/40 bg-clay/[0.08] px-4 py-3.5 text-left transition-colors active:bg-clay/15"
+            className="flex w-full items-center justify-between gap-3 rounded-bloque border border-clay/40 bg-clay/[0.08] px-4 py-3.5 text-left transition-colors active:bg-clay/15"
           >
             <span className="text-[13px] leading-relaxed text-clay">
               {ticketsSinPagador.length === 1
@@ -120,7 +120,7 @@ export default function CuentasSheet({
         )}
 
         {state.ticket.closed && !isCompleted && (
-          <div className="rounded-[15px] border border-mint/40 bg-mint/[0.08] px-4 py-3.5">
+          <div className="rounded-bloque border border-mint/40 bg-mint/[0.08] px-4 py-3.5">
             <p className="text-[15px] font-bold text-mint">{t.cuentas.mesaCerrada}</p>
             <p className="mt-1 text-[13px] leading-relaxed text-ink-soft">
               {t.cuentas.mesaCerradaAviso}
@@ -129,7 +129,7 @@ export default function CuentasSheet({
         )}
 
         {isCompleted ? (
-          <div className="rounded-[15px] border border-amber/40 bg-amber/[0.08] px-4 py-4 text-center">
+          <div className="rounded-bloque border border-amber/40 bg-amber/[0.08] px-4 py-4 text-center">
             <p className="text-[21px] font-bold tracking-[-0.025em] text-amber">
               {t.cuentas.diviCompletado}
             </p>
@@ -156,7 +156,7 @@ export default function CuentasSheet({
           return (
             <section
               key={pago.fromId}
-              className="rounded-[15px] border border-mint/40 bg-mint/[0.08] px-4 py-3.5"
+              className="rounded-bloque border border-mint/40 bg-mint/[0.08] px-4 py-3.5"
             >
               <div className="flex items-center gap-3">
                 <Avatar name={quien.name} avatar={quien.avatar} color={quien.color} size={32} />
@@ -447,7 +447,7 @@ function Bloque({
 }) {
   return (
     <section
-      className={`rounded-[15px] border px-4 py-4 ${
+      className={`rounded-bloque border px-4 py-4 ${
         tono === "bien"
           ? "border-mint/30 bg-mint/[0.08]"
           : tono === "aviso"

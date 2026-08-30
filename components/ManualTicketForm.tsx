@@ -98,7 +98,7 @@ export default function ManualTicketForm({ demo }: { demo: boolean }) {
         </Field>
       </div>
 
-      <div className="rounded-2xl border border-line bg-paper-2 p-4">
+      <div className="rounded-caja border border-line bg-paper-2 p-4">
         <p className="stamp mb-3 text-ink-faint">Consumiciones</p>
 
         {/*

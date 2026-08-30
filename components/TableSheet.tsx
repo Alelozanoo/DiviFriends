@@ -101,7 +101,7 @@ export default function TableSheet({
       <div className="mt-4 grid gap-3">
         {/* ------------------------------------------------ cómo se llama */}
         {editandoNombre ? (
-          <div className="grid gap-2.5 rounded-[15px] border border-amber/40 bg-amber/[0.06] p-3.5">
+          <div className="grid gap-2.5 rounded-bloque border border-amber/40 bg-amber/[0.06] p-3.5">
             <p className="stamp text-ink-faint">{t.mesa.nombreMesa}</p>
             <input
               autoFocus
@@ -135,7 +135,7 @@ export default function TableSheet({
               setBorrador(place ?? "");
               setEditandoNombre(true);
             }}
-            className="flex min-h-[54px] w-full items-center gap-3 rounded-[15px] border border-line-soft bg-paper px-3.5 text-left transition-colors active:bg-paper-3"
+            className="flex min-h-[54px] w-full items-center gap-3 rounded-bloque border border-line-soft bg-paper px-3.5 text-left transition-colors active:bg-paper-3"
           >
             <span className="min-w-0 flex-1">
               <span className="stamp block text-ink-faint">{t.mesa.nombreMesa}</span>
@@ -165,7 +165,7 @@ export default function TableSheet({
         )}
 
         {/* --------------------------------------------- el QR y el código */}
-        <div className="flex items-center gap-4 rounded-[15px] bg-[#f4ece0] p-4">
+        <div className="flex items-center gap-4 rounded-bloque bg-[#f4ece0] p-4">
           <div
             className="h-24 w-24 shrink-0 [&>svg]:h-full [&>svg]:w-full"
             dangerouslySetInnerHTML={{ __html: qrSvg }}

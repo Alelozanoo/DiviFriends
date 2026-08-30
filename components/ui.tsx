@@ -171,8 +171,8 @@ export function Sheet({
             centrado
               ? // Redonda por los cuatro lados y algo más baja: flotando en
                 // medio, el borde de abajo se ve, y conviene que se vea aire.
-                "pop max-h-[86dvh] rounded-[24px] pb-5"
-              : "rise max-h-[92dvh] rounded-t-[24px] border-b-0 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
+                "pop max-h-[86dvh] rounded-hoja pb-5"
+              : "rise max-h-[92dvh] rounded-t-hoja border-b-0 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
           }`}
         >
           {fijo ? (

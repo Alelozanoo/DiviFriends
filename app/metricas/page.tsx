@@ -132,7 +132,7 @@ export default async function MetricasPage({ searchParams }: Props) {
         {m.acciones.length ? (
           <Escalera pasos={m.acciones} />
         ) : (
-          <p className="rounded-2xl border border-line bg-paper-2 px-4 py-3 text-sm text-ink-faint">
+          <p className="rounded-caja border border-line bg-paper-2 px-4 py-3 text-sm text-ink-faint">
             Todavía no hay ni un cambio grabado.
           </p>
         )}
@@ -148,6 +148,36 @@ export default async function MetricasPage({ searchParams }: Props) {
         </div>
         <p className="mt-3 text-xs leading-relaxed text-ink-faint">
           Si algún día pones anuncios, esta es la tabla que dice a qué horas ponerlos.
+        </p>
+      </Bloque>
+
+      <Bloque titulo="Lo que traen los vídeos" nota="Mesas abiertas desde la cuenta de un reel">
+        {m.origenes.length ? (
+          <div className="space-y-2">
+            {m.origenes.map((o) => (
+              <div
+                key={o.slug}
+                className="flex items-baseline justify-between gap-4 rounded-caja border border-line bg-paper-2 px-4 py-3"
+              >
+                <span className="font-semibold">/reparte/{o.slug}</span>
+                <span className="stamp text-ink-faint">
+                  <b className="tnum text-base text-ink">{o.dosOMas}</b> de{" "}
+                  <span className="tnum">{o.n}</span> llegan a dos
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="rounded-caja border border-line bg-paper-2 px-4 py-3 text-sm text-ink-faint">
+            Todavía no ha entrado nadie por la cuenta de un vídeo.
+          </p>
+        )}
+        <p className="mt-3 text-xs leading-relaxed text-ink-faint">
+          El número que vale es el primero:{" "}
+          <b className="text-ink">cuántas de esas mesas llegan a dos personas</b>. Una mesa de uno
+          solo es alguien que tocó un botón, y eso ya lo cuentan las reproducciones; que llegue a
+          dos significa que pasó el enlace, que es lo único que convierte un vídeo en gente usando
+          esto.
         </p>
       </Bloque>
 
@@ -188,7 +218,7 @@ export default async function MetricasPage({ searchParams }: Props) {
         </p>
       </Bloque>
 
-      <p className="mt-8 rounded-2xl border border-line bg-paper-2 px-4 py-3 text-xs leading-relaxed text-ink-faint">
+      <p className="mt-8 rounded-caja border border-line bg-paper-2 px-4 py-3 text-xs leading-relaxed text-ink-faint">
         <b className="text-ink-soft">Lo que esto no puede saber:</b> si alguien vuelve. Una
         comanda no guarda quién la creó más allá de esa mesa, así que no hay forma de decir que
         el divi de este sábado y el del que viene son de la misma persona. Para eso haría falta
@@ -220,7 +250,7 @@ function Cifra({
 }) {
   const color = tono === "mint" ? "text-mint" : tono === "clay" ? "text-clay" : destacado ? "text-amber" : "text-ink";
   return (
-    <div className="rounded-2xl border border-line bg-paper-2 px-4 py-3">
+    <div className="rounded-caja border border-line bg-paper-2 px-4 py-3">
       <p className={`tnum text-3xl font-bold leading-tight ${color}`}>
         {n.toLocaleString("es-ES", {
           minimumFractionDigits: decimales,
@@ -307,7 +337,7 @@ function Bloque({
 function Escalera({ pasos }: { pasos: { etiqueta: string; n: number; pct?: number }[] }) {
   const alto = Math.max(1, ...pasos.map((p) => p.n));
   return (
-    <div className="flex flex-col gap-2 rounded-2xl border border-line bg-paper-2 p-4">
+    <div className="flex flex-col gap-2 rounded-caja border border-line bg-paper-2 p-4">
       {pasos.map((paso) => (
         <div key={paso.etiqueta} className="flex items-center gap-3">
           <span className="w-40 shrink-0 text-[13px] leading-tight text-ink-soft">
@@ -333,7 +363,7 @@ function Escalera({ pasos }: { pasos: { etiqueta: string; n: number; pct?: numbe
 function Barras({ datos }: { datos: { etiqueta: string; n: number }[] }) {
   const alto = Math.max(1, ...datos.map((d) => d.n));
   return (
-    <div className="flex items-end gap-1.5 rounded-2xl border border-line bg-paper-2 p-4">
+    <div className="flex items-end gap-1.5 rounded-caja border border-line bg-paper-2 p-4">
       {datos.map((d) => (
         <div key={d.etiqueta} className="flex flex-1 flex-col items-center gap-1.5">
           <span className="tnum text-[10px] text-ink-faint">{d.n || ""}</span>

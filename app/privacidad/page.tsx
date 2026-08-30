@@ -235,7 +235,7 @@ function Bloque({
 }) {
   return (
     <section
-      className={`mt-6 rounded-[15px] border p-5 ${
+      className={`mt-6 rounded-caja border p-5 ${
         tono === "aviso" ? "border-clay/30 bg-clay/[0.05]" : "border-line-soft bg-paper-2"
       }`}
     >

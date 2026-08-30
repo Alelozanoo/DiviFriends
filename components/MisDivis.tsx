@@ -78,7 +78,7 @@ function Fila({ divi, onQuitar, t }: { divi: DiviGuardado; onQuitar: () => void;
   */
   if (confirmando) {
     return (
-      <li className="rounded-2xl border border-clay/40 bg-clay/[0.07] px-3.5 py-3">
+      <li className="rounded-caja border border-clay/40 bg-clay/[0.07] px-3.5 py-3">
         <p className="text-sm font-semibold">{t.misDivis.cerrarTitulo} {divi.place || divi.code}?</p>
         <p className="mt-1 text-xs leading-relaxed text-ink-soft">
           {t.misDivis.cerrarAviso}
@@ -107,7 +107,7 @@ function Fila({ divi, onQuitar, t }: { divi: DiviGuardado; onQuitar: () => void;
     <li className="relative">
       <Link
         href={`/t/${divi.code}`}
-        className="flex items-center gap-3 rounded-2xl border border-line bg-paper-2 py-2.5 pl-3.5 pr-11 transition-colors active:bg-paper-3"
+        className="flex items-center gap-3 rounded-caja border border-line bg-paper-2 py-2.5 pl-3.5 pr-11 transition-colors active:bg-paper-3"
       >
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-semibold">

@@ -46,10 +46,20 @@ function Cuerpo() {
         />
 
         <div className="mx-auto max-w-6xl px-[var(--gutter)] pb-8 pt-8 lg:px-5 lg:pb-20 lg:pt-16">
-          <header className="mb-6 flex justify-center lg:mb-12 lg:justify-start">
-            <Link href={inicio(lang)} className="inline-flex items-center gap-3 lg:gap-4">
-              <Logo size={128} priority className="h-10 w-10 lg:h-20 lg:w-20" />
-              <Wordmark className="text-[24px] font-bold tracking-[-0.03em] lg:text-3xl" />
+          {/*
+            La marca, más pequeña de lo que era.
+
+            En el móvil el logo iba a 40 px y la palabra a 24, y el reclamo
+            —que es lo único que tiene que convencer a alguien que llega de un
+            enlace— a 21. O sea que lo más grande de la pantalla era el nombre
+            de la empresa, que es justo lo que menos le importa a quien acaba
+            de llegar. Aquí la marca dice quién eres; el reclamo, para qué
+            sirve. Y ese orden se ve antes de leer nada.
+          */}
+          <header className="mb-5 flex justify-center lg:mb-12 lg:justify-start">
+            <Link href={inicio(lang)} className="inline-flex items-center gap-2.5 lg:gap-4">
+              <Logo size={128} priority className="h-8 w-8 lg:h-20 lg:w-20" />
+              <Wordmark className="text-[19px] font-bold tracking-[-0.03em] lg:text-3xl" />
             </Link>
           </header>
 
@@ -58,7 +68,7 @@ function Cuerpo() {
             quedan para el ordenador, pero sin nada la pantalla no decía qué es
             esto: era una tarjeta suelta en un hueco negro.
           */}
-          <p className="mb-5 text-center text-[21px] font-bold leading-tight tracking-[-0.025em] text-ink lg:hidden">
+          <p className="mb-6 text-balance text-center text-[31px] font-bold leading-[1.08] tracking-[-0.035em] text-ink lg:hidden">
             {t.home.claim} <span className="text-amber">{t.home.claimAmber}</span>
           </p>
 

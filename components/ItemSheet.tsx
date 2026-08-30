@@ -201,7 +201,7 @@ export default function ItemSheet({
                 type="button"
                 disabled={busy}
                 onClick={() => void elegirUnidades(n)}
-                className="flex flex-col items-center gap-0.5 rounded-2xl border-2 border-line py-3 transition-colors hover:border-mint active:bg-paper-3 disabled:opacity-40"
+                className="flex flex-col items-center gap-0.5 rounded-bloque border-2 border-line py-3 transition-colors hover:border-mint active:bg-paper-3 disabled:opacity-40"
               >
                 <span className="tnum text-[21px] font-bold">
                   {n === item.qty ? rellena(t.repartir.lasN, { n }) : n}
@@ -275,7 +275,7 @@ export default function ItemSheet({
                   type="button"
                   disabled={blocked}
                   onClick={() => repartirEntre(n)}
-                  className={`flex flex-col items-center gap-0.5 rounded-2xl border-2 py-3 transition-colors disabled:opacity-25 ${
+                  className={`flex flex-col items-center gap-0.5 rounded-bloque border-2 py-3 transition-colors disabled:opacity-25 ${
                     item.splitInto === n
                       ? "border-mint bg-mint/10"
                       : "border-line hover:border-mint active:bg-paper-3"

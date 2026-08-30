@@ -28,7 +28,7 @@ export default function CookiesPage() {
       </p>
 
       {HAY_PIXEL ? (
-        <section className="mt-8 rounded-[15px] border border-line-soft bg-paper-2 p-5">
+        <section className="mt-8 rounded-caja border border-line-soft bg-paper-2 p-5">
           <h2 className="text-[17px] font-bold tracking-[-0.02em]">La cookie de Meta (Facebook)</h2>
           <dl className="mt-3 space-y-2">
             <Fila k="Para qué">
@@ -47,7 +47,7 @@ export default function CookiesPage() {
           </dl>
         </section>
       ) : (
-        <section className="mt-8 rounded-[15px] border border-mint/30 bg-mint/[0.06] p-5">
+        <section className="mt-8 rounded-caja border border-mint/30 bg-mint/[0.06] p-5">
           <h2 className="text-[17px] font-bold tracking-[-0.02em] text-mint">
             No hay nada que aceptar
           </h2>
@@ -62,7 +62,7 @@ export default function CookiesPage() {
         </section>
       )}
 
-      <section className="mt-6 rounded-[15px] border border-line-soft bg-paper-2 p-5">
+      <section className="mt-6 rounded-caja border border-line-soft bg-paper-2 p-5">
         <h2 className="text-[17px] font-bold tracking-[-0.02em]">Lo que se guarda en tu móvil</h2>
         <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
           Quién eres dentro de cada mesa, tu perfil por si vuelves, y la lista de tus divis. Se

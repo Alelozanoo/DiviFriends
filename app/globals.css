@@ -62,6 +62,30 @@
   --color-clay: var(--clay);
   --color-black: #000;
   --color-white: #fff;
+  /*
+    La escala de esquinas.
+
+    Antes había un radio para casi todo —`rounded-xl` aparecía ciento catorce
+    veces— y un puñado de valores sueltos: 15 px aquí, 11 px allá, 9 px en un
+    sitio. Con una sola curva, nada parece contener a nada: la tarjeta, el botón
+    de dentro y la píldora de al lado pertenecen todos al mismo plano, y eso es
+    lo que hace que una pantalla se vea plana aunque tenga sombras.
+  
+    La regla es que lo de fuera sea más redondo que lo de dentro, y que el salto
+    se note. Cinco pasos, y cada uno con su trabajo:
+  
+      hoja    24  lo que tapa la pantalla: hojas y modales
+      caja    20  una tarjeta suelta sobre la página
+      bloque  16  una caja dentro de una hoja, que ya va dentro de 24
+      pieza   12  lo que se toca: botones, campos, píldoras
+      menudo   8  sellos, etiquetas, contadores
+  */
+  --radius-hoja: 24px;
+  --radius-caja: 20px;
+  --radius-bloque: 16px;
+  --radius-pieza: 12px;
+  --radius-menudo: 8px;
+
   --font-sans: var(--font-display);
   --font-mono: var(--font-figure);
 

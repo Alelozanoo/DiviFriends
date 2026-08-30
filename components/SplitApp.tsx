@@ -623,7 +623,7 @@ export default function SplitApp({
                 <button
                   type="button"
                   onClick={() => setUploadingAnother(true)}
-                  className="flex h-10 shrink-0 items-center whitespace-nowrap rounded-[11px] border border-dashed border-line px-[15px] text-[13px] font-semibold text-ink-faint transition-colors hover:border-amber hover:text-amber active:bg-paper-2"
+                  className="flex h-10 shrink-0 items-center whitespace-nowrap rounded-menudo border border-dashed border-line px-[15px] text-[13px] font-semibold text-ink-faint transition-colors hover:border-amber hover:text-amber active:bg-paper-2"
                 >
                   {t.comanda.anadir}
                 </button>
@@ -688,7 +688,7 @@ export default function SplitApp({
                     type="button"
                     aria-pressed={filtro === clave}
                     onClick={() => setFiltro(clave)}
-                    className={`flex min-h-10 min-w-0 flex-1 items-center justify-center gap-1.5 overflow-hidden whitespace-nowrap rounded-[9px] text-[13px] font-semibold transition-colors ${
+                    className={`flex min-h-10 min-w-0 flex-1 items-center justify-center gap-1.5 overflow-hidden whitespace-nowrap rounded-menudo text-[13px] font-semibold transition-colors ${
                       filtro === clave ? "bg-paper-4 text-ink" : "text-ink-faint"
                     }`}
                   >
@@ -734,7 +734,7 @@ export default function SplitApp({
               sitio queda qué hacer con la mesa.
             */}
             {state.items.length === 0 && (leyendo || fallóLectura) && (
-              <li className="rounded-2xl border border-line bg-paper-2 px-4 py-4">
+              <li className="rounded-caja border border-line bg-paper-2 px-4 py-4">
                 {fallóLectura ? (
                   <>
                     <p className="text-[15px] font-semibold text-clay">{fallóLectura}</p>
@@ -803,7 +803,7 @@ export default function SplitApp({
                 <button
                   type="button"
                   onClick={() => setAdding(true)}
-                  className="flex min-h-16 w-full items-center justify-center gap-2 rounded-[15px] border-[1.5px] border-dashed border-line text-[15px] font-semibold text-ink-soft transition-colors active:bg-paper-2"
+                  className="flex min-h-16 w-full items-center justify-center gap-2 rounded-caja border-[1.5px] border-dashed border-line text-[15px] font-semibold text-ink-soft transition-colors active:bg-paper-2"
                 >
                   <span className="text-[21px] leading-none">+</span>
                   {t.comanda.faltaAlgo}
@@ -1426,7 +1426,7 @@ function Pestana({
       /* Con tope: desde que la mesa se puede llamar «Cena de despedida de
          Nuria en el asador», una pestaña sola empujaba el «+ Añadir» fuera de
          la pantalla y había que adivinar que aquello se desplazaba. */
-      className={`flex h-10 max-w-[13rem] shrink-0 items-center gap-2 overflow-hidden whitespace-nowrap rounded-[11px] border px-[15px] text-[13px] font-semibold transition-colors ${
+      className={`flex h-10 max-w-[13rem] shrink-0 items-center gap-2 overflow-hidden whitespace-nowrap rounded-menudo border px-[15px] text-[13px] font-semibold transition-colors ${
         activa
           ? "border-line bg-paper-3 text-ink shadow-[inset_0_-2px_0_var(--amber)]"
           : "border-line text-ink-faint hover:text-ink"

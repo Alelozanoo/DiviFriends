@@ -242,7 +242,7 @@ export default function TicketUploader({
           const file = event.dataTransfer.files?.[0];
           if (file) void upload(file);
         }}
-        className={`relative overflow-hidden rounded-[20px] border transition-colors ${
+        className={`relative overflow-hidden rounded-caja border transition-colors ${
           dragging ? "border-amber bg-amber/5" : "border-line-soft bg-paper-2"
         }`}
       >
@@ -256,7 +256,7 @@ export default function TicketUploader({
         */}
         {pidiendoCodigo ? (
           <div className="flex w-full flex-col items-center gap-3.5 px-[var(--gutter)] py-7 text-center">
-            <span className="grid h-14 w-14 place-items-center rounded-2xl bg-amber text-[26px] font-bold text-paper" aria-hidden>
+            <span className="grid h-14 w-14 place-items-center rounded-caja bg-amber text-[26px] font-bold text-paper" aria-hidden>
               #
             </span>
             <span className="text-[21px] font-bold leading-tight tracking-[-0.025em]">
@@ -281,7 +281,7 @@ export default function TicketUploader({
               <Escaner src={vista} />
             ) : (
               <span
-                className={`grid h-14 w-14 place-items-center rounded-2xl bg-amber text-paper ${
+                className={`grid h-14 w-14 place-items-center rounded-caja bg-amber text-paper ${
                   busy ? "animate-pulse" : ""
                 }`}
                 aria-hidden

@@ -139,7 +139,7 @@ export default function ItemRow({
   return (
     <li
       style={{ ["--fila" as string]: fondo }}
-      className={`overflow-hidden rounded-[15px] border-[1.5px] transition-colors duration-200 ${
+      className={`overflow-hidden rounded-caja border-[1.5px] transition-colors duration-200 ${
         isMine
           ? open
             ? "border-amber bg-amber/[0.13]"

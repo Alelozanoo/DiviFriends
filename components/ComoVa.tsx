@@ -301,7 +301,7 @@ export function PasoCuentas() {
  */
 function Marco({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-[17.5rem] flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl border border-line bg-paper p-5">
+    <div className="flex h-[17.5rem] flex-col items-center justify-center gap-3 overflow-hidden rounded-caja border border-line bg-paper p-5">
       {children}
     </div>
   );
