@@ -66,10 +66,27 @@ export const viewport: Viewport = {
     de verdad, así que una hoja centrada se centra en el hueco que queda encima
     del teclado y se queda quieta.
 
-    No toca el zoom: el de pellizcar sigue funcionando para quien lo necesita
-    para leer, que es lo que pasa si se pone `maximumScale`.
   */
   interactiveWidget: "resizes-content",
+
+  /*
+    Sin zoom. Decisión de producto, tomada a sabiendas.
+
+    Esto **no** es lo que evita que iOS amplíe solo al tocar un campo —eso ya
+    está resuelto por el suelo de 16 px de `globals.css`, y es lo que de verdad
+    molestaba—. Esto es otra cosa: quitar el pellizco.
+
+    El coste está en que quien amplía para leer, normalmente porque ve poco, deja
+    de poder hacerlo. A cambio, en una app que se usa de pie en un bar y se toca
+    con una sola mano, un pellizco accidental deja la pantalla torcida y no hay
+    forma evidente de deshacerlo.
+
+    Y un aviso para quien lo lea dentro de un año: en el iPhone esto casi no
+    hace nada. Safari ignora `user-scalable=no` desde iOS 10 a propósito, así
+    que el pellizco sigue ahí. Donde se nota es en Android.
+  */
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
