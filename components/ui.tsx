@@ -85,6 +85,7 @@ export function Sheet({
   titulo,
   sub,
   fijo = false,
+  centrado = false,
 }: {
   children: React.ReactNode;
   onClose: () => void;
@@ -98,6 +99,16 @@ export function Sheet({
    * más molestan cuando no hace falta.
    */
   fijo?: boolean;
+  /**
+   * En mitad de la pantalla y no pegada abajo.
+   *
+   * Una hoja que sube desde el borde es lo natural para elegir algo de una
+   * lista: la mano ya está ahí. Pero cuando hay que **escribir**, el teclado
+   * ocupa media pantalla y la hoja se queda espachurrada contra él, encajada
+   * entre dos bordes. Centrada se lee como lo que es: una pregunta que hay que
+   * contestar antes de seguir.
+   */
+  centrado?: boolean;
 }) {
   useEffect(() => {
     const originalStyle = window.getComputedStyle(document.body).overflow;
@@ -139,7 +150,9 @@ export function Sheet({
       la pantalla de atrás pierde el foco de golpe.
     */
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-[#0a0705]/85 backdrop-blur-[3px]"
+      className={`fixed inset-0 z-50 flex justify-center bg-[#0a0705]/85 backdrop-blur-[3px] ${
+        centrado ? "items-center px-[var(--gutter)]" : "items-end"
+      }`}
       onClick={fijo ? undefined : onClose}
     >
       <div className="relative w-full max-w-md" onClick={(event) => event.stopPropagation()}>
@@ -154,7 +167,13 @@ export function Sheet({
             flotando sin bordes. `dvh` y no `vh` porque en el móvil la barra del
             navegador se mueve y con `vh` la hoja se cortaba por abajo.
           */
-          className="rise max-h-[92dvh] overflow-y-auto overscroll-contain rounded-t-[24px] border border-b-0 border-line bg-paper-2 px-[var(--gutter)] pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-2 shadow-[var(--sombra-hoja)]"
+          className={`overflow-y-auto overscroll-contain border border-line bg-paper-2 px-[var(--gutter)] pt-2 shadow-[var(--sombra-hoja)] ${
+            centrado
+              ? // Redonda por los cuatro lados y algo más baja: flotando en
+                // medio, el borde de abajo se ve, y conviene que se vea aire.
+                "pop max-h-[86dvh] rounded-[24px] pb-5"
+              : "rise max-h-[92dvh] rounded-t-[24px] border-b-0 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
+          }`}
         >
           {fijo ? (
             <div className="h-3" />

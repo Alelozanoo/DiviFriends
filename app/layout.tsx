@@ -57,6 +57,19 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  /*
+    Que al abrirse el teclado encoja la pantalla en vez de empujarla.
+
+    Por defecto el móvil deja la página del mismo tamaño y la desplaza hacia
+    arriba para que se vea el campo: la pantalla entera se mueve sola y parece
+    que algo se ha descolocado. Con esto, lo que queda a la vista es la pantalla
+    de verdad, así que una hoja centrada se centra en el hueco que queda encima
+    del teclado y se queda quieta.
+
+    No toca el zoom: el de pellizcar sigue funcionando para quien lo necesita
+    para leer, que es lo que pasa si se pone `maximumScale`.
+  */
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
