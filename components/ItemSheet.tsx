@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { money } from "@/lib/format";
 import { LIMITS } from "@/lib/ticketDoc";
 import type { Item, ItemBreakdown, Participant } from "@/lib/types";
@@ -69,25 +69,39 @@ export default function ItemSheet({
   const multiUnidad = Number.isInteger(item.qty) && item.qty > 1;
 
   /*
-    Dos pantallas, no tres.
+    Una sola hoja.
 
-    Había una para las unidades, otra para «entre cuántos» y otra para «con
-    quién», y las dos primeras eran rejillas de números iguales que significaban
-    cosas distintas —dos mariscadas y dos personas—. Además la tercera volvía a
-    preguntar lo de la segunda: decías «entre 4» y luego tocabas a cuatro. Ahora
-    el número y los nombres son lo mismo, porque el número se dibuja en huecos.
+    Fueron tres pantallas y luego dos, y seguía sobrando una. Las preguntas son
+    tres —cuántas de estas, entre cuántos, y quiénes— pero se contestan de un
+    vistazo si están juntas: la cantidad arriba, al lado del nombre, y debajo
+    los huecos, que ya dicen a la vez cuántos son y quiénes.
 
-    La de las unidades sobrevive aparte por un motivo de fondo: separar unidades
-    parte la línea en dos y eso no se deshace, así que merece su momento y su
-    botón. Lo demás se guarda solo al tocarlo, como todo en esta app.
+    Lo que obligaba a separarlas era de fontanería: repartir menos unidades de
+    las que hay parte la línea en dos y eso no se deshace, así que no puede
+    pasar mientras alguien juguetea con un contador. Se resuelve esperando:
+    el contador no toca nada, y la línea se parte sola en el momento en que se
+    reparte de verdad —al tocar un hueco o «toda la mesa»—, que es cuando ya
+    está claro lo que se quiere.
   */
-  const [paso, setPaso] = useState<"unidades" | "reparto">(
-    multiUnidad && !item.manualSplit ? "unidades" : "reparto",
-  );
   const [unidades, setUnidades] = useState(item.qty);
   const [eligiendo, setEligiendo] = useState<number | null>(null);
   const [nuevo, setNuevo] = useState("");
   const [busy, setBusy] = useState(false);
+
+  /*
+    Lo que quedó a medias mientras se separaba la línea.
+
+    Al separar, la hoja pasa a hablar de la línea nueva y llega en el
+    renderizado siguiente. Por eso lo pendiente se guarda como una descripción
+    y no como una función: ejecutarla después vuelve a pedir los mandos, que
+    para entonces ya apuntan a la línea buena.
+  */
+  type Pendiente =
+    | { tipo: "todos" }
+    | { tipo: "poner"; id: string }
+    | { tipo: "partes"; n: number };
+  const pendiente = useRef<Pendiente | null>(null);
+  const lineaPrevia = useRef<string | null>(null);
 
   const porId = new Map(participants.map((p) => [p.id, p]));
 
@@ -137,23 +151,44 @@ export default function ItemSheet({
     setEligiendo(null);
   }
 
+  function ejecutar(accion: Pendiente) {
+    if (accion.tipo === "todos") repartirEntreTodos();
+    else if (accion.tipo === "poner") ponerEnHueco(accion.id);
+    else onSetPartes(accion.n);
+  }
+
   /**
-   * Cierra el paso de las unidades.
+   * Hace algo sobre la línea, separándola antes si hace falta.
    *
-   * Repartirlas todas no separa nada. Elegir menos las saca a su propia línea,
-   * y a partir de ahí la hoja habla de la línea nueva: llega sola en el
-   * siguiente renderizado, por eso aquí no hay que tocar `item`.
+   * Mientras el contador de arriba diga «todas», no hay nada que separar. En
+   * cuanto dice menos, la primera cosa que se reparta parte la línea: esas
+   * unidades se van a una línea propia y la hoja sigue con ella.
    */
-  async function seguirDesdeUnidades() {
+  async function conLineaLista(accion: Pendiente) {
     if (unidades >= item.qty) {
-      setPaso("reparto");
+      ejecutar(accion);
       return;
     }
+    pendiente.current = accion;
+    lineaPrevia.current = item.id;
     setBusy(true);
     const hecho = await onSplitUnits(unidades);
     setBusy(false);
-    if (hecho) setPaso("reparto");
+    if (!hecho) {
+      pendiente.current = null;
+      lineaPrevia.current = null;
+    }
   }
+
+  /* Ya hay línea nueva: se termina lo que se había pedido. */
+  useEffect(() => {
+    if (!pendiente.current || !lineaPrevia.current || item.id === lineaPrevia.current) return;
+    ejecutar(pendiente.current);
+    pendiente.current = null;
+    lineaPrevia.current = null;
+    // `ejecutar` se recrea en cada render; lo que manda es que la línea cambie.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item.id]);
 
   return (
     <Sheet onClose={onClose}>
@@ -168,7 +203,7 @@ export default function ItemSheet({
           <p className="mt-0.5 text-[15px] text-ink-soft">
             {money(item.totalCents, currency)}
             {/* «1,025 unidades» no es una frase: eso es un peso, no unidades. */}
-            {Number.isInteger(item.qty) && item.qty > 1 && ` · ${item.qty} ${t.repartir.unidades}`}
+            {multiUnidad && ` · ${item.qty} ${t.repartir.unidades}`}
           </p>
         </div>
         <button
@@ -181,68 +216,35 @@ export default function ItemSheet({
         </button>
       </div>
 
-      {paso === "unidades" ? (
-        /* ------------------------------------ cuántas de ellas se reparten */
-        <>
-          <p className="text-[12px] mt-5 text-amber">
-            {rellena(t.repartir.paso, { n: 1, total: 2 })}
-          </p>
-          <h3 className="mt-1 text-[17px] font-bold tracking-[-0.02em]">
-            {t.repartir.cuantasUnidades}
-          </h3>
-          <p className="mt-1 text-[15px] leading-relaxed text-ink-soft">
-            {rellena(t.repartir.cuantasAyuda, { n: item.qty })}
-          </p>
+      {/*
+        Cuántas de ellas, arriba y con el nombre.
 
-          {/*
-            Un contador y no once botones.
+        Era una pantalla entera para sí sola, con su rejilla de once números y
+        su «paso 1 de 2». Es una cantidad, y una cantidad se dice con un más y
+        un menos: cabe en una línea al lado del plato y deja ver a la vez lo que
+        de verdad se está decidiendo, que es entre quiénes va.
+      */}
+      {multiUnidad && (
+        <div className="mt-4 flex items-center gap-3">
+          <Contador valor={unidades} min={1} max={item.qty} onCambia={setUnidades} disabled={busy} />
+          <span className="text-[15px] text-ink-soft">
+            {unidades === item.qty ? t.repartir.todas : rellena(t.repartir.deN, { n: item.qty })} ·{" "}
+            <b className="tnum font-bold text-ink">
+              {money(Math.round((item.totalCents * unidades) / item.qty), currency)}
+            </b>
+          </span>
+        </div>
+      )}
 
-            Aquí había una rejilla de números —1, 2, 3… hasta 11 y «las 20»—
-            idéntica a la del paso siguiente, donde los números son personas.
-            Dos preguntas seguidas con la misma pinta y distinto significado:
-            el «2» de aquí son dos mariscadas y el de allí, dos comensales.
-            Un más y un menos no se confunde con una lista de opciones, y de
-            paso deja decir catorce, que con los botones no se podía.
-          */}
-          <div className="mt-3.5 flex items-center gap-3">
-            <Contador valor={unidades} min={1} max={item.qty} onCambia={setUnidades} />
-            <span className="text-[15px] text-ink-soft">
-              {unidades === item.qty
-                ? t.repartir.todas
-                : rellena(t.repartir.deN, { n: item.qty })}{" "}
-              ·{" "}
-              <b className="tnum font-bold text-ink">
-                {money(Math.round((item.totalCents * unidades) / item.qty), currency)}
-              </b>
-            </span>
-          </div>
+      {multiUnidad && unidades < item.qty && (
+        <p className="mt-2 text-[13px] leading-relaxed text-ink-faint">
+          {item.qty - unidades === 1
+            ? t.repartir.laOtraAparte
+            : rellena(t.repartir.lasOtrasAparte, { n: item.qty - unidades })}
+        </p>
+      )}
 
-          {unidades < item.qty && (
-            <p className="mt-2.5 text-[13px] leading-relaxed text-ink-faint">
-              {item.qty - unidades === 1
-                ? t.repartir.laOtraAparte
-                : rellena(t.repartir.lasOtrasAparte, { n: item.qty - unidades })}
-            </p>
-          )}
-        </>
-      ) : (
-        /* ------------------- entre cuántos y con quién, en la misma pantalla */
-        <>
-          {/*
-            La vuelta a las unidades, con el número puesto. Sólo cuando hay
-            varias: si la línea es una sola cosa, no hubo primer paso.
-          */}
-          {multiUnidad && (
-            <button
-              type="button"
-              onClick={() => setPaso("unidades")}
-              className="text-[12px] mt-5 inline-flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1 text-ink-faint transition-colors hover:border-amber hover:text-amber"
-            >
-              ← {rellena(t.repartir.unidadesCambiar, { n: item.qty })}
-            </button>
-          )}
-
-          <h3 className={`text-[17px] font-bold tracking-[-0.02em] ${multiUnidad ? "mt-3" : "mt-5"}`}>
+          <h3 className="mt-5 text-[17px] font-bold tracking-[-0.02em]">
             {t.repartir.entreCuantos}
           </h3>
 
@@ -257,7 +259,7 @@ export default function ItemSheet({
           <div className="mt-3 flex items-center gap-2">
             <button
               type="button"
-              onClick={() => repartirEntreTodos()}
+              onClick={() => void conLineaLista({ tipo: "todos" })}
               disabled={participants.length === 0 || busy}
               className={`min-h-[46px] flex-1 rounded-pieza border text-[15px] font-semibold transition-colors disabled:opacity-30 ${
                 esTodaLaMesa
@@ -271,7 +273,7 @@ export default function ItemSheet({
               valor={item.splitInto}
               min={Math.max(1, breakdown.takenShares)}
               max={LIMITS.splitInto}
-              onCambia={(n) => onSetPartes(n)}
+              onCambia={(n) => void conLineaLista({ tipo: "partes", n })}
             />
           </div>
 
@@ -339,7 +341,7 @@ export default function ItemSheet({
                     key={persona.id}
                     type="button"
                     disabled={busy}
-                    onClick={() => ponerEnHueco(persona.id)}
+                    onClick={() => void conLineaLista({ tipo: "poner", id: persona.id })}
                     className="flex items-center gap-2 rounded-pieza border border-line px-3 py-2 text-[15px] font-semibold transition-colors active:bg-paper-3 disabled:opacity-40"
                   >
                     <Avatar
@@ -369,7 +371,7 @@ export default function ItemSheet({
                   const participantId = await onAddPerson(name);
                   setBusy(false);
                   setNuevo("");
-                  if (participantId) ponerEnHueco(participantId);
+                  if (participantId) void conLineaLista({ tipo: "poner", id: participantId });
                 }}
               >
                 <input
@@ -405,48 +407,25 @@ export default function ItemSheet({
                     n: breakdown.freeShares,
                     dinero: money(breakdown.perShareCents, currency),
                   })}
-          </p>
-        </>
-      )}
+      </p>
 
       {/*
-        Nunca «Cancelar»: cada toque de aquí arriba se guarda al momento, así
-        que no hay nada que deshacer al salir. En el paso 1 el botón empuja
-        hacia adelante en vez de cerrar, porque quedarse ahí es justo el fallo
-        que traía a la gente con tres cuartos de paella sin dueño.
-
-        Quitar la línea ya no vive aquí: estaba bajo una raya al final de una
-        hoja que va de repartir, y no tenía nada que ver. Ahora es la ✕ de la
-        esquina de la burbuja.
-      */}
-      <div className="mt-4" />
-      {/*
-        Nunca «Cancelar»: cada toque de aquí arriba se guarda al momento, así
-        que no hay nada que deshacer al salir. La única excepción es el paso de
-        las unidades, que sí necesita un botón porque separar una línea en dos
-        no tiene vuelta atrás y no se hace de un roce.
+        Nunca «Cancelar»: cada toque de aquí se guarda al momento, así que no
+        hay nada que deshacer al salir. Ni siquiera separar unidades, que es lo
+        único que no tiene vuelta atrás: no pasa al mover el contador, sino al
+        repartir de verdad.
 
         Quitar la línea no vive aquí: estaba bajo una raya al final de una hoja
         que va de repartir, y no tenía nada que ver. Es la ✕ de la burbuja.
       */}
-      {paso === "unidades" ? (
-        <button
-          type="button"
-          onClick={() => void seguirDesdeUnidades()}
-          disabled={busy}
-          className="mt-3 w-full min-h-[52px] rounded-pieza bg-amber text-[15px] font-bold text-paper transition-transform active:scale-[0.98] disabled:opacity-50"
-        >
-          {t.repartir.seguirConQuien}
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={onClose}
-          className="mt-3 w-full min-h-[52px] rounded-pieza bg-amber text-[15px] font-bold text-paper transition-transform active:scale-[0.98]"
-        >
-          {t.repartir.listo}
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={onClose}
+        disabled={busy}
+        className="mt-4 w-full min-h-[52px] rounded-pieza bg-amber text-[15px] font-bold text-paper transition-transform active:scale-[0.98] disabled:opacity-50"
+      >
+        {t.repartir.listo}
+      </button>
     </Sheet>
   );
 }

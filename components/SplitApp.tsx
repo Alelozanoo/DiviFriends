@@ -1482,7 +1482,7 @@ function JoinSheet({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <Sheet fijo centrado onClose={() => {}} titulo={t.entrar.titulo} sub={t.entrar.entradilla}>
+    <Sheet fijo onClose={() => {}} titulo={t.entrar.titulo} sub={t.entrar.entradilla}>
 
       {globalProfile && !showForm && (
         <div className="mt-5 mb-4 flex flex-col gap-3">

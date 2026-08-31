@@ -85,7 +85,6 @@ export function Sheet({
   titulo,
   sub,
   fijo = false,
-  centrado = false,
 }: {
   children: React.ReactNode;
   onClose: () => void;
@@ -99,16 +98,6 @@ export function Sheet({
    * más molestan cuando no hace falta.
    */
   fijo?: boolean;
-  /**
-   * En mitad de la pantalla y no pegada abajo.
-   *
-   * Una hoja que sube desde el borde es lo natural para elegir algo de una
-   * lista: la mano ya está ahí. Pero cuando hay que **escribir**, el teclado
-   * ocupa media pantalla y la hoja se queda espachurrada contra él, encajada
-   * entre dos bordes. Centrada se lee como lo que es: una pregunta que hay que
-   * contestar antes de seguir.
-   */
-  centrado?: boolean;
 }) {
   useEffect(() => {
     const originalStyle = window.getComputedStyle(document.body).overflow;
@@ -150,9 +139,7 @@ export function Sheet({
       la pantalla de atrás pierde el foco de golpe.
     */
     <div
-      className={`fixed inset-0 z-50 flex justify-center bg-[#0a0705]/85 backdrop-blur-[3px] ${
-        centrado ? "items-center px-[var(--gutter)]" : "items-end"
-      }`}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#0a0705]/85 px-[var(--gutter)] backdrop-blur-[3px]"
       onClick={fijo ? undefined : onClose}
     >
       <div className="relative w-full max-w-md" onClick={(event) => event.stopPropagation()}>
@@ -167,19 +154,21 @@ export function Sheet({
             flotando sin bordes. `dvh` y no `vh` porque en el móvil la barra del
             navegador se mueve y con `vh` la hoja se cortaba por abajo.
           */
-          className={`overflow-y-auto overscroll-contain border border-line bg-paper-2 px-[var(--gutter)] pt-2 shadow-[var(--sombra-hoja)] ${
-            centrado
-              ? // Redonda por los cuatro lados y algo más baja: flotando en
-                // medio, el borde de abajo se ve, y conviene que se vea aire.
-                "pop max-h-[86dvh] rounded-hoja pb-5"
-              : "rise max-h-[92dvh] rounded-t-hoja border-b-0 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
-          }`}
+          /*
+            Flotando en medio, siempre.
+
+            Subían desde el borde de abajo, que es lo natural para elegir de una
+            lista porque la mano ya está ahí. Pero en cuanto hay algo que
+            escribir, el teclado ocupa media pantalla y empuja la hoja contra el
+            borde de arriba: se rompe. Centrada no la empuja nada, y con
+            `interactive-widget=resizes-content` se coloca sola en el hueco que
+            queda encima del teclado.
+
+            Redonda por los cuatro lados y algo más baja que antes: flotando, el
+            borde de abajo se ve, y conviene que se vea aire.
+          */
+          className="pop max-h-[86dvh] overflow-y-auto overscroll-contain rounded-hoja border border-line bg-paper-2 px-[var(--gutter)] pb-5 pt-4 shadow-[var(--sombra-hoja)]"
         >
-          {fijo ? (
-            <div className="h-3" />
-          ) : (
-            <div aria-hidden className="mx-auto mb-3 h-1 w-10 rounded-full bg-line" />
-          )}
           {titulo && (
             <h2 className="text-[21px] font-bold leading-tight tracking-[-0.025em]">{titulo}</h2>
           )}
