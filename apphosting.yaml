@@ -91,3 +91,20 @@ env:
   - variable: GEMINI_API_KEY
     secret: gemini-api-key
     availability: [RUNTIME]
+
+  # --- TikTok ---------------------------------------------------------------
+  # Las llaves de la app «DiviFriends Publisher» del portal de desarrolladores,
+  # que es lo que permite publicar en el canal desde /tiktok. Sólo RUNTIME: el
+  # secreto no puede acabar en el bundle, que es público.
+  #
+  # Como el token de metricas, este bloque va comentado hasta que existan los
+  # secretos: descoméntalo DESPUÉS de crearlos o el despliegue falla por no
+  # encontrarlos.
+  #   firebase apphosting:secrets:set tiktok-client-key --project divifriends-2964
+  #   firebase apphosting:secrets:set tiktok-client-secret --project divifriends-2964
+  # - variable: TIKTOK_CLIENT_KEY
+  #   secret: tiktok-client-key
+  #   availability: [RUNTIME]
+  # - variable: TIKTOK_CLIENT_SECRET
+  #   secret: tiktok-client-secret
+  #   availability: [RUNTIME]
