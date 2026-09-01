@@ -60,6 +60,23 @@ function llaves() {
   return { key, secret };
 }
 
+/**
+ * El origen público, el que ve el navegador.
+ *
+ * No vale `new URL(request.url).origin`: App Hosting corre detrás de un proxy
+ * y la petición llega con la dirección interna del contenedor
+ * (`https://0.0.0.0:8080`). Con eso, la `redirect_uri` no coincide con la
+ * registrada en TikTok y el login se cae. Mismo patrón que `ticketUrl.ts`.
+ */
+export async function origenPublico() {
+  const { headers } = await import("next/headers");
+  const lista = await headers();
+  const host = lista.get("x-forwarded-host") ?? lista.get("host") ?? "localhost:3000";
+  const proto = lista.get("x-forwarded-proto")
+    ?? (host.startsWith("localhost") ? "http" : "https");
+  return `${proto}://${host}`;
+}
+
 export function urlVuelta(origen: string) {
   return `${origen}/tiktok/callback`;
 }

@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { urlAutorizar } from "@/lib/tiktok";
+import { origenPublico, urlAutorizar } from "@/lib/tiktok";
 import { guardarEstado, puedePasar } from "@/lib/tiktokSesion";
 
 export const runtime = "nodejs";
 
 /** Manda al creador a TikTok a dar permiso. */
-export async function GET(request: Request) {
-  const origen = new URL(request.url).origin;
+export async function GET() {
+  const origen = await origenPublico();
   if (!(await puedePasar())) {
     return NextResponse.redirect(new URL("/tiktok", origen));
   }
