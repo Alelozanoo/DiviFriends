@@ -99,6 +99,14 @@ env:
   # Creados el 1 de septiembre de 2026 con:
   #   firebase apphosting:secrets:set tiktok-client-key --project divifriends-2964
   #   firebase apphosting:secrets:set tiktok-client-secret --project divifriends-2964
+  # El dominio público, escrito y no adivinado: la redirect_uri que se manda a
+  # TikTok tiene que ser idéntica a la registrada en el portal, y detrás del
+  # proxy de App Hosting la petición llega con la dirección interna del
+  # contenedor. En local no se define y se sacan de las cabeceras.
+  - variable: SITIO_URL
+    value: https://divifriends.es
+    availability: [RUNTIME]
+
   - variable: TIKTOK_CLIENT_KEY
     secret: tiktok-client-key
     availability: [RUNTIME]

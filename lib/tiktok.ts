@@ -69,6 +69,13 @@ function llaves() {
  * registrada en TikTok y el login se cae. Mismo patrón que `ticketUrl.ts`.
  */
 export async function origenPublico() {
+  // Primero, el dominio escrito a mano. La `redirect_uri` tiene que coincidir
+  // byte a byte con la registrada en TikTok, así que adivinarla a partir de la
+  // petición es más frágil que declararla: detrás del proxy de App Hosting
+  // llegan cabeceras que no siempre traen el dominio de verdad.
+  const fijo = process.env.SITIO_URL;
+  if (fijo) return fijo.replace(/\/$/, "");
+
   const { headers } = await import("next/headers");
   const lista = await headers();
   const host = lista.get("x-forwarded-host") ?? lista.get("host") ?? "localhost:3000";
