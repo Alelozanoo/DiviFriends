@@ -47,3 +47,34 @@ export async function guardarEstado(valor: string) {
 export async function estadoGuardado() {
   return (await cookies()).get(ESTADO)?.value ?? "";
 }
+
+// --- la puerta ---------------------------------------------------------
+
+const LLAVE = "tt_llave";
+
+/**
+ * ¿Puede pasar quien pide esto?
+ *
+ * Con `TIKTOK_LLAVE` sin definir, la página está abierta. Es a propósito
+ * mientras dure la auditoría: si los revisores abren la URL y se topan con un
+ * muro, la rechazan por no poder acceder.
+ *
+ * En cuanto esté aprobada se define el secreto y la puerta se cierra sola. Se
+ * entra una vez con `?llave=…` y queda una cookie; nadie más pasa aunque
+ * conozca la dirección.
+ *
+ * Ojo con lo que esto NO es: no protege la cuenta, porque la cuenta ya está
+ * protegida —el token es de quien entra, no nuestro—. Esto protege el cupo de
+ * publicaciones de la app, que sin auditar son cinco cada 24 horas.
+ */
+export async function puedePasar(pedida?: string | null) {
+  const llave = process.env.TIKTOK_LLAVE;
+  if (!llave) return true;
+
+  const c = await cookies();
+  if (pedida && pedida === llave) {
+    c.set(LLAVE, llave, { ...BASE, maxAge: 60 * 60 * 24 * 90 });
+    return true;
+  }
+  return c.get(LLAVE)?.value === llave;
+}

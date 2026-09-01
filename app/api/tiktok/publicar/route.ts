@@ -3,7 +3,7 @@ import { bad } from "@/lib/api";
 import {
   estadoPublicacion, infoCreador, publicar, refrescar, TikTokError,
 } from "@/lib/tiktok";
-import { guardarSesion, tokenActual, tokenRefresco } from "@/lib/tiktokSesion";
+import { guardarSesion, puedePasar, tokenActual, tokenRefresco } from "@/lib/tiktokSesion";
 
 export const runtime = "nodejs";
 // El vídeo viaja entero en la petición, así que el tope por defecto no llega.
@@ -33,6 +33,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  // La puerta se comprueba también aquí: cerrar solo la página dejaría la API
+  // abierta a quien la llame a pelo.
+  if (!(await puedePasar())) return bad("Esta herramienta es privada", 403);
   const t = await token();
   if (!t) return bad("No hay ninguna cuenta de TikTok conectada", 401);
 

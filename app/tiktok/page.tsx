@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Publicador from "./Publicador";
+import { puedePasar } from "@/lib/tiktokSesion";
 
 /**
  * Publicar en TikTok desde DiviFriends.
@@ -16,9 +17,10 @@ export const metadata: Metadata = {
 export default async function TikTokPage({
   searchParams,
 }: {
-  searchParams: Promise<{ aviso?: string }>;
+  searchParams: Promise<{ aviso?: string; llave?: string }>;
 }) {
-  const { aviso } = await searchParams;
+  const { aviso, llave } = await searchParams;
+  const abierta = await puedePasar(llave);
   return (
     <main id="contenido" className="mx-auto w-full max-w-lg flex-1 px-[var(--gutter)] py-12">
       <h1 className="text-[27px] font-bold leading-tight tracking-[-0.03em]">
@@ -28,7 +30,14 @@ export default async function TikTokPage({
         Sube un vídeo al canal de DiviFriends. Antes de publicar verás en qué cuenta
         va, quién podrá verlo y qué permite tu cuenta.
       </p>
-      <Publicador aviso={aviso} />
+      {abierta ? (
+        <Publicador aviso={aviso} />
+      ) : (
+        <p className="text-[15px] leading-relaxed text-ink-soft">
+          Esta herramienta es privada. Si te toca usarla, entra con el enlace que
+          lleva la llave.
+        </p>
+      )}
     </main>
   );
 }
