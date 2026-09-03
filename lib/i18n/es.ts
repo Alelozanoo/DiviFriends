@@ -122,7 +122,6 @@ export const es = {
     titulo: "Tus divis",
     donde: "en este móvil",
     enTuCuenta: "en tu cuenta",
-    verTodos: "Ver los",
     teDeben: "te deben",
     loTuyo: "lo tuyo",
     a: "a",

@@ -107,7 +107,6 @@ export const en: Dict = {
     titulo: "Your divis",
     donde: "on this phone",
     enTuCuenta: "in your account",
-    verTodos: "See all",
     teDeben: "you're owed",
     loTuyo: "your share",
     a: "to",

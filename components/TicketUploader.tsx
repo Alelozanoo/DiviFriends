@@ -279,8 +279,21 @@ export default function TicketUploader({
           entera para escribir un código. Ahora la tarjeta se da la vuelta en su
           sitio y el pie de abajo cambia de palabra para volver.
         */}
+        {/*
+          El papel, alto.
+
+          Un ticket es estrecho y largo, y esto medía 360 por 235: la forma de
+          una tarjeta de crédito, no la de un ticket. El alto no lo pone el
+          contenido —son dos líneas y un botón— sino el `min-h`, con el
+          contenido arriba, que es por donde empieza lo impreso en un ticket:
+          centrado dejaba el título flotando en medio de una hoja en blanco.
+          En dvh y no en píxeles porque tiene que
+          seguir cabiendo con el reclamo arriba y el pie abajo, y eso depende
+          de la pantalla. En el ordenador se apaga: allí el papel va en una
+          columna al lado del titular y estirarlo sólo abre un hueco.
+        */}
         {pidiendoCodigo ? (
-          <div className="flex w-full flex-col items-center gap-3.5 px-[var(--gutter)] py-10 text-center">
+          <div className="flex min-h-[50dvh] w-full flex-col items-center justify-start gap-3.5 px-[var(--gutter)] pb-10 pt-9 text-center lg:min-h-0 lg:justify-center lg:py-10">
             <span className="text-[21px] font-bold leading-tight tracking-[-0.025em]">
               {t.subir.codigoTitulo}
             </span>
@@ -292,7 +305,7 @@ export default function TicketUploader({
             </div>
           </div>
         ) : (
-          <div className="flex w-full flex-col items-center gap-3.5 px-[var(--gutter)] py-10 text-center">
+          <div className="flex min-h-[50dvh] w-full flex-col items-center justify-start gap-3.5 px-[var(--gutter)] pb-10 pt-9 text-center lg:min-h-0 lg:justify-center lg:py-10">
             {/*
               En cuanto la foto está lista se enseña con el escáner encima. Leer
               un ticket tarda varios segundos y un icono parpadeando no dice nada:
@@ -359,6 +372,25 @@ export default function TicketUploader({
                 </button>
               )}
             </div>
+
+            {/*
+              La letra pequeña, dentro del papel.
+
+              Estaba fuera, debajo de la hoja, y ahí hacía dos cosas malas:
+              alargaba la portada por abajo y dejaba el papel con un claro de
+              doscientos píxeles por dentro. Impresa aquí llena ese hueco y
+              encima cae donde cae en un ticket de verdad —debajo de lo que
+              importa, al pie del papel y en cuerpo pequeño—. Va con `mt-auto`
+              a propósito: pegada al título dejaba un solo claro enorme debajo,
+              y abajo parte el blanco en dos y la hoja se lee como impresa de
+              arriba abajo. Sólo cuando no está trabajando: con
+              la barra en marcha, lo que hay que leer es el porcentaje.
+            */}
+            {!busy && (
+              <span className={`mt-auto max-w-[19rem] text-balance pt-6 text-[12.5px] leading-relaxed lg:hidden ${TINTA_SUAVE}`}>
+                {t.pasos.asiSeVe}
+              </span>
+            )}
           </div>
         )}
 

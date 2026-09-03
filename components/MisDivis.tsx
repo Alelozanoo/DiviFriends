@@ -6,7 +6,7 @@ import { money } from "@/lib/format";
 import { cuando, useMisDivis, type DiviGuardado } from "@/lib/misDivis";
 import { useT } from "@/lib/i18n";
 import { useCuenta } from "@/lib/cuenta";
-import { Avatar } from "./ui";
+import { Avatar, CerrarHoja, Sheet } from "./ui";
 
 /**
  * Las comandas por las que has pasado, para volver a la de anoche de un toque.
@@ -16,55 +16,76 @@ import { Avatar } from "./ui";
  * es lo más grande de cada fila. La competencia pone ahí «Activa», que no
  * responde a ninguna de las dos.
  *
- * No se pinta nada si no hay divis guardados: quien llega por primera vez ve la
- * portada exactamente igual que antes.
+ * Vive detrás de un icono de la cabecera y no debajo del papel, que es donde
+ * estaba. Con tres divis guardadas la lista se comía media pantalla y dejaba
+ * el ticket en una franja de 360 por 235: ancho, chato y sin parecer un
+ * ticket. Y peor: la primera pantalla cambiaba de forma según cuántas divis
+ * llevaras, cuando es la que tiene que decir siempre lo mismo —haz la foto—.
+ *
+ * Sin divis guardadas el icono no existe. Quien llega por primera vez ve la
+ * cabecera limpia y el papel entero.
  */
-export default function MisDivis() {
+export default function MisDivisBoton() {
+  const t = useT();
+  const { divis } = useMisDivis();
+  const [abierta, setAbierta] = useState(false);
+
+  // `null` es «todavía no lo sé» —servidor o hidratación—, y pintar el icono
+  // para quitarlo medio segundo después es un parpadeo en cada visita.
+  if (divis === null || divis.length === 0) return null;
+
+  /*
+    El punto sólo cuando hay dinero de por medio, y sin número: el número ya
+    está dentro, y la campana de al lado usa cifra en rojo para lo que no has
+    visto. Dos contadores juntos no se distinguen de un golpe.
+  */
+  const algoVivo = divis.some((d) => !d.saldado && d.cents !== 0);
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setAbierta(true)}
+        aria-label={t.misDivis.titulo}
+        className="relative grid h-10 w-10 place-items-center rounded-full text-ink-soft transition-colors hover:bg-paper-2 hover:text-ink"
+      >
+        {/* Un ticket: papel con los dientes de la impresora y dos renglones. */}
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M6 3.5h12v15.5l-2-1.2-2 1.2-2-1.2-2 1.2-2-1.2-2 1.2z" />
+          <path d="M9.5 8h5M9.5 11.5h5" />
+        </svg>
+        {algoVivo && (
+          <span aria-hidden className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full border-2 border-paper bg-amber" />
+        )}
+      </button>
+
+      {abierta && <MisDivisHoja onClose={() => setAbierta(false)} />}
+    </>
+  );
+}
+
+/** La lista, entera y con su propio scroll: en una hoja no hace falta cortarla. */
+function MisDivisHoja({ onClose }: { onClose: () => void }) {
   const t = useT();
   const { divis, quitar } = useMisDivis();
   const { usuario } = useCuenta();
-  const [todos, setTodos] = useState(false);
-
-  // `null` es «todavía no lo sé» —servidor o hidratación—, y pintar un hueco
-  // vacío para luego rellenarlo daría un salto en la página.
-  if (divis === null || divis.length === 0) return null;
-
-  const VISIBLES = 3;
-  const lista = todos ? divis : divis.slice(0, VISIBLES);
-  const ocultos = divis.length - lista.length;
+  const lista = divis ?? [];
 
   return (
-    <section className="mt-6">
-      {/* Los dos rótulos, al mismo tono.
+    <Sheet onClose={onClose} titulo={t.misDivis.titulo} sub={usuario ? t.misDivis.enTuCuenta : t.misDivis.donde}>
+      <div className="mt-4">
+        <ul className="space-y-1.5">
+          {lista.map((divi) => (
+            <Fila key={divi.code} divi={divi} onQuitar={() => quitar(divi.code)} t={t} />
+          ))}
+        </ul>
 
-          El de la derecha iba a `/70` para quedar por detrás del otro, y con eso
-          se caía a 3,3:1: `ink-faint` está calculado para dar 5,58:1 justo, no
-          le sobra nada que rebajar. Ya queda en segundo plano por lo que es —un
-          sello de once píxeles a la derecha del todo—, sin necesidad de que se
-          borre. */}
-      <div className="mb-2 flex items-baseline justify-between gap-3 px-1">
-    <p className="text-[12px] text-ink-faint">{t.misDivis.titulo}</p>
-    {/* Con cuenta ya no viven «en este móvil»: te siguen. Decirlo es lo que
-        hace visible para qué sirve haber entrado. */}
-    <p className="text-[12px] text-ink-faint">{usuario ? t.misDivis.enTuCuenta : t.misDivis.donde}</p>
       </div>
 
-      <ul className="space-y-1.5">
-        {lista.map((divi) => (
-          <Fila key={divi.code} divi={divi} onQuitar={() => quitar(divi.code)} t={t} />
-        ))}
-      </ul>
-
-      {ocultos > 0 && (
-        <button
-          type="button"
-          onClick={() => setTodos(true)}
-     className="text-[12px] mt-2 w-full rounded-xl border border-line py-2 text-ink-faint transition-colors hover:border-amber hover:text-amber"
-        >
-          {t.misDivis.verTodos} {divis.length}
-        </button>
-      )}
-    </section>
+      <div className="mt-4">
+        <CerrarHoja onClick={onClose}>{t.cuenta.cerrar}</CerrarHoja>
+      </div>
+    </Sheet>
   );
 }
 

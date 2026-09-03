@@ -6,7 +6,7 @@ import TicketUploader from "@/components/TicketUploader";
 import { CambiarCookies } from "@/components/Consent";
 import { PASOS } from "@/components/ComoVa";
 import Preguntas from "@/components/Preguntas";
-import MisDivis from "@/components/MisDivis";
+import MisDivisBoton from "@/components/MisDivis";
 import ComoFuncionaSheet from "@/components/ComoFuncionaSheet";
 import LangSwitch from "@/components/LangSwitch";
 import CuentaBoton from "@/components/CuentaBoton";
@@ -77,7 +77,10 @@ function Cuerpo() {
               salía como una tira de noventa píxeles pegada a la derecha. Se
               centra en vertical con flex, que no crea ese problema.
             */}
-            <div className="flex items-center">
+            {/* Tus divis y tu cuenta, juntas y del mismo tamaño: las dos son
+                «lo tuyo», y separarlas haría que una pareciera más importante. */}
+            <div className="flex items-center gap-0.5">
+              <MisDivisBoton />
               <CuentaBoton />
             </div>
           </header>
@@ -105,35 +108,11 @@ function Cuerpo() {
               {/* Sin rótulo encima: el papel ya dice dónde se empieza. */}
               <TicketUploader />
 
-              {/*
-                Debajo de la tarjeta y no encima: quien vuelve baja el pulgar un
-                centímetro y ya está, y quien llega por primera vez no se
-                encuentra un muro antes de poder hacer la foto — que costó lo
-                suyo que entrara en la primera pantalla.
 
-                No pinta nada si no hay divis guardados, así que para quien
-                llega nuevo la portada es exactamente la de antes.
-              */}
-              <MisDivis />
 
-              {/*
-                Una frase, y ya.
-
-                Aquí hubo dos cosas y ninguna valía. Primero una lista numerada
-                —«1 le haces una foto», «2 seleccionas lo que has tomado»—, que
-                es el bloque más templado que existe: lo tiene cualquier landing
-                del mundo, y encima explicaba con palabras algo que se entiende
-                mirando. Después el dibujo de la comanda, que enseñaba el
-                producto pero le robaba el sitio a lo único que hay que tocar.
-
-                Queda la frase. Dice lo que hacen los cuatro pasos en un
-                renglón, no compite con la tarjeta y deja la pantalla en lo que
-                tiene que ser: subir la foto. Los cuatro pasos con sus dibujos
-                siguen enteros a un toque, en «¿Cómo funciona?» del pie.
-              */}
-              <p className="mt-6 text-balance text-center text-[13px] leading-relaxed text-ink-soft lg:hidden">
-                {t.pasos.asiSeVe}
-              </p>
+              {/* La frase que había aquí se imprime ahora dentro del papel,
+                  en `TicketUploader`: llena el claro que dejaba la hoja alta y
+                  deja de estirar la portada por abajo. */}
             </div>
 
             {/*
