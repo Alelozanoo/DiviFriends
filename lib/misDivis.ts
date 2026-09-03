@@ -24,8 +24,13 @@ import { useCallback, useSyncExternalStore } from "react";
 
 const CLAVE = "divi.mis-divis";
 export const EVENTO = "divi:mis-divis";
-/** Suficiente para «lo de este fin de semana», que es para lo que sirve. */
-const TOPE = 12;
+/**
+ * Doce eran «lo de este fin de semana», que es para lo que servía la lista.
+ * El resumen del mes pregunta otra cosa —cuánto has puesto y cuánto te deben—
+ * y con doce se queda corto en cuanto alguien sale dos veces por semana. La
+ * portada sigue enseñando tres y un «ver todas»: esto es memoria, no lista.
+ */
+const TOPE = 30;
 
 export interface DiviGuardado {
   code: string;
@@ -40,6 +45,26 @@ export interface DiviGuardado {
   saldado: boolean;
   /** Sólo lo justo para pintar las caras. */
   gente: { name: string; color: string; avatar?: string }[];
+
+  /*
+    Lo que sigue lo pide el resumen del mes, y por eso va con interrogante:
+    las divis que ya estaban guardadas antes de que existiera no lo traen, y
+    valen igual para lo suyo. Al volver a abrir una, se completa sola.
+  */
+
+  /** Lo que pusiste tú en la barra. Cero si pagó otro. */
+  puestoCents?: number;
+  /** Lo que consumiste tú, con tu parte del servicio o el descuento. */
+  mioCents?: number;
+  /** Quién te debe de esta mesa, y si ya te lo ha devuelto. */
+  deudas?: { name: string; cents: number; pagado: boolean }[];
+  /**
+   * Cuándo fue la mesa.
+   *
+   * No vale `at` para esto: `at` es la última vez que entraste, y abrir en
+   * octubre la cena de septiembre la mudaría de mes entero, con sus cifras.
+   */
+  creada?: string;
 }
 
 function leerCrudo(): DiviGuardado[] {

@@ -86,6 +86,23 @@ export const en: Dict = {
     otroTicket: "Add another receipt",
   },
 
+  resumen: {
+    titulo: "Your numbers",
+    vacio: "Once you go through a divi, you'll see here what you put in and who owes you.",
+    entradilla: "What you've put in, and what's still to come back.",
+    teDeben: "Owed to you",
+    enPaz: "All square",
+    pusiste: "You put in",
+    tuyo: "Of that, yours was",
+    adelantaste: "You fronted",
+    devuelto: "Already paid back",
+    sinDatos: "{n} older divis aren't counted here. They'll add themselves next time you open them.",
+    sinDatosUna: "One older divi isn't counted here. It'll add itself next time you open it.",
+    quienTeDebe: "Who owes you",
+    nadieTeDebe: "Nobody, for now.",
+    debesTu: "What you owe",
+  },
+
   misDivis: {
     titulo: "Your divis",
     donde: "on this phone",

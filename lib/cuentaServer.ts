@@ -15,8 +15,9 @@ import { StoreError } from "./store";
  *
  *   - el perfil que ya existía en el móvil (nombre, foto pequeña, Bizum,
  *     Revolut), para entrar en las mesas ya puesto;
- *   - las últimas doce divis, las mismas que `lib/misDivis.ts` guarda en el
- *     móvil, para que te sigan de un aparato a otro;
+ *   - las últimas treinta divis, las mismas que `lib/misDivis.ts` guarda en el
+ *     móvil, para que te sigan de un aparato a otro y para que el resumen del
+ *     mes tenga de dónde salir;
  *   - el correo, que lo da Google y hace falta para avisarte más adelante.
  *
  * No se guarda la foto de Google tal cual: el navegador la baja, la recorta a
@@ -46,8 +47,8 @@ export interface Cuenta {
   actualizada: string;
 }
 
-/** Espejo de `TOPE` en `lib/misDivis.ts`: lo que se enseña, y ni una más. */
-const TOPE_DIVIS = 12;
+/** Espejo de `TOPE` en `lib/misDivis.ts`: lo que se guarda, y ni una más. */
+const TOPE_DIVIS = 30;
 
 /**
  * Lo que aguanta un documento sin acercarse al mega de Firestore. Doce divis
@@ -134,6 +135,12 @@ export function limpiaPerfil(raw: unknown): PerfilCuenta | null {
   };
 }
 
+/** Céntimos que no pueden ser negativos: lo puesto y lo consumido. */
+function enteroPositivo(valor: unknown): number | undefined {
+  const n = Number(valor);
+  return Number.isFinite(n) && n >= 0 ? Math.round(n) : undefined;
+}
+
 function limpiaDivi(raw: unknown): DiviGuardado | null {
   if (typeof raw !== "object" || raw === null) return null;
   const r = raw as Record<string, unknown>;
@@ -158,6 +165,24 @@ function limpiaDivi(raw: unknown): DiviGuardado | null {
       })
     : [];
 
+  /*
+    Lo que te deben, persona a persona. Se corta en doce como la gente: una
+    mesa no tiene más, y así una lista inventada no puede engordar el
+    documento de nadie.
+  */
+  const deudas = Array.isArray(r.deudas)
+    ? r.deudas.slice(0, 12).flatMap((d) => {
+        if (typeof d !== "object" || d === null) return [];
+        const x = d as Record<string, unknown>;
+        const name = limpiaTexto(x.name, 20);
+        const cents = Number.isFinite(Number(x.cents)) ? Math.round(Number(x.cents)) : 0;
+        if (!name || cents <= 0) return [];
+        return [{ name, cents, pagado: x.pagado === true }];
+      })
+    : undefined;
+
+  const creada = limpiaTexto(r.creada, 40);
+
   return {
     code,
     place: limpiaTexto(r.place, 60) || null,
@@ -167,6 +192,10 @@ function limpiaDivi(raw: unknown): DiviGuardado | null {
     aQuien: limpiaTexto(r.aQuien, 20) || null,
     saldado: r.saldado === true,
     gente,
+    puestoCents: enteroPositivo(r.puestoCents),
+    mioCents: enteroPositivo(r.mioCents),
+    deudas,
+    creada: creada && !Number.isNaN(new Date(creada).getTime()) ? creada : undefined,
   };
 }
 

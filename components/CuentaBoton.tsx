@@ -9,6 +9,7 @@ import BienvenidaSheet from "./BienvenidaSheet";
 import { EnlaceBorrado } from "./BorrarCuenta";
 import { EditNameSheet } from "./EditNameSheet";
 import NotificacionesSheet from "./NotificacionesSheet";
+import ResumenSheet from "./ResumenSheet";
 import { Avatar, CerrarHoja, Sheet } from "./ui";
 
 /** Dónde se apunta a quién ya se le enseñó la bienvenida en este aparato. */
@@ -30,7 +31,7 @@ export default function CuentaBoton() {
   const t = useT();
   const { usuario, usuarioNombre, cargada, entrar, salir, fallo, ocupado, avisos, pendientes } = useCuenta();
   const { profile, saveProfile } = useGlobalProfile();
-  const [hoja, setHoja] = useState<null | "cuenta" | "perfil" | "amigos" | "avisos" | "usuario" | "fallo">(null);
+  const [hoja, setHoja] = useState<null | "cuenta" | "perfil" | "amigos" | "avisos" | "usuario" | "resumen" | "fallo">(null);
   // A quién ya se le preguntó en este móvil. Se guarda el uid y no un «sí»,
   // porque en un móvil prestado entran dos personas y la segunda tiene que
   // ver su bienvenida igual.
@@ -161,6 +162,7 @@ export default function CuentaBoton() {
               <span className="shrink-0 text-[12px] text-ink-faint">{t.cuenta.cambiar}</span>
             </button>
 
+            <Opcion onClick={() => setHoja("resumen")}>{t.resumen.titulo}</Opcion>
             <Opcion onClick={() => setHoja("perfil")}>{t.cuenta.editarPerfil}</Opcion>
             <Opcion
               onClick={() => setHoja("amigos")}
@@ -207,6 +209,8 @@ export default function CuentaBoton() {
       )}
 
       {hoja === "usuario" && <UsuarioSheet actual={usuarioNombre} onClose={() => setHoja("cuenta")} />}
+
+      {hoja === "resumen" && <ResumenSheet onClose={() => setHoja("cuenta")} />}
 
       {hoja === "amigos" && <AmigosSheet onClose={() => setHoja("cuenta")} />}
 

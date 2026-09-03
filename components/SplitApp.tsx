@@ -411,6 +411,23 @@ export default function SplitApp({
   const aQuien = meId
     ? (settlement.transactions ?? []).find((t) => t.fromId === meId)?.toId
     : undefined;
+  /*
+    Quién te debe de esta mesa y si ya te lo ha devuelto.
+
+    Sale de las mismas transacciones que pinta la pantalla de cuentas, filtradas
+    por las que apuntan a ti. `settled` del que debe es lo que dice si ya volvió:
+    es el mismo sí o no que marca la mesa, no una cuenta aparte.
+  */
+  const meDeben = meId
+    ? (settlement.transactions ?? [])
+        .filter((tx) => tx.toId === meId)
+        .map((tx) => {
+          const quien = settlement.byParticipant.find((p) => p.participantId === tx.fromId);
+          return { name: quien?.name ?? "", cents: tx.cents, pagado: quien?.settled === true };
+        })
+        .filter((d) => d.name && d.cents > 0)
+    : [];
+
   const huella = [
     code,
     meId ?? "",
@@ -420,6 +437,8 @@ export default function SplitApp({
     state.participants.map((p) => p.id).join(","),
     aQuien ?? "",
     esMia,
+    myBalance?.paidCents ?? 0,
+    meDeben.map((d) => `${d.name}:${d.cents}:${d.pagado}`).join(","),
   ].join("|");
 
   useEffect(() => {
@@ -441,6 +460,10 @@ export default function SplitApp({
         color: p.color,
         avatar: p.avatar,
       })),
+      puestoCents: myBalance.paidCents,
+      mioCents: myBalance.itemsCents + myBalance.extrasCents,
+      deudas: meDeben,
+      creada: state.ticket.createdAt,
     });
     // Se apunta cuando cambia algo que la lista enseña, no en cada repintado:
     // `huella` resume justo eso.

@@ -100,6 +100,24 @@ export const es = {
   },
 
   /* ------------------------------------------------------- tus divis */
+  /* ------------------------------------------------------- tus números */
+  resumen: {
+    titulo: "Tus números",
+    vacio: "Cuando pases por una divi, aquí verás lo que pusiste y quién te debe.",
+    entradilla: "Lo que has puesto y lo que te falta por cobrar.",
+    teDeben: "Te deben",
+    enPaz: "Estás en paz",
+    pusiste: "Pusiste",
+    tuyo: "De eso, tuyo era",
+    adelantaste: "Adelantaste",
+    devuelto: "Ya te han devuelto",
+    sinDatos: "{n} divis de antes no entran en la cuenta. Se apuntan solas la próxima vez que las abras.",
+    sinDatosUna: "Una divi de antes no entra en la cuenta. Se apunta sola la próxima vez que la abras.",
+    quienTeDebe: "Quién te debe",
+    nadieTeDebe: "Nadie, de momento.",
+    debesTu: "Lo que debes tú",
+  },
+
   misDivis: {
     titulo: "Tus divis",
     donde: "en este móvil",
