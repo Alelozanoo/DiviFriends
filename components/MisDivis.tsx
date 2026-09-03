@@ -5,6 +5,7 @@ import { useState } from "react";
 import { money } from "@/lib/format";
 import { cuando, useMisDivis, type DiviGuardado } from "@/lib/misDivis";
 import { useT } from "@/lib/i18n";
+import { useCuenta } from "@/lib/cuenta";
 import { Avatar } from "./ui";
 
 /**
@@ -21,6 +22,7 @@ import { Avatar } from "./ui";
 export default function MisDivis() {
   const t = useT();
   const { divis, quitar } = useMisDivis();
+  const { usuario } = useCuenta();
   const [todos, setTodos] = useState(false);
 
   // `null` es «todavía no lo sé» —servidor o hidratación—, y pintar un hueco
@@ -42,7 +44,9 @@ export default function MisDivis() {
           borre. */}
       <div className="mb-2 flex items-baseline justify-between gap-3 px-1">
     <p className="text-[12px] text-ink-faint">{t.misDivis.titulo}</p>
-    <p className="text-[12px] text-ink-faint">{t.misDivis.donde}</p>
+    {/* Con cuenta ya no viven «en este móvil»: te siguen. Decirlo es lo que
+        hace visible para qué sirve haber entrado. */}
+    <p className="text-[12px] text-ink-faint">{usuario ? t.misDivis.enTuCuenta : t.misDivis.donde}</p>
       </div>
 
       <ul className="space-y-1.5">

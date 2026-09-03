@@ -1,4 +1,5 @@
 import { cert, getApp, getApps, initializeApp, applicationDefault } from "firebase-admin/app";
+import { getAuth, type Auth } from "firebase-admin/auth";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
 
 /**
@@ -46,3 +47,17 @@ export function firestore(): Firestore {
 }
 
 export const TICKETS = "tickets";
+
+/**
+ * Quién dice ser quien llama.
+ *
+ * El navegador entra con Google y se queda con un token firmado por Firebase;
+ * cada petición a `/api/cuenta` lo manda en `Authorization` y aquí se comprueba
+ * la firma. Sin esto, cualquiera podría pedir la cuenta de otro poniendo su
+ * `uid` en el cuerpo. Reutiliza la misma app del Admin SDK que Firestore, así
+ * que arrancarla es gratis.
+ */
+export function adminAuth(): Auth {
+  firestore();
+  return getAuth(getApp());
+}

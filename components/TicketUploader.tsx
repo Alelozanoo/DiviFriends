@@ -51,19 +51,27 @@ type Phase = "idle" | "reading" | "parsing" | "error";
  *
  * Abrir la comanda vacía tarda unos novecientos milisegundos, y saltar de golpe
  * a la sala se siente a tirón, no a rápido: no da tiempo a ver que ha pasado
- * algo. Segundo y medio es lo que dura un gesto que se entiende — la barra sale,
- * se llena entera y estás dentro.
+ * algo. Tres segundos es lo que dura el gesto que se quiere — la barra sale,
+ * se llena entera y estás dentro—, y con margen para que la foto se termine de
+ * leer detrás sin que la mesa aparezca a medias.
  *
- * Son 1300 y no 1500 porque el número que se mira es el otro: **cuándo estás
- * dentro**. Entre que la barra toca el final y aparece la mesa hay un salto de
- * unos 200 ms que `router.prefetch` no llega a quitar —la comanda es una página
- * dinámica, así que de verdad no se puede pedir hasta pulsar—. Medido tres
- * veces contra producción: 0,15, 0,16 y 0,27 s. Descontados aquí, entrar cae
- * donde tenía que caer.
+ * Antes eran 1300 (segundo y medio menos los ~200 ms que tarda en pintarse la
+ * comanda tras el `push`). Se subió a tres segundos el 3 de septiembre de 2026
+ * porque en la calle entrar tan pronto se veía precipitado.
  *
  * Si el servidor tarda más, manda el servidor: esto es un suelo, no un techo.
  */
-const ENTRADA_MS = 1300;
+const ENTRADA_MS = 3000;
+
+/**
+ * Los tres tonos del papel, los mismos que usa `PaperTicket`.
+ *
+ * El secundario no es el `#776a5c` de allí: sobre el crema mide 4,47:1 y el
+ * mínimo para texto pequeño es 4,5. Allí pasa porque se usa en cifras grandes;
+ * aquí lleva frases de trece píxeles, así que baja a `#6b5f52`, que mide 5,29.
+ */
+const PAPEL = "bg-[#f4ece0] text-[#14100d]";
+const TINTA_SUAVE = "text-[#6b5f52]";
 
 export default function TicketUploader({
   targetCode,
@@ -208,8 +216,8 @@ export default function TicketUploader({
           Sin esto, al llegar al 100 % había que esperar otros trescientos
           milisegundos a que el servidor mandara la página: la barra llena y la
           pantalla quieta, que es exactamente la sensación que se quería quitar.
-          Pidiéndola por adelantado, esos milisegundos caben dentro del segundo
-          y medio que ya se estaba esperando y el salto es instantáneo.
+          Pidiéndola por adelantado, esos milisegundos caben dentro de los tres
+          segundos que ya se estaban esperando y el salto es instantáneo.
         */
         const destino = `/t/${data.code}?nuevo=1`;
         router.prefetch(destino);
@@ -230,6 +238,21 @@ export default function TicketUploader({
 
   return (
     <div className="w-full">
+      {/*
+        Esto no es una tarjeta: es el papel.
+
+        Era una caja oscura con borde y esquinas redondas, o sea la misma caja
+        que tiene cualquier otra web, y encima llevaba dentro un pictograma de
+        cámara metido en un cuadradito ámbar. Lo que se sube aquí es un ticket,
+        y el ticket ya sabemos dibujarlo: `PaperTicket` y los cuatro pasos de la
+        portada llevan meses pintando papel crema con los bordes dentados. Es
+        raro que lo único que hay que tocar no fuera de papel.
+
+        Sobre el fondo café oscuro, esta hoja es lo único iluminado de la
+        pantalla, que es exactamente lo que dice el lenguaje visual de la casa:
+        un ticket visto de noche. Y de paso el sitio donde hay que tocar deja de
+        competir con nada.
+      */}
       <div
         onDragOver={(event) => {
           event.preventDefault();
@@ -242,10 +265,12 @@ export default function TicketUploader({
           const file = event.dataTransfer.files?.[0];
           if (file) void upload(file);
         }}
-        className={`relative overflow-hidden rounded-caja border transition-colors ${
-          dragging ? "border-amber bg-amber/5" : "border-line-soft bg-paper-2"
-        }`}
+        className={`relative transition-[filter] ${dragging ? "brightness-95" : ""}`}
       >
+        {/* Los dientes de arriba, como en `ComoVa`: el mismo truco de la casa,
+            una tira con la máscara y su gemela girada al final. */}
+        <div className={`${PAPEL} torn-top h-2.5`} />
+        <div className={`${PAPEL} relative overflow-hidden`}>
         {/*
           La misma tarjeta, dos puertas.
 
@@ -255,14 +280,11 @@ export default function TicketUploader({
           sitio y el pie de abajo cambia de palabra para volver.
         */}
         {pidiendoCodigo ? (
-          <div className="flex w-full flex-col items-center gap-3.5 px-[var(--gutter)] py-7 text-center">
-            <span className="grid h-14 w-14 place-items-center rounded-caja bg-amber text-[26px] font-bold text-paper" aria-hidden>
-              #
-            </span>
+          <div className="flex w-full flex-col items-center gap-3.5 px-[var(--gutter)] py-10 text-center">
             <span className="text-[21px] font-bold leading-tight tracking-[-0.025em]">
               {t.subir.codigoTitulo}
             </span>
-            <span className="max-w-xs text-[13px] leading-relaxed text-ink-faint">
+            <span className={`max-w-xs text-[13px] leading-relaxed ${TINTA_SUAVE}`}>
               {t.subir.codigoAyuda}
             </span>
             <div className="w-full">
@@ -270,25 +292,23 @@ export default function TicketUploader({
             </div>
           </div>
         ) : (
-          <div className="flex w-full flex-col items-center gap-3.5 px-[var(--gutter)] py-7 text-center">
+          <div className="flex w-full flex-col items-center gap-3.5 px-[var(--gutter)] py-10 text-center">
             {/*
               En cuanto la foto está lista se enseña con el escáner encima. Leer
               un ticket tarda varios segundos y un icono parpadeando no dice nada:
               ver tu propia foto con la línea pasando por encima cuenta que se
               está trabajando sobre ella, y que la que has hecho vale.
             */}
-            {vista ? (
-              <Escaner src={vista} />
-            ) : (
-              <span
-                className={`grid h-14 w-14 place-items-center rounded-caja bg-amber text-paper ${
-                  busy ? "animate-pulse" : ""
-                }`}
-                aria-hidden
-              >
-                <CameraIcon />
-              </span>
-            )}
+            {/*
+              Ya no hay pictograma de cámara esperando dentro de un cuadradito
+              ámbar. Ese apilado —icono en tesela, titular en negrita, botón
+              pastilla a todo el ancho— es la tarjeta de héroe que sale por
+              defecto en cualquier web generada, y aquí encima sobraba: el
+              objeto del que estamos hablando es la hoja sobre la que está
+              puesto, no un dibujo de una cámara. Cuando hay foto de verdad sí
+              se enseña, porque entonces sí hay algo que mirar.
+            */}
+            {vista && <Escaner src={vista} />}
 
             <span className="text-[21px] font-bold leading-tight tracking-[-0.025em]">
               {busy ? getDynamicCopy() : t.subir.titulo}
@@ -297,7 +317,7 @@ export default function TicketUploader({
             {/* Sólo mientras trabaja: al empezar, la frase de apoyo repetía lo que
                 ya dicen el título y los dos botones de debajo. */}
             {busy && (
-              <span className="max-w-sm text-[13px] leading-relaxed text-ink-soft">
+              <span className={`max-w-sm text-[13px] leading-relaxed ${TINTA_SUAVE}`}>
                 {progress < 85 ? t.subir.tardo : t.subir.cuadrando}
               </span>
             )}
@@ -305,13 +325,16 @@ export default function TicketUploader({
             <div className="min-h-[52px] w-full">
               {busy ? (
                 <div className="w-full pt-2 text-left">
-         <div className="text-[12px] mb-2 flex justify-between text-amber">
+                  <div className={`text-[12px] mb-2 flex justify-between ${TINTA_SUAVE}`}>
                     <span>{t.subir.progreso}</span>
                     <span className="tnum">{progress}%</span>
                   </div>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-line">
+                  {/* Sobre el crema, el ámbar de la marca se queda en gris
+                      claro: la barra la lleva el ámbar oscuro, que es el mismo
+                      color un par de pasos más abajo. */}
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#dcd2c2]">
                     <div
-                      className="h-full rounded-full bg-amber transition-all ease-linear"
+                      className="h-full rounded-full bg-amber-deep transition-all ease-linear"
                       style={{
                         width: `${progress}%`,
                         // Pegada al número cuando el recorrido es corto; con
@@ -326,7 +349,11 @@ export default function TicketUploader({
                   type="button"
                   disabled={busy}
                   onClick={() => fileRef.current?.click()}
-                  className="min-h-[52px] w-full rounded-xl bg-amber px-4 text-[15px] font-bold text-paper transition-transform active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
+                  /* Tinta sobre papel. El ámbar es el color de la marca sobre
+                     el fondo oscuro, pero sobre el crema pierde casi todo el
+                     contraste y deja de leerse como el sitio donde hay que
+                     tocar: en un ticket, lo impreso es negro. */
+                  className="min-h-[52px] w-full rounded-pieza bg-[#14100d] px-4 text-[15px] font-bold text-[#f4ece0] transition-transform active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
                 >
                   {t.subir.boton}
                 </button>
@@ -357,26 +384,39 @@ export default function TicketUploader({
         */}
         {!targetCode && !busy && (
           <>
-            <div className="rule" />
+            {/* El filete de la impresora, pintado con la tinta del papel: el
+                `.rule` de la casa usa `--line`, que sobre el crema se ve como
+                un tajo negro en vez de como una perforación. */}
+            <div
+              className="h-px"
+              style={{
+                backgroundImage: "linear-gradient(90deg, #c9bda9 0 6px, transparent 6px 12px)",
+                backgroundSize: "12px 1px",
+              }}
+            />
             <button
               type="button"
               onClick={() => setPidiendoCodigo(!pidiendoCodigo)}
-              className="flex min-h-[52px] w-full items-center justify-center gap-2 whitespace-nowrap px-4 text-[15px] font-semibold text-ink-soft transition-colors active:bg-paper-3"
+              className={`flex min-h-[52px] w-full items-center justify-center gap-2 whitespace-nowrap px-4 text-[15px] font-semibold transition-colors active:bg-[#e6dccc] ${TINTA_SUAVE}`}
             >
               {/* Una sola línea: la pregunta más el enlace se partían en dos en
                   390 px y el botón perdía la forma de puerta. Y es un acto, no
                   una pregunta, igual que «Subir foto». */}
-              <span aria-hidden className="text-amber">{pidiendoCodigo ? "\u2190" : "#"}</span>
+              <span aria-hidden className="text-amber-deep">{pidiendoCodigo ? "\u2190" : "#"}</span>
               {pidiendoCodigo ? t.subir.conFoto : t.subir.conCodigo}
             </button>
           </>
         )}
+        </div>
+        {/* Los dientes de abajo: la misma tira girada, que es como se hace en
+            `ComoVa` y en la p\u00e1gina de imprimir. */}
+        <div className={`${PAPEL} torn-top h-2.5 rotate-180`} />
       </div>
 
       {error && (
         <p
           role="alert"
-          className="mt-3 rounded-xl border border-clay/40 bg-clay/10 px-4 py-3 text-[13px] leading-relaxed text-clay"
+          className="mt-3 rounded-pieza border border-clay/40 bg-clay/10 px-4 py-3 text-[13px] leading-relaxed text-clay"
         >
           {error}
         </p>
@@ -395,7 +435,7 @@ export default function TicketUploader({
  */
 function Escaner({ src }: { src: string }) {
   return (
-    <div className="relative h-40 w-32 overflow-hidden rounded-xl border border-line bg-paper sm:h-48 sm:w-36">
+    <div className="relative h-40 w-32 overflow-hidden rounded-pieza border border-line bg-paper sm:h-48 sm:w-36">
       {/* Es un data URL efímero de la propia sesión: `next/image` no aporta nada. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={src} alt="" className="h-full w-full object-cover opacity-70" />
@@ -422,14 +462,5 @@ function Escaner({ src }: { src: string }) {
         ))}
       </div>
     </div>
-  );
-}
-
-function CameraIcon() {
-  return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z" />
-      <circle cx="12" cy="13.5" r="3.5" />
-    </svg>
   );
 }

@@ -1,5 +1,6 @@
 import { getTicketState, patchTicket } from "@/lib/store";
-import { bad, fail, ok } from "@/lib/api";
+import { bad, fail, ok, cuerpo } from "@/lib/api";
+import { avisaCierre } from "@/lib/avisosServer";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,7 +23,7 @@ export async function PATCH(request: Request, { params }: Ctx) {
   // `by` es quien dice ser el que hace el cambio: va al historial tal cual,
   // sin comprobarlo. Aquí no hay sesiones, y el historial es un registro
   // social, no un control de acceso.
-  const { by, ...patch } = (await request.json()) as {
+  const { by, ...patch } = (await cuerpo(request)) as {
     totalCents?: number;
     place?: string;
     tableLabel?: string;
@@ -31,7 +32,12 @@ export async function PATCH(request: Request, { params }: Ctx) {
   };
 
   try {
-    return ok(await patchTicket(code.toUpperCase(), patch, by));
+    const state = await patchTicket(code.toUpperCase(), patch, by);
+    // Después de guardar, y sin esperar al correo: si no sale, la mesa está
+    // cerrada igual. Sólo cuando de verdad se cierra, no en cada retoque.
+    if (patch.closed === true)
+      void avisaCierre(request, code.toUpperCase(), state);
+    return ok(state);
   } catch (error) {
     return fail(error);
   }

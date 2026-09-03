@@ -99,6 +99,15 @@ export interface Metricas {
   lineas: number;
   porFranja: Record<Franja, number>;
   porDiaSemana: { etiqueta: string; n: number }[];
+  /**
+   * Las mesas que nacieron de la cuenta de un vídeo, por vídeo.
+   *
+   * **El número que importa es `dosOMas`, no `n`.** Mil mesas de una persona
+   * sola son mil curiosos que tocaron un botón: eso ya lo dicen las
+   * reproducciones. Que una mesa llegue a dos personas significa que alguien
+   * pasó el enlace a otro, que es lo único que convierte un reel en usuarios.
+   */
+  origenes: { slug: string; n: number; dosOMas: number }[];
 }
 
 const DIA = 86_400_000;
@@ -211,6 +220,7 @@ export function resumen(docs: TicketDoc[], ahora = new Date()): Metricas {
   let efimeros = 0;
   const vidas: number[] = [];
   const acciones = new Map<EventDoc["kind"], number>();
+  const origenes = new Map<string, { n: number; dosOMas: number }>();
 
   for (const doc of nacidas) {
     const { hora, diaSemana, clave } = enMadrid(doc.createdAt);
@@ -229,6 +239,13 @@ export function resumen(docs: TicketDoc[], ahora = new Date()): Metricas {
     if (gente <= 1) solo += 1;
     if (gente >= 2) dosOMas += 1;
     if (gente >= 3) tresOMas += 1;
+
+    if (doc.origen) {
+      const o = origenes.get(doc.origen) ?? { n: 0, dosOMas: 0 };
+      o.n += 1;
+      if (gente >= 2) o.dosOMas += 1;
+      origenes.set(doc.origen, o);
+    }
 
     participantes += gente;
     conAvatar += (doc.participants ?? []).filter((p) => p.avatar).length;
@@ -368,5 +385,8 @@ export function resumen(docs: TicketDoc[], ahora = new Date()): Metricas {
     lineas: media(lineasTotal, total),
     porFranja,
     porDiaSemana,
+    origenes: [...origenes.entries()]
+      .map(([slug, o]) => ({ slug, ...o }))
+      .sort((a, b) => b.n - a.n),
   };
 }

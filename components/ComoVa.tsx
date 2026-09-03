@@ -56,7 +56,7 @@ export function PasoFoto() {
           ["Pulpo", "18,90"],
           ["Tarta", "5,50"],
         ].map(([nombre, precio]) => (
-          <div key={nombre} className="rounded-lg border border-line bg-paper-2 p-1.5">
+          <div key={nombre} className="rounded-menudo border border-line bg-paper-2 p-1.5">
             <p className="truncate text-[0.5rem] font-semibold leading-tight">{nombre}</p>
             {/* Sin esto el símbolo del euro se cae solo a la línea de abajo. */}
             <p className="tnum whitespace-nowrap text-[0.65rem] font-bold leading-tight">
@@ -101,13 +101,13 @@ export function PasoTickets() {
         {tickets.map((recibo) => (
           <div
             key={recibo.sitio}
-            className="flex items-center gap-2 rounded-xl border border-line bg-paper-2 px-2.5 py-2"
+            className="flex items-center gap-2 rounded-pieza border border-line bg-paper-2 px-2.5 py-2"
           >
             <span
               style={{ background: recibo.color }}
-              className="grid h-5 w-5 shrink-0 place-items-center rounded-full text-[0.5rem] font-bold text-paper"
+              className="font-mono grid h-5 w-5 shrink-0 place-items-center rounded-full text-[0.6rem] font-bold text-paper"
             >
-              {recibo.quien.slice(0, 2).toUpperCase()}
+              {recibo.quien.slice(0, 1).toUpperCase()}
             </span>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[0.7rem] font-semibold leading-tight">
@@ -123,7 +123,7 @@ export function PasoTickets() {
       </div>
 
       <div className="flex w-full max-w-[15rem] items-baseline justify-between border-t border-line pt-2.5">
-        <span className="stamp text-ink-faint">{t.pasos.totalMesa}</span>
+        <span className="text-[11px] text-ink-faint">{t.pasos.totalMesa}</span>
         <span className="tnum whitespace-nowrap text-lg font-bold">72,90 €</span>
       </div>
     </Marco>
@@ -215,7 +215,7 @@ export function PasoCuentas() {
   }[] = [
     {
       nombre: "Leo",
-      inicial: "LE",
+      inicial: "L",
       importe: "34,90",
       color: "#e0705f",
       // Dos pagos porque pagaron dos: es justo lo que la app resuelve sola.
@@ -223,7 +223,7 @@ export function PasoCuentas() {
     },
     {
       nombre: "Álex",
-      inicial: "ÁL",
+      inicial: "Á",
       importe: "24,70",
       color: "#5ec5c0",
       notas: [`${t.pasos.recibeDe} Leo`],
@@ -232,7 +232,7 @@ export function PasoCuentas() {
     },
     {
       nombre: "Marta",
-      inicial: "MA",
+      inicial: "M",
       importe: "10,20",
       color: "#8b8bf0",
       notas: [`${t.pasos.recibeDe} Leo`],
@@ -243,14 +243,14 @@ export function PasoCuentas() {
   return (
     <Marco>
       <div className="w-full max-w-[15rem]">
-        <div className="rounded-xl border border-line bg-paper-2 px-3 py-2.5">
+        <div className="rounded-pieza border border-line bg-paper-2 px-3 py-2.5">
           {/* Corto a propósito: en una columna estrecha, la frase entera de la
               app se parte en dos líneas y estropea la cifra de debajo. */}
-          <p className="stamp text-ink-faint">{t.pasos.faltaPorSaldar}</p>
+          <p className="text-[11px] text-ink-faint">{t.pasos.faltaPorSaldar}</p>
           <p className="tnum mt-1 text-2xl font-bold leading-none">34,90 €</p>
         </div>
 
-        <ul className="mt-2.5 overflow-hidden rounded-xl border border-line bg-paper-2">
+        <ul className="mt-2.5 overflow-hidden rounded-pieza border border-line bg-paper-2">
           {gente.map((p, i) => (
             <li
               key={p.nombre}
@@ -260,7 +260,7 @@ export function PasoCuentas() {
             >
               <span
                 style={{ background: p.color }}
-                className="grid h-5 w-5 shrink-0 place-items-center rounded-full text-[0.5rem] font-bold text-paper"
+                className="font-mono grid h-5 w-5 shrink-0 place-items-center rounded-full text-[0.6rem] font-bold text-paper"
               >
                 {p.inicial}
               </span>
@@ -301,7 +301,7 @@ export function PasoCuentas() {
  */
 function Marco({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-[17.5rem] flex-col items-center justify-center gap-3 overflow-hidden rounded-caja border border-line bg-paper p-5">
+    <div className="flex h-[17.5rem] flex-col items-center justify-center gap-3 overflow-hidden rounded-caja bg-paper p-5">
       {children}
     </div>
   );

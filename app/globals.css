@@ -156,11 +156,24 @@ body {
   background-size: 12px 1px;
 }
 
-/* Borde superior/inferior dentado, como papel arrancado. */
-.torn-top,
-.torn-bottom {
+/*
+  Borde dentado, como papel arrancado. Se usa como una tira suelta encima del
+  papel, y otra igual girada 180° debajo.
+
+  Llevaba `background-color: inherit` y ahí estaba el fallo: esa declaración va
+  después de las utilidades de Tailwind, así que le ganaba al `bg-[#f4ece0]`
+  que llevan puesto los cuatro sitios donde se usa. El padre de la tira nunca
+  tiene fondo, o sea que heredaba «transparente» y la tira no se pintaba: los
+  dientes del ticket de los pasos, los de la página de imprimir y los de la
+  hoja de subir llevaban meses saliendo rectos. Ahora manda el color que pone
+  cada uno, que es lo que ya decía el código en cada sitio.
+
+  `.torn-bottom` se va con ella: se declaraba aquí pero nunca llegó a tener
+  máscara, así que no dentaba nada. Para el borde de abajo se gira la de
+  arriba, que es lo que hacen los cuatro usos.
+*/
+.torn-top {
   --tooth: 10px;
-  background-color: inherit;
 }
 .torn-top {
   -webkit-mask-image: radial-gradient(var(--tooth) var(--tooth) at 50% 0, transparent 99%, #000 100%);

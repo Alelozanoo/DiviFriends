@@ -3,11 +3,16 @@ import { addReceipt } from "@/lib/store";
 import { OcrError, parseTicketImage, type ParsedTicket } from "@/lib/ocr";
 import { parseMoney } from "@/lib/format";
 import { callerKey, consume, TOPES } from "@/lib/rateLimit";
-import { bad, fail, tooMany } from "@/lib/api";
+import { bad, fail, tooMany, cuerpo } from "@/lib/api";
 
 export const runtime = "nodejs";
 
-const ACCEPTED = ["image/jpeg", "image/png", "image/webp", "image/gif"] as const;
+const ACCEPTED = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+] as const;
 type Accepted = (typeof ACCEPTED)[number];
 
 interface ManualItem {
@@ -30,15 +35,12 @@ interface CreateBody {
 
 type Ctx = { params: Promise<{ code: string }> };
 
-export async function POST(
-  request: Request,
-  { params }: Ctx,
-) {
+export async function POST(request: Request, { params }: Ctx) {
   const { code } = await params;
 
   let body: CreateBody;
   try {
-    body = (await request.json()) as CreateBody;
+    body = (await cuerpo(request, 6_000_000)) as CreateBody;
   } catch {
     return bad("Cuerpo de la petición inválido.");
   }
@@ -56,7 +58,9 @@ export async function POST(
   try {
     const gate = await consume(quotas);
     if (!gate.ok) {
-      console.warn(`[limite] rechazada ${caller} · vuelve en ${gate.retryAfterSeconds}s`);
+      console.warn(
+        `[limite] rechazada ${caller} · vuelve en ${gate.retryAfterSeconds}s`,
+      );
       return tooMany(
         "Se han creado demasiadas comandas seguidas. Prueba de nuevo en un rato.",
         gate.retryAfterSeconds,
@@ -69,24 +73,36 @@ export async function POST(
   if (body.image) {
     const mediaType = (body.mediaType ?? "image/jpeg") as Accepted;
     if (!ACCEPTED.includes(mediaType)) {
-      return bad(`Formato no soportado (${mediaType}). Usa JPG, PNG o WebP.`, 415);
+      return bad(
+        `Formato no soportado (${mediaType}). Usa JPG, PNG o WebP.`,
+        415,
+      );
     }
-    const base64 = body.image.includes(",") ? body.image.slice(body.image.indexOf(",") + 1) : body.image;
+    const base64 = body.image.includes(",")
+      ? body.image.slice(body.image.indexOf(",") + 1)
+      : body.image;
     if (base64.length > 7_000_000) {
-      return bad("La imagen es demasiado grande. Haz la foto con menos resolución.", 413);
+      return bad(
+        "La imagen es demasiado grande. Haz la foto con menos resolución.",
+        413,
+      );
     }
     try {
       parsed = await parseTicketImage(base64, mediaType);
     } catch (error) {
       if (error instanceof OcrError) {
-        return NextResponse.json({ error: error.message, code: error.code }, { status: 422 });
+        return NextResponse.json(
+          { error: error.message, code: error.code },
+          { status: 422 },
+        );
       }
       throw error;
     }
     if (parsed.items.length === 0) {
       return NextResponse.json(
         {
-          error: "No he reconocido ninguna consumición en la foto. Prueba con más luz o añádelas a mano.",
+          error:
+            "No he reconocido ninguna consumición en la foto. Prueba con más luz o añádelas a mano.",
           code: "unreadable",
         },
         { status: 422 },
@@ -130,7 +146,10 @@ export async function POST(
         totalCents: Math.round(item.line_total * 100),
       })),
     });
-    return NextResponse.json(state, { status: 201, headers: { "x-receipt-id": receiptId } });
+    return NextResponse.json(state, {
+      status: 201,
+      headers: { "x-receipt-id": receiptId },
+    });
   } catch (error) {
     return fail(error);
   }

@@ -95,6 +95,8 @@ export interface NewTicket {
   currency: string;
   totalCents: number;
   items: { name: string; qty: number; unitCents: number; totalCents: number }[];
+  /** El slug de la cuenta de un vídeo, cuando la mesa sale de una. */
+  origen?: string;
 }
 
 export async function createTicket(input: NewTicket): Promise<string> {
@@ -104,6 +106,9 @@ export async function createTicket(input: NewTicket): Promise<string> {
     tableLabel: input.tableLabel,
     currency: input.currency,
     totalCents: input.totalCents,
+    // Sólo si lo hay: Firestore rechaza los campos con `undefined`, y una mesa
+    // normal no viene de ningún vídeo.
+    ...(input.origen ? { origen: input.origen } : {}),
     createdAt: now,
     updatedAt: now,
     caducaEl: caducidad(),

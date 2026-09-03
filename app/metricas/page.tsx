@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { firestore, TICKETS } from "@/lib/firebaseAdmin";
 import { resumen } from "@/lib/metricas";
+import { metricasCuentas } from "@/lib/metricasCuentas";
 import { lecturasDelDia, MODELO_LECTOR } from "@/lib/rateLimit";
 import type { TicketDoc } from "@/lib/ticketDoc";
 
@@ -40,6 +41,8 @@ export default async function MetricasPage({ searchParams }: Props) {
   const m = resumen(docs);
   // El marcador del tope: un documento más, y es el único gasto exacto que hay.
   const lecturas = await lecturasDelDia();
+  // Las cuentas de la gente: Google, amigos, invitaciones y correos.
+  const c = await metricasCuentas();
 
   return (
     <main id="contenido" className="mx-auto w-full max-w-3xl flex-1 px-4 py-8">
@@ -152,6 +155,66 @@ export default async function MetricasPage({ searchParams }: Props) {
       </Bloque>
 
 
+      {/* ---------------------------------------------------- las cuentas */}
+      <Bloque titulo="Cuentas con Google" nota="Quién ha entrado, y qué ha hecho con la cuenta">
+        <div className="grid grid-cols-3 gap-3">
+          <Cifra n={c.cuentas.total} label="Cuentas" destacado />
+          <Cifra n={c.cuentas.semana} label="Últimos 7 días" />
+          <Cifra n={c.cuentas.hoy} label="Hoy" />
+        </div>
+        <div className="mt-3">
+          <Barras datos={c.cuentas.porDia} />
+        </div>
+        <div className="mt-3">
+          <Escalera
+            pasos={[
+              { etiqueta: "con foto", n: c.cuentas.conFoto, pct: pct(c.cuentas.conFoto, c.cuentas.total) },
+              { etiqueta: "con Bizum o Revolut", n: c.cuentas.conBizum, pct: pct(c.cuentas.conBizum, c.cuentas.total) },
+              { etiqueta: "con usuario elegido", n: c.cuentas.conUsuario, pct: pct(c.cuentas.conUsuario, c.cuentas.total) },
+              { etiqueta: "con los correos apagados", n: c.cuentas.correosApagados, pct: pct(c.cuentas.correosApagados, c.cuentas.total) },
+            ]}
+          />
+        </div>
+      </Bloque>
+
+      <Bloque titulo="Amigos y mesas" nota="Lo que sólo pasa con cuenta">
+        <div className="grid grid-cols-3 gap-3">
+          <Cifra n={c.amigos.amistades} label="Amistades" destacado />
+          <Cifra n={c.amigos.pendientes} label="Sin aceptar" />
+          <Cifra n={c.mesas.invitados} label="Metidos en una mesa por un amigo" />
+        </div>
+        <p className="mt-3 text-xs leading-relaxed text-ink-faint">
+          De los {c.mesas.invitados} metidos por un amigo, <b className="text-ink-soft">{c.mesas.abiertos}</b> llegaron
+          a abrir la mesa. Además, {c.mesas.propios} se sentaron ellos mismos con su cuenta.
+        </p>
+      </Bloque>
+
+      <Bloque titulo="Correos" nota="Cada aviso se apunta; salir por correo es sólo una de las vías">
+        <div className="grid grid-cols-3 gap-3">
+          <Cifra n={c.correos.hoy} label="Hoy" destacado />
+          <Cifra n={c.correos.semana} label="Últimos 7 días" />
+          <Cifra n={c.correos.total} label="Desde el principio" />
+        </div>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <div>
+            <p className="mb-1.5 text-[12px] text-ink-faint">Qué pasó con cada uno</p>
+            <Escalera pasos={c.correos.porEstado} />
+          </div>
+          <div>
+            <p className="mb-1.5 text-[12px] text-ink-faint">De qué eran</p>
+            <Escalera pasos={c.correos.porTipo} />
+          </div>
+        </div>
+        <p className="mt-3 text-xs leading-relaxed text-ink-faint">
+          El freno global de hoy va por{" "}
+          <b className={c.correos.tope.hechos >= c.correos.tope.max * 0.8 ? "text-clay" : "text-ink-soft"}>
+            {c.correos.tope.hechos} de {c.correos.tope.max}
+          </b>
+          . Si se llena, los siguientes se quedan apuntados en la campana y no salen por correo hasta el día
+          siguiente.
+        </p>
+      </Bloque>
+
       <Bloque titulo="Lo que cuesta" nota="Leer tickets es el único gasto que crece con la gente">
         <div className="grid grid-cols-3 gap-3">
           <Dinero dolares={m.coste.hoy} label="Hoy" destacado />
@@ -189,6 +252,36 @@ export default async function MetricasPage({ searchParams }: Props) {
         </p>
       </Bloque>
 
+      <Bloque titulo="Lo que traen los vídeos" nota="Mesas abiertas desde la cuenta de un reel">
+        {m.origenes.length ? (
+          <div className="space-y-2">
+            {m.origenes.map((o) => (
+              <div
+                key={o.slug}
+                className="flex items-baseline justify-between gap-4 rounded-caja border border-line bg-paper-2 px-4 py-3"
+              >
+                <span className="font-semibold">/reparte/{o.slug}</span>
+        <span className="text-[12px] text-ink-faint">
+                  <b className="tnum text-base text-ink">{o.dosOMas}</b> de{" "}
+                  <span className="tnum">{o.n}</span> llegan a dos
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="rounded-caja border border-line bg-paper-2 px-4 py-3 text-sm text-ink-faint">
+            Todavía no ha entrado nadie por la cuenta de un vídeo.
+          </p>
+        )}
+        <p className="mt-3 text-xs leading-relaxed text-ink-faint">
+          El número que vale es el primero:{" "}
+          <b className="text-ink">cuántas de esas mesas llegan a dos personas</b>. Una mesa de uno
+          solo es alguien que tocó un botón, y eso ya lo cuentan las reproducciones; que llegue a
+          dos significa que pasó el enlace, que es lo único que convierte un vídeo en gente usando
+          esto.
+        </p>
+      </Bloque>
+
       <p className="mt-8 rounded-caja border border-line bg-paper-2 px-4 py-3 text-xs leading-relaxed text-ink-faint">
         <b className="text-ink-soft">Lo que esto no puede saber:</b> si alguien vuelve. Una
         comanda no guarda quién la creó más allá de esa mesa, así que no hay forma de decir que
@@ -203,6 +296,8 @@ export default async function MetricasPage({ searchParams }: Props) {
 }
 
 /* ------------------------------------------------------------------ piezas */
+
+const pct = (parte: number, total: number) => (total === 0 ? 0 : Math.round((parte / total) * 100));
 
 function Cifra({
   n,

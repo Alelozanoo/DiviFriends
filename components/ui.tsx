@@ -25,11 +25,17 @@ export function Avatar({
         background: dimmed ? "transparent" : color,
         borderColor: color,
         color: dimmed ? color : "#14100d",
-        /* Con suelo en 11 px: las iniciales de un avatar de 25 salían a 10 y se
-           quedaban por debajo del mínimo legible en un móvil. */
-        fontSize: Math.max(11, Math.round(size * 0.4)),
+        /* Con suelo en 11 px: la inicial de un avatar de 25 salía a 10 y se
+           quedaba por debajo del mínimo legible en un móvil. Sube de 0,4 a
+           0,52 porque desde que es una sola letra hay sitio de sobra, y una
+           letra grande dentro del círculo se lee como una marca y no como un
+           hueco por rellenar. */
+        fontSize: Math.max(12, Math.round(size * 0.52)),
       }}
-      className="grid shrink-0 place-items-center rounded-full border-2 font-bold leading-none overflow-hidden relative"
+      /* La letra va en la tipografía de las cifras —la máquina de escribir— y
+         no en la de los títulos: sobre el color plano del círculo, una capital
+         de Courier parece un sello, que es de lo que va la casa. */
+      className="font-mono grid shrink-0 place-items-center rounded-full border-2 font-bold leading-none overflow-hidden relative"
     >
       {avatar ? (
         avatar.startsWith("data:image/") ? (
@@ -192,7 +198,7 @@ export function CerrarHoja({ children, onClick }: { children: string; onClick: (
     <button
       type="button"
       onClick={onClick}
-      className="min-h-[46px] w-full rounded-xl border border-line text-[15px] font-semibold text-ink transition-colors active:bg-paper-3"
+      className="min-h-[46px] w-full rounded-pieza border border-line text-[15px] font-semibold text-ink transition-colors active:bg-paper-3"
     >
       {children}
     </button>

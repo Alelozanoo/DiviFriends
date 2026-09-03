@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-const ACTUALIZADA = "18 de agosto de 2026";
+const ACTUALIZADA = "3 de septiembre de 2026";
 
 /* Si el píxel está apagado, decirlo en pasado y no prometer un consentimiento
    que ya no se pide. La página se ajusta sola cuando vuelva. */
@@ -39,7 +39,10 @@ export default function PrivacidadPage() {
 
       <Bloque titulo="La versión corta">
         <ul className="grid gap-2">
-          <Punto>No hay cuentas, ni contraseñas, ni correo. Escribes tu nombre y ya estás.</Punto>
+          <Punto>
+            No hace falta cuenta ni contraseña: escribes tu nombre y ya estás. Si quieres, entras
+            con Google para que tu nombre, tu foto y tus divis te sigan de un móvil a otro.
+          </Punto>
           <Punto>
             La foto del ticket <b className="text-ink">no se guarda</b>: se lee y se queda el
             texto.
@@ -104,6 +107,83 @@ export default function PrivacidadPage() {
         </p>
       </Bloque>
 
+      <Bloque titulo="Si entras con Google">
+        <p className="text-[15px] leading-relaxed text-ink-soft">
+          Es opcional y la web funciona igual sin ello. Lo que da es memoria: lo que hasta ahora se
+          guardaba sólo en tu móvil pasa a guardarse también en tu cuenta.
+        </p>
+        <div className="mt-4">
+          <Dato k="Tu correo">
+            Lo da Google al entrar. Sirve para reconocerte y para avisarte de lo que pase en tus
+            mesas. <b className="text-ink">No se enseña a nadie</b>, tampoco a la gente de tu mesa.
+          </Dato>
+          <Dato k="Tu nombre y tu foto">
+            Los mismos que pones en una mesa, guardados para no tener que escribirlos cada vez. La
+            foto se recorta a 150 píxeles antes de guardarse; la de Google no se guarda tal cual.
+          </Dato>
+          <Dato k="Bizum y Revolut">Si los pusiste, para que quien te deba pueda pagarte de un toque.</Dato>
+          <Dato k="Tus divis">
+            Las últimas doce mesas por las que has pasado, con tu saldo y las caras de la mesa. Es lo
+            mismo que «Tus divis» de la portada, sólo que ya no vive únicamente en un móvil.
+          </Dato>
+          <Dato k="Google">
+            Es quien comprueba que eres tú. Recibe que has entrado en DiviFriends, como con cualquier
+            web que use su botón. Está en Estados Unidos; la transferencia se ampara en sus cláusulas
+            contractuales tipo.
+          </Dato>
+          <Dato k="Para que no te olvide">
+            Mantener la sesión abierta necesita guardar un dato en el navegador. Es estrictamente
+            necesario para lo que has pedido —entrar— y por eso no pasa por el aviso de cookies.
+          </Dato>
+        </div>
+        <p className="mt-4 text-[13px] leading-relaxed text-ink-faint">
+          La base legal sigue siendo el servicio que pides (artículo 6.1.b del RGPD). La cuenta se
+          borra desde «Tu cuenta» → «Borrar mi cuenta», al momento y entera: el perfil, las divis y
+          la entrada con Google. Las mesas en las que estuviste no se tocan, porque son de la mesa.
+        </p>
+      </Bloque>
+
+      <Bloque titulo="Amigos y avisos por correo">
+        <p className="text-[15px] leading-relaxed text-ink-soft">
+          Con cuenta puedes tener amigos y meterlos en una mesa de un toque. Las dos cosas están
+          pensadas para que nadie sepa de ti más de lo que le enseñas.
+        </p>
+        <div className="mt-4">
+          <Dato k="Cómo se hacen los amigos">
+            Por enlace, no buscando por correo. Cada cuenta tiene un enlace que se manda por
+            WhatsApp; quien lo abre pide, y tú aceptas. <b className="text-ink">Nadie entra en tu
+            lista sin que digas que sí</b>, y buscar por correo no existe para que nadie pueda saber
+            si una persona tiene cuenta.
+          </Dato>
+          <Dato k="Tu usuario">
+            Opcional. Si eliges uno (@así), tus amigos te pueden añadir con él en vez de con el
+            código. Quien lo sepa ve lo mismo que con el enlace —tu nombre y tu foto— y podrá
+            pedirte amistad, que sigues teniendo que aceptar. Si no quieres que nadie te encuentre
+            por un nombre, no elijas uno.
+          </Dato>
+          <Dato k="Qué ven tus amigos">Tu nombre, tu foto y tu usuario si lo tienes. Nunca tu correo.</Dato>
+          <Dato k="Qué correos llegan">
+            Sólo cuatro, y sólo si tienes cuenta: que alguien te pide amistad, que un amigo te ha
+            metido en una mesa, que la mesa se ha cerrado y cuánto te toca, y que alguien dice
+            haberte pagado. Son avisos de algo tuyo, <b className="text-ink">nunca publicidad</b>.
+          </Dato>
+          <Dato k="Cuántos">
+            Uno por hecho: si te meten y te quitan, no se repite. Como mucho cinco al día por persona,
+            y con un tope global para toda la web. Cada correo dice por qué te llega.
+          </Dato>
+          <Dato k="Cómo se apagan">
+            Desde «Tu cuenta» → «Avisos por correo», o desde el enlace que va al pie de cada correo,
+            sin tener que entrar. Al momento.
+          </Dato>
+          <Dato k="Quién los manda">
+            Salen de hola@divifriends.es por el proveedor que aloja ese buzón, en la Unión Europea.
+            Cada aviso se guarda también en tu cuenta —el asunto y a qué mesa lleva— para
+            enseñártelo en la campana de la portada, tengas los correos encendidos o no. Se borra
+            con la cuenta.
+          </Dato>
+        </div>
+      </Bloque>
+
       <Bloque titulo="Quién más lo ve" tono="aviso">
         <Dato k="Tu mesa">
           Cualquiera que tenga el enlace o el código de seis letras. La comanda está pensada para
@@ -162,6 +242,10 @@ export default function PrivacidadPage() {
         <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
           También puedes salirte de una mesa cuando quieras —los tres puntos, «Salirme de la
           mesa»— y con ello desaparecen tu nombre, tu foto y lo que hubieras marcado.
+        </p>
+        <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
+          Una cuenta dura hasta que la borras tú, desde «Tu cuenta» → «Borrar mi cuenta». No hay
+          que escribir a nadie.
         </p>
         <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
           Y si quieres que se borre una mesa entera antes de tiempo, escribe a{" "}

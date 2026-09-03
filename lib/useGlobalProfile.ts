@@ -10,15 +10,43 @@ export interface GlobalProfile {
 }
 
 const KEY = "divifriends_profile";
+/** Salta cada vez que el perfil cambia en este navegador: la cuenta lo escucha. */
+export const EVENTO_PERFIL = "divi:perfil";
 const listeners = new Set<() => void>();
 
 function subscribe(listener: () => void): () => void {
   listeners.add(listener);
   window.addEventListener("storage", listener);
+  window.addEventListener(EVENTO_PERFIL, listener);
   return () => {
     listeners.delete(listener);
     window.removeEventListener("storage", listener);
+    window.removeEventListener(EVENTO_PERFIL, listener);
   };
+}
+
+/** El perfil guardado en este móvil, o `null`. */
+export function leerPerfil(): GlobalProfile | null {
+  try {
+    const raw = window.localStorage.getItem(KEY);
+    return raw ? (JSON.parse(raw) as GlobalProfile) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Escribe el perfil y avisa. `silencioso` es para cuando lo escribe la propia
+ * cuenta al bajar de la nube: si avisara, la cuenta se lo volvería a subir.
+ */
+export function escribirPerfil(perfil: GlobalProfile, silencioso = false): void {
+  try {
+    window.localStorage.setItem(KEY, JSON.stringify(perfil));
+  } catch {
+    return;
+  }
+  for (const listener of listeners) listener();
+  if (!silencioso) window.dispatchEvent(new CustomEvent(EVENTO_PERFIL));
 }
 
 export function useGlobalProfile() {
@@ -36,20 +64,7 @@ export function useGlobalProfile() {
   }
 
   const saveProfile = useCallback((updates: Partial<GlobalProfile>) => {
-    let current: GlobalProfile | null = null;
-    const raw = window.localStorage.getItem(KEY);
-    if (raw) {
-      try {
-        current = JSON.parse(raw);
-      } catch {}
-    }
-    const p = { ...current, ...updates } as GlobalProfile;
-    try {
-      window.localStorage.setItem(KEY, JSON.stringify(p));
-      for (const listener of listeners) listener();
-    } catch {
-      // Ignore
-    }
+    escribirPerfil({ ...leerPerfil(), ...updates } as GlobalProfile);
   }, []);
 
   return { profile, saveProfile };

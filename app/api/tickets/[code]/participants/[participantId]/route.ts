@@ -1,5 +1,5 @@
 import { patchParticipant, removeParticipant } from "@/lib/store";
-import { fail, ok } from "@/lib/api";
+import { fail, ok, cuerpo } from "@/lib/api";
 
 export const runtime = "nodejs";
 
@@ -7,7 +7,7 @@ type Ctx = { params: Promise<{ code: string; participantId: string }> };
 
 export async function PATCH(request: Request, { params }: Ctx) {
   const { code, participantId } = await params;
-  const body = (await request.json()) as {
+  const body = (await cuerpo(request)) as {
     name?: string;
     avatar?: string;
     settled?: boolean;

@@ -9,6 +9,7 @@ import Preguntas from "@/components/Preguntas";
 import MisDivis from "@/components/MisDivis";
 import ComoFuncionaSheet from "@/components/ComoFuncionaSheet";
 import LangSwitch from "@/components/LangSwitch";
+import CuentaBoton from "@/components/CuentaBoton";
 import { I18nProvider, useT, useLang, type Lang } from "@/lib/i18n";
 import { inicio } from "@/lib/i18n/config";
 
@@ -56,11 +57,29 @@ function Cuerpo() {
             de llegar. Aquí la marca dice quién eres; el reclamo, para qué
             sirve. Y ese orden se ve antes de leer nada.
           */}
-          <header className="mb-5 flex justify-center lg:mb-12 lg:justify-start">
+          <header className="mb-5 flex items-center justify-between lg:mb-12">
             <Link href={inicio(lang)} className="inline-flex items-center gap-2.5 lg:gap-4">
               <Logo size={128} priority className="h-8 w-8 lg:h-20 lg:w-20" />
               <Wordmark className="text-[19px] font-bold tracking-[-0.03em] lg:text-3xl" />
             </Link>
+            {/*
+              La cuenta, en la esquina y opcional.
+
+              En el móvil la marca va centrada y esto se cuelga a la derecha
+              sin moverla; en el ordenador la cabecera se abre y cada cosa va a
+              su lado. Es pequeño a propósito: la portada sigue siendo para
+              subir la foto, y quien no quiera cuenta no debería ni verlo.
+            */}
+            {/*
+              Sin `transform` en este envoltorio, y no es manía: una
+              transformación en un antecesor convierte el `position: fixed` de
+              las hojas en «fijo respecto a este div», y la hoja de la cuenta
+              salía como una tira de noventa píxeles pegada a la derecha. Se
+              centra en vertical con flex, que no crea ese problema.
+            */}
+            <div className="flex items-center">
+              <CuentaBoton />
+            </div>
           </header>
 
           {/*
@@ -83,7 +102,7 @@ function Cuerpo() {
                 el rótulo va fuera, como el sello de una sección, y debajo hay
                 un solo bloque con las dos maneras de empezar.
               */}
-       <p className="text-[12px] mb-2.5 text-ink-faint lg:px-2">{t.home.empiezaAqui}</p>
+              {/* Sin rótulo encima: el papel ya dice dónde se empieza. */}
               <TicketUploader />
 
               {/*
@@ -137,17 +156,22 @@ function Cuerpo() {
                 {t.home.entradilla}
               </p>
 
-              <ul className="mt-6 flex flex-wrap justify-start gap-1.5 lg:mt-8 lg:gap-2">
-                {t.home.sellos.map((texto) => (
-                  <li
-                    key={texto}
-                    className="flex items-center gap-1.5 rounded-full border border-line bg-paper-2/70 py-1.5 pl-2.5 pr-3 text-xs font-semibold text-ink-soft lg:py-2 lg:pl-3 lg:pr-4 lg:text-sm"
-                  >
-                    <CheckIcon />
-                    {texto}
-                  </li>
-                ))}
-              </ul>
+              {/*
+                Una línea, no tres píldoras.
+
+                Eran tres insignias con su palito verde, que es el número
+                canónico y el adorno más repetido que hay: una píldora sólo se
+                gana el sitio si lleva un dato vivo dentro —un estado, una
+                cuenta—, y «Gratis» no lo es. Puestas en fila y con borde
+                parecían el comparativo de planes de una web de suscripción,
+                que es justo lo contrario de lo que esto es.
+
+                Dicho en un renglón ocupa la mitad, se lee antes y no promete
+                que haya un plan de pago en alguna parte.
+              */}
+              <p className="mt-5 text-[15px] text-ink-soft lg:mt-7">
+                {t.home.sellos.join(" · ")}
+              </p>
             </div>
           </div>
         </div>
@@ -222,24 +246,5 @@ function Cuerpo() {
         </div>
       </footer>
     </main>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg
-      aria-hidden
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="var(--mint)"
-      strokeWidth="3.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="shrink-0"
-    >
-      <path d="M4 12.5 9.5 18 20 6.5" />
-    </svg>
   );
 }

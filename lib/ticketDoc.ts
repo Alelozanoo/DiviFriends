@@ -27,6 +27,16 @@ export interface TicketDoc {
   totalCents: number;
   payerId?: string | null;
   closed?: boolean;
+  /**
+   * De qué cuenta de un vídeo nació esta mesa, si nació de una.
+   *
+   * Es el `slug` de `plantillas.ts`. Sirve para una sola cosa: poder mirar en
+   * las métricas si un reel trajo mesas de verdad o sólo curiosos. No se
+   * enseña en ninguna pantalla y no dice nada de quién la abrió.
+   *
+   * Opcional porque casi todas las mesas nacen de una foto, no de un vídeo.
+   */
+  origen?: string;
   /** @deprecated La propina se quitó: complicaba la pantalla de cuentas. */
   tipCents?: number;
   createdAt: string;

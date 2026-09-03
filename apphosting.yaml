@@ -105,12 +105,43 @@ env:
   # contenedor. En local no se define y se sacan de las cabeceras.
   - variable: SITIO_URL
     value: https://divifriends.es
-    availability: [RUNTIME]
+    availability: [ RUNTIME ]
 
   - variable: TIKTOK_CLIENT_KEY
     secret: tiktok-client-key
-    availability: [RUNTIME]
+    availability: [ RUNTIME ]
 
   - variable: TIKTOK_CLIENT_SECRET
     secret: tiktok-client-secret
-    availability: [RUNTIME]
+    availability: [ RUNTIME ]
+
+  # --- El correo de la app ---------------------------------------------------
+  # Sale del buzón hola@divifriends.es por el SMTP de Hostinger. La contraseña
+  # es un secreto y sólo existe en RUNTIME; sin ella la app no manda nada y no
+  # pasa nada. Se crea con:
+  #   firebase apphosting:secrets:set smtp-clave --project divifriends-2964
+  #   firebase apphosting:secrets:set correo-secreto --project divifriends-2964
+  # `correo-secreto` firma los enlaces de baja de los correos; vale cualquier
+  # cadena larga al azar. `CORREO_TOPE_DIA` es el freno global: al 60 % de lo
+  # que permita el plan del buzón. El buzón es Business Starter de Hostinger,
+  # 1.000 al día (comprobado el 2 de septiembre de 2026), así que 600. Si
+  # cambia el plan, cambia este número. Ver lib/correo.ts.
+  - variable: SMTP_HOST
+    value: smtp.hostinger.com
+    availability: [ RUNTIME ]
+
+  - variable: SMTP_PUERTO
+    value: "465"
+    availability: [ RUNTIME ]
+
+  - variable: SMTP_USUARIO
+    value: hola@divifriends.es
+    availability: [ RUNTIME ]
+  - variable: SMTP_CLAVE
+    secret: smtp-clave
+  - variable: CORREO_SECRETO
+    secret: correo-secreto
+
+  - variable: CORREO_TOPE_DIA
+    value: "600"
+    availability: [ RUNTIME ]

@@ -239,7 +239,7 @@ export default function ItemRow({
         <div>
           <div className="flex gap-2 border-t border-line-soft px-[13px] pb-[13px] pt-[11px]">
             {isMine && canStep ? (
-              <span className="flex flex-1 items-center rounded-xl bg-amber">
+              <span className="flex flex-1 items-center rounded-bloque bg-amber">
                 <Step
                   label={`${t.linea.quitarUnidad} ${item.name}`}
                   onClick={() => onSetShares(mine!.shares - 1)}
@@ -261,7 +261,7 @@ export default function ItemRow({
               <button
                 type="button"
                 onClick={() => onSetShares(0)}
-                className="flex min-h-[46px] flex-1 items-center justify-center rounded-xl border border-line px-4 text-[15px] font-semibold text-ink transition-colors active:bg-paper-2"
+                className="flex min-h-[46px] flex-1 items-center justify-center rounded-pieza border border-line px-4 text-[15px] font-semibold text-ink transition-colors active:bg-paper-2"
               >
                 {t.linea.yaNo}
               </button>
@@ -270,7 +270,7 @@ export default function ItemRow({
                 type="button"
                 disabled={full}
                 onClick={() => onSetShares(1)}
-                className="flex min-h-[46px] flex-1 items-center justify-center rounded-xl bg-amber px-4 text-[15px] font-bold text-paper transition-transform active:scale-[0.98] disabled:opacity-40"
+                className="flex min-h-[46px] flex-1 items-center justify-center rounded-pieza bg-amber px-4 text-[15px] font-bold text-paper transition-transform active:scale-[0.98] disabled:opacity-40"
               >
                 {t.linea.esMio}
               </button>
@@ -280,7 +280,7 @@ export default function ItemRow({
               type="button"
               onClick={onOpenOptions}
               aria-label={rellena(t.linea.repartirEntreVarios, { name: item.name })}
-              className="flex min-h-[46px] flex-1 items-center justify-center gap-1.5 rounded-xl border border-line px-4 text-[15px] font-semibold text-ink transition-colors active:bg-paper-2"
+              className="flex min-h-[46px] flex-1 items-center justify-center gap-1.5 rounded-pieza border border-line px-4 text-[15px] font-semibold text-ink transition-colors active:bg-paper-2"
             >
               ÷ {t.linea.dividir}
             </button>
@@ -289,7 +289,7 @@ export default function ItemRow({
               type="button"
               onClick={onRemove}
               aria-label={rellena(t.linea.masOpciones, { name: item.name })}
-              className="grid min-h-[46px] w-[50px] shrink-0 place-items-center rounded-xl border border-line text-[15px] text-ink-soft transition-colors active:bg-paper-2"
+              className="grid min-h-[46px] w-[50px] shrink-0 place-items-center rounded-pieza border border-line text-[15px] text-ink-soft transition-colors active:bg-paper-2"
             >
               ⋯
             </button>
@@ -317,7 +317,7 @@ function Step({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="grid min-h-[46px] w-12 place-items-center rounded-xl text-[21px] font-bold text-paper disabled:opacity-35"
+      className="grid min-h-[46px] w-12 place-items-center rounded-pieza text-[21px] font-bold text-paper disabled:opacity-35"
     >
       {children}
     </button>

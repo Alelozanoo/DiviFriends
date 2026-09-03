@@ -68,11 +68,43 @@ export const TOPES = {
     // Sale de dividir el presupuesto entre lo que cuesta una lectura, para que
     // el tope y la factura no puedan separarse: con Gemini son 5.555 al día,
     // y volverían a ser 337 si `OCR_MODELO=anthropic`.
-    global: { max: Math.floor(PRESUPUESTO_DIARIO / COSTE_POR_LECTURA), windowMs: DIA },
+    global: {
+      max: Math.floor(PRESUPUESTO_DIARIO / COSTE_POR_LECTURA),
+      windowMs: DIA,
+    },
   },
   /** Crear una comanda escrita a mano. No llama a ninguna IA; sólo escribe. */
   comandaManual: {
     porIp: { max: 60, windowMs: HORA },
+  },
+  /**
+   * Lo que se hace con cuenta. Aquí el caller ya está identificado por Google,
+   * así que los topes van por persona y no por IP: no hay wifi de bar que
+   * valga, y un script con una cuenta no puede vaciar el buzón ni la base.
+   *
+   * Los números son holgados para una persona y ridículos para un ataque:
+   * nadie pide amistad a treinta personas en un día, ni mete a sesenta en
+   * mesas, ni guarda su perfil cuatro veces por minuto durante una hora.
+   */
+  cuenta: {
+    /** PATCH /api/cuenta: perfil, divis, avisos, usuario. Cada uno escribe hasta 80 KB. */
+    guardar: { max: 240, windowMs: HORA },
+    /** Pedir amistad: escribe en dos cuentas y puede mandar un correo. */
+    solicitud: { max: 30, windowMs: DIA },
+    /** Meter a un amigo en una mesa: le apunta un asiento y le manda un correo. */
+    invitar: { max: 60, windowMs: DIA },
+    /** Borrar la cuenta borra en cascada; por IP porque tras borrar no hay uid. */
+    borrar: { max: 10, windowMs: HORA },
+    /** La búsqueda pública de un código o @usuario: frena el rastreo de nombres. */
+    busca: { max: 60, windowMs: HORA },
+    /** El enlace de baja: la firma no se adivina, pero probarla tampoco es gratis. */
+    baja: { max: 30, windowMs: HORA },
+    /**
+     * Avisos que puede recibir una persona al día, contando los que no salen
+     * por correo: es lo que frena que un bucle contra una mesa le llene la
+     * campana a alguien. Cuarenta cubre cualquier noche de verdad.
+     */
+    avisos: { max: 40, windowMs: DIA },
   },
 } as const;
 
@@ -107,7 +139,11 @@ const memoria = new Map<string, Counter>();
 /** Descuenta una petición del tope general. No toca la base de datos. */
 export function consumeEnMemoria(clave: string, now = Date.now()): Decision {
   podar(now);
-  const decision = decide(now, [{ key: clave, ...TOPE_API }], [memoria.get(clave)]);
+  const decision = decide(
+    now,
+    [{ key: clave, ...TOPE_API }],
+    [memoria.get(clave)],
+  );
   if (decision.ok && decision.writes[0]) memoria.set(clave, decision.writes[0]);
   return decision;
 }
@@ -150,14 +186,20 @@ export type Decision =
  * Si cualquier tope está lleno no se incrementa ninguno: una petición
  * rechazada no debe gastar cupo de los demás contadores.
  */
-export function decide(now: number, quotas: Quota[], counters: (Counter | undefined)[]): Decision {
+export function decide(
+  now: number,
+  quotas: Quota[],
+  counters: (Counter | undefined)[],
+): Decision {
   const writes: (Counter | null)[] = [];
   let retryAfterSeconds = 0;
 
   quotas.forEach((quota, i) => {
     const previous = counters[i];
     const expired = !previous || now - previous.windowStart >= quota.windowMs;
-    const counter: Counter = expired ? { count: 0, windowStart: now } : previous;
+    const counter: Counter = expired
+      ? { count: 0, windowStart: now }
+      : previous;
 
     if (counter.count >= quota.max) {
       const waitMs = counter.windowStart + quota.windowMs - now;
@@ -227,14 +269,21 @@ export async function lecturasDelDia(now = Date.now()): Promise<{
   desde: string | null;
 }> {
   const { firestore } = await import("./firebaseAdmin");
-  const snap = await firestore().collection("limits").doc("global_lecturas").get();
+  const snap = await firestore()
+    .collection("limits")
+    .doc("global_lecturas")
+    .get();
   const counter = snap.data() as Counter | undefined;
   const { max, windowMs } = TOPES.lecturaDeTicket.global;
   // Una ventana caducada es una ventana a cero: la reabre la próxima lectura.
   if (!counter || now - counter.windowStart >= windowMs) {
     return { hechas: 0, tope: max, desde: null };
   }
-  return { hechas: counter.count, tope: max, desde: new Date(counter.windowStart).toISOString() };
+  return {
+    hechas: counter.count,
+    tope: max,
+    desde: new Date(counter.windowStart).toISOString(),
+  };
 }
 
 /**

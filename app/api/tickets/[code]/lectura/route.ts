@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { rellenaComanda } from "@/lib/store";
 import { OcrError, parseTicketImage } from "@/lib/ocr";
 import { callerKey, consume, TOPES } from "@/lib/rateLimit";
-import { bad, fail, ok, tooMany } from "@/lib/api";
+import { bad, fail, ok, tooMany, cuerpo } from "@/lib/api";
 
 export const runtime = "nodejs";
 
@@ -17,7 +17,12 @@ export const runtime = "nodejs";
  * El tope es el mismo que el de las otras dos puertas que llaman al modelo: el
  * gasto sigue contado en un solo sitio, pase por donde pase la foto.
  */
-const ACCEPTED = ["image/jpeg", "image/png", "image/webp", "image/gif"] as const;
+const ACCEPTED = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+] as const;
 type Accepted = (typeof ACCEPTED)[number];
 
 type Ctx = { params: Promise<{ code: string }> };
@@ -27,7 +32,10 @@ export async function POST(request: Request, { params }: Ctx) {
 
   let body: { image?: string; mediaType?: string };
   try {
-    body = (await request.json()) as { image?: string; mediaType?: string };
+    body = (await cuerpo(request, 6_000_000)) as {
+      image?: string;
+      mediaType?: string;
+    };
   } catch {
     return bad("Cuerpo de la petición inválido.");
   }
@@ -40,7 +48,9 @@ export async function POST(request: Request, { params }: Ctx) {
       { key: "global_lecturas", ...TOPES.lecturaDeTicket.global },
     ]);
     if (!gate.ok) {
-      console.warn(`[limite] rechazada ${caller} · vuelve en ${gate.retryAfterSeconds}s`);
+      console.warn(
+        `[limite] rechazada ${caller} · vuelve en ${gate.retryAfterSeconds}s`,
+      );
       return tooMany(
         "Se han leído demasiados tickets seguidos. Prueba de nuevo en un rato.",
         gate.retryAfterSeconds,
@@ -52,13 +62,19 @@ export async function POST(request: Request, { params }: Ctx) {
 
   const mediaType = (body.mediaType ?? "image/jpeg") as Accepted;
   if (!ACCEPTED.includes(mediaType)) {
-    return bad(`Formato no soportado (${mediaType}). Usa JPG, PNG o WebP.`, 415);
+    return bad(
+      `Formato no soportado (${mediaType}). Usa JPG, PNG o WebP.`,
+      415,
+    );
   }
   const base64 = body.image.includes(",")
     ? body.image.slice(body.image.indexOf(",") + 1)
     : body.image;
   if (base64.length > 7_000_000) {
-    return bad("La imagen es demasiado grande. Haz la foto con menos resolución.", 413);
+    return bad(
+      "La imagen es demasiado grande. Haz la foto con menos resolución.",
+      413,
+    );
   }
 
   try {
@@ -89,7 +105,10 @@ export async function POST(request: Request, { params }: Ctx) {
     );
   } catch (error) {
     if (error instanceof OcrError) {
-      return NextResponse.json({ error: error.message, code: error.code }, { status: 422 });
+      return NextResponse.json(
+        { error: error.message, code: error.code },
+        { status: 422 },
+      );
     }
     return fail(error);
   }

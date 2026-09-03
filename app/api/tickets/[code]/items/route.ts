@@ -1,6 +1,6 @@
 import { addItem } from "@/lib/store";
 import { parseMoney } from "@/lib/format";
-import { asNumber, fail, ok } from "@/lib/api";
+import { asNumber, fail, ok, cuerpo } from "@/lib/api";
 
 export const runtime = "nodejs";
 
@@ -9,7 +9,7 @@ type Ctx = { params: Promise<{ code: string }> };
 /** Añade una línea que el OCR se dejó, o algo pedido después. */
 export async function POST(request: Request, { params }: Ctx) {
   const { code } = await params;
-  const body = (await request.json()) as {
+  const body = (await cuerpo(request)) as {
     name?: string;
     qty?: number;
     price?: string | number;

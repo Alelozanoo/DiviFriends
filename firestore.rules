@@ -19,6 +19,32 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    // Las cuentas. Ni siquiera la propia: todo pasa por /api/cuenta con el
+    // token en la cabecera, que es donde se valida lo que se guarda. Se deja
+    // explícito para que nadie abra esto «sólo para leer la mía» y se lleve
+    // por delante el correo de todo el mundo.
+    match /users/{uid} {
+      allow read, write: if false;
+    }
+
+    // Amistades, asientos reservados, códigos de amigo y el registro de los
+    // correos mandados. Todo por la API con el token; nada desde el navegador.
+    match /users/{uid}/amigos/{otro} {
+      allow read, write: if false;
+    }
+    match /invitaciones/{id} {
+      allow read, write: if false;
+    }
+    match /codigos/{codigo} {
+      allow read, write: if false;
+    }
+    match /usuarios/{usuario} {
+      allow read, write: if false;
+    }
+    match /correos/{id} {
+      allow read, write: if false;
+    }
+
     // Contadores de los topes de uso. La regla general de abajo ya los cierra;
     // se deja explícito porque leerlos diría a quien ataca cuánto cupo queda, y
     // escribirlos sería quitarse el tope de encima.

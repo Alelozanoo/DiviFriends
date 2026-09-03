@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { SLUGS } from "@/lib/plantillas";
 
 const SITIO = "https://divifriends.es";
 
@@ -22,6 +23,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly",
       priority: 1,
     },
+    /*
+      Las cuentas de los vídeos sí entran, al revés que las comandas: son
+      páginas públicas, siempre las mismas, y son a donde manda el último
+      fotograma de cada reel. Quien busque «la cuenta del vino» después de
+      verlo tiene que encontrarla.
+    */
+    ...SLUGS.map((slug) => ({
+      url: `${SITIO}/reparte/${slug}`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    })),
     {
       url: `${SITIO}/nueva`,
       lastModified: new Date(),

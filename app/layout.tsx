@@ -1,19 +1,39 @@
 import type { Metadata, Viewport } from "next";
-import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
+import { Bricolage_Grotesque, Courier_Prime } from "next/font/google";
 import Consent from "@/components/Consent";
 import Pixel from "@/components/Pixel";
 import "./globals.css";
 
-const display = Space_Grotesk({
+/*
+  Las dos letras de la casa, cambiadas el 2 de septiembre de 2026.
+
+  Antes eran Space Grotesk y JetBrains Mono, y ese par es el ajuste de fábrica
+  de las webs generadas: quien haya visto diez landings salidas de una IA
+  reconoce la «a», la «y» y la «G» de Space Grotesk sin proponérselo. JetBrains
+  Mono además estaba mal elegida dos veces, porque es una letra de editor de
+  código y aquí lo que se imita es una impresora de comandas.
+
+  Bricolage Grotesque tiene carácter propio sin salirse de la familia de las
+  grotescas, así que la comanda sigue leyéndose igual de rápido. Courier Prime
+  es una máquina de escribir de verdad: las cifras del ticket dejan de parecer
+  una terminal y pasan a parecer papel.
+*/
+const display = Bricolage_Grotesque({
   variable: "--font-display",
   subsets: ["latin"],
   display: "swap",
 });
 
-const figure = JetBrains_Mono({
+/*
+  Courier Prime sólo trae redonda y negrita. JetBrains Mono traía además la
+  media, así que cualquier `font-medium` que hubiera caído sobre una cifra
+  ahora se redondea a la redonda en vez de sintetizarse: mejor así, porque una
+  negrita falsa en una columna de importes se nota en cuanto hay dos seguidas.
+*/
+const figure = Courier_Prime({
   variable: "--font-figure",
   subsets: ["latin"],
-  weight: ["400", "500", "700"],
+  weight: ["400", "700"],
   display: "swap",
 });
 

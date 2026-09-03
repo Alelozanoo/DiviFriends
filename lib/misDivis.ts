@@ -83,6 +83,34 @@ export function olvidarTodo(): void {
   guardar([]);
 }
 
+/** La lista tal cual está, para mandársela a la cuenta. */
+export function todos(): DiviGuardado[] {
+  return leerCrudo();
+}
+
+/**
+ * Mete las divis de la cuenta en las del móvil.
+ *
+ * Por código, y la que se vio más tarde manda: es la misma regla que aplica el
+ * servidor, para que dé igual desde qué lado llegue el cambio. Sólo escribe si
+ * de verdad cambia algo; si no, el evento haría que la cuenta se volviera a
+ * mandar a sí misma en bucle.
+ */
+export function fundir(remotas: DiviGuardado[]): void {
+  const locales = leerCrudo();
+  const porCodigo = new Map<string, DiviGuardado>();
+  for (const divi of [...locales, ...remotas]) {
+    const previa = porCodigo.get(divi.code);
+    if (!previa || new Date(divi.at).getTime() >= new Date(previa.at).getTime()) {
+      porCodigo.set(divi.code, divi);
+    }
+  }
+  const lista = [...porCodigo.values()]
+    .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
+    .slice(0, TOPE);
+  if (JSON.stringify(lista) !== JSON.stringify(locales)) guardar(lista);
+}
+
 /* ------------------------------------------------------------------ react */
 
 const oyentes = new Set<() => void>();

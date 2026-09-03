@@ -74,9 +74,21 @@ export function colorFor(index: number): string {
   return PALETTE[index % PALETTE.length];
 }
 
+/**
+ * La inicial con la que se marca a alguien que todavía no ha puesto foto.
+ *
+ * Devolvía dos letras —«AL», «RO», «NU»— y dos letras dentro de un círculo de
+ * color plano es el marcador de posición de toda la vida: es lo que pinta el
+ * correo cuando no sabe quién eres. Con una sola letra el círculo deja de
+ * parecer un hueco por rellenar y pasa a parecer una marca, que es lo que es.
+ *
+ * A quién es quién no le afecta: el color ya es único por persona, y el nombre
+ * va escrito al lado en todas las listas. Donde sí se nota es en los avatares
+ * de veinte píxeles de una fila de la comanda, que es donde salen solos: dos
+ * letras ahí caían a diez píxeles y no se leían.
+ */
 export function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[1][0]).toUpperCase();
+  const limpio = name.trim();
+  if (!limpio) return "?";
+  return [...limpio][0].toUpperCase();
 }

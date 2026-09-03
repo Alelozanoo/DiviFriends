@@ -1,5 +1,5 @@
 import { splitOffUnits } from "@/lib/store";
-import { asNumber, fail, ok } from "@/lib/api";
+import { asNumber, fail, ok, cuerpo } from "@/lib/api";
 
 export const runtime = "nodejs";
 
@@ -14,7 +14,7 @@ type Ctx = { params: Promise<{ code: string; itemId: string }> };
  */
 export async function POST(request: Request, { params }: Ctx) {
   const { code, itemId } = await params;
-  const body = (await request.json()) as { qty?: number };
+  const body = (await cuerpo(request)) as { qty?: number };
 
   try {
     const { state, newItemId } = await splitOffUnits(

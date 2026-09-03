@@ -5,7 +5,8 @@ import { useEffect, useMemo, useState, useRef } from "react";
 import { computeSettlement, totalAfterRemoving } from "@/lib/settle";
 import { useStoredParticipant } from "@/lib/useStoredParticipant";
 import { useTicketSync } from "@/lib/useTicketSync";
-import { useGlobalProfile } from "@/lib/useGlobalProfile";
+import { leerPerfil, useGlobalProfile } from "@/lib/useGlobalProfile";
+import { asientoEn, invitaAMesa, useCuenta, vinculaAsiento } from "@/lib/cuenta";
 import { processImageToAvatarBase64 } from "@/lib/avatarUpload";
 import { money, parseMoney } from "@/lib/format";
 import { EV, track, trackOnce } from "@/lib/track";
@@ -115,7 +116,50 @@ export default function SplitApp({
   const pagoPendiente = usePagoPendiente(code);
   const { profile: globalProfile, saveProfile } = useGlobalProfile();
   const meId = storedId && state.participants.some((p) => p.id === storedId) ? storedId : null;
-  const showJoin = joinOverride ?? (known && !meId);
+  const { usuario } = useCuenta();
+  /*
+    Con cuenta y sin saber quién eres: ¿te reservaron asiento?
+
+    Si un amigo te metió en esta mesa, tu participante ya existe con tu nombre
+    y tu cara, y aquí se recupera sin que la pantalla llegue a preguntarte
+    quién eres. Se pregunta una vez por mesa; si no hay asiento, la hoja de
+    «¿quién eres?» sale como siempre.
+  */
+  const [asientoMirado, setAsientoMirado] = useState(false);
+  const mirandoAsiento = useRef(false);
+  useEffect(() => {
+    if (!usuario || !known || meId || joinOverride || mirandoAsiento.current) return;
+    mirandoAsiento.current = true;
+    (async () => {
+      try {
+        const { participantId } = await asientoEn(code);
+        if (participantId) {
+          store(participantId);
+          return;
+        }
+        /*
+          Sin asiento reservado pero con cuenta: te sientas solo.
+
+          Con cuenta la mesa ya sabe quién eres, y preguntar «¿entrar como
+          Ale?» es una pantalla de más. El perfil puede tardar un instante en
+          bajar de la nube justo después de entrar, así que se le da hasta
+          segundo y medio; si aun así no hay nombre, se pregunta como siempre.
+        */
+        let perfil = leerPerfil();
+        for (let i = 0; i < 15 && !perfil?.name; i++) {
+          await new Promise((r) => setTimeout(r, 100));
+          perfil = leerPerfil();
+        }
+        if (perfil?.name) await join(perfil.name, perfil.avatar, perfil.bizum, perfil.revolut);
+      } catch {
+        // Sin red o sin perfil: la hoja de «¿quién eres?» sale como siempre.
+      } finally {
+        setAsientoMirado(true);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [usuario, known, meId]);
+  const showJoin = joinOverride ?? (known && !meId && (!usuario || asientoMirado));
 
   // `color` va obligatorio, como en `Participant`: el toast siempre se rellena
   // desde uno de la mesa, así que nunca falta. Declararlo opcional no cubría
@@ -238,6 +282,10 @@ export default function SplitApp({
     if (!participantId) return;
     track(EV.seApunta, { con_avatar: Boolean(avatar) });
     store(participantId);
+    // Con cuenta, la mesa se queda con que este asiento es tuyo: así te puede
+    // avisar cuando se cierre o cuando te paguen. Sin esperar: no es parte de
+    // apuntarse, y si falla no cambia nada de lo que ves.
+    if (usuario) void vinculaAsiento(code, participantId).catch(() => {});
     setJoinOverride(null);
     /*
       En una mesa recién creada, lo siguiente es el QR y no el pagador.
@@ -685,7 +733,7 @@ export default function SplitApp({
               <div
                 role="group"
                 aria-label={t.comanda.filtrar}
-                className="flex gap-[3px] rounded-xl border border-line-soft bg-paper-2 p-[3px]"
+                className="flex gap-[3px] rounded-bloque border border-line-soft bg-paper-2 p-[3px]"
               >
                 {(
                   [
@@ -720,7 +768,7 @@ export default function SplitApp({
 
       <main id="contenido" className="mx-auto w-full max-w-3xl flex-1 px-[var(--gutter)] py-3">
         {error && (
-          <p role="alert" className="mb-3 rounded-xl border border-clay/40 bg-clay/10 px-3 py-2.5 text-sm text-clay">
+          <p role="alert" className="mb-3 rounded-pieza border border-clay/40 bg-clay/10 px-3 py-2.5 text-sm text-clay">
             {error}
           </p>
         )}
@@ -745,7 +793,7 @@ export default function SplitApp({
               sitio queda qué hacer con la mesa.
             */}
             {state.items.length === 0 && (leyendo || fallóLectura) && (
-              <li className="rounded-caja border border-line bg-paper-2 px-4 py-4">
+              <li className="rounded-caja bg-paper-2 px-4 py-4">
                 {fallóLectura ? (
                   <>
                     <p className="text-[15px] font-semibold text-clay">{fallóLectura}</p>
@@ -802,7 +850,7 @@ export default function SplitApp({
                 <button
                   type="button"
                   onClick={() => setFiltro("todo")}
-                  className="mt-1 min-h-[46px] rounded-xl border border-line px-5 text-[15px] font-semibold text-ink transition-colors active:bg-paper-2"
+                  className="mt-1 min-h-[46px] rounded-pieza border border-line px-5 text-[15px] font-semibold text-ink transition-colors active:bg-paper-2"
                 >
                   {t.comanda.verTodo}
                 </button>
@@ -934,7 +982,7 @@ export default function SplitApp({
                    que te toque, y la más larga se comía la cifra de la
                    izquierda hasta taparla. Lo que no puede perderse nunca es
                    cuánto llevas. */
-                className={`max-w-[58%] min-h-[46px] shrink-0 truncate rounded-xl px-5 text-[15px] font-bold active:scale-95 transition-transform ${
+                className={`max-w-[58%] min-h-[46px] shrink-0 truncate rounded-pieza px-5 text-[15px] font-bold active:scale-95 transition-transform ${
                   showTodoPagado
                     ? "bg-[#3b82f6]/10 text-[#3b82f6] border border-[#3b82f6]/20"
                     : "bg-amber"
@@ -948,7 +996,7 @@ export default function SplitApp({
             <button
               type="button"
               onClick={() => setJoinOverride(true)}
-              className="min-h-[46px] shrink-0 rounded-xl bg-amber px-5 text-[15px] font-bold"
+              className="min-h-[46px] shrink-0 rounded-pieza bg-amber px-5 text-[15px] font-bold"
               style={{ color: "var(--paper-2)" }}
             >
               {t.comanda.unirme}
@@ -1065,6 +1113,14 @@ export default function SplitApp({
           }
           onRemove={(participantId) =>
             void removeParticipant(participantId)
+          }
+          onInvitar={
+            usuario
+              ? async (uid) => {
+                  const data = await invitaAMesa(code, uid);
+                  setServer(data as unknown as TicketState);
+                }
+              : undefined
           }
           onClose={() => {
             setSharing(false);
@@ -1308,7 +1364,7 @@ export default function SplitApp({
                 <button
                   type="button"
                   onClick={() => setShowStatusPopup(false)}
-                  className="w-full min-h-[46px] w-full rounded-xl border border-line text-[15px] font-semibold text-ink transition-colors active:bg-paper-3"
+                  className="w-full min-h-[46px] w-full rounded-pieza border border-line text-[15px] font-semibold text-ink transition-colors active:bg-paper-3"
                 >
                   {t.estado.cerrar}
                 </button>
@@ -1489,7 +1545,7 @@ function JoinSheet({
           <button
             type="button"
             onClick={() => void onJoin(globalProfile.name, globalProfile.avatar, globalProfile.bizum, globalProfile.revolut)}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber px-4 py-3 font-bold text-paper transition-transform active:scale-[0.98]"
+            className="flex w-full items-center justify-center gap-2 rounded-pieza bg-amber px-4 py-3 font-bold text-paper transition-transform active:scale-[0.98]"
           >
             {globalProfile.avatar && (
               <Avatar name={globalProfile.name} avatar={globalProfile.avatar} color="var(--color-amber)" size={24} />
@@ -1500,7 +1556,7 @@ function JoinSheet({
           <button
             type="button"
             onClick={() => setShowForm(true)}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-line bg-paper px-4 py-3 font-bold text-ink-soft transition-colors hover:border-amber active:bg-paper-3"
+            className="flex w-full items-center justify-center gap-2 rounded-pieza border-2 border-line bg-paper px-4 py-3 font-bold text-ink-soft transition-colors hover:border-amber active:bg-paper-3"
           >
             {t.perfil.entrarNuevo}
           </button>
@@ -1548,7 +1604,7 @@ function JoinSheet({
               aria-label={t.perfil.tuNombre}
               autoCapitalize="words"
               maxLength={40}
-              className="min-h-[52px] w-full min-w-0 rounded-xl border border-line bg-paper px-4 text-[16px] font-semibold focus:border-amber focus:outline-none"
+              className="min-h-[52px] w-full min-w-0 rounded-pieza border border-line bg-paper px-4 text-[16px] font-semibold focus:border-amber focus:outline-none"
             />
           </div>
 
@@ -1581,7 +1637,7 @@ function JoinSheet({
           <button
             type="submit"
             disabled={busy || !name.trim()}
-            className="min-h-[52px] w-full rounded-xl bg-amber text-[15px] font-bold text-paper transition-transform active:scale-[0.98] disabled:opacity-40"
+            className="min-h-[52px] w-full rounded-pieza bg-amber text-[15px] font-bold text-paper transition-transform active:scale-[0.98] disabled:opacity-40"
           >
             {t.entrar.entrar}
           </button>
@@ -1600,7 +1656,7 @@ function JoinSheet({
         <button
           type="button"
           onClick={() => setShowForm(false)}
-          className="mt-3 flex min-h-[46px] w-full items-center justify-center gap-2 rounded-xl border border-line text-[15px] font-semibold text-ink-soft transition-colors active:bg-paper-3"
+          className="mt-3 flex min-h-[46px] w-full items-center justify-center gap-2 rounded-pieza border border-line text-[15px] font-semibold text-ink-soft transition-colors active:bg-paper-3"
         >
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <path d="M14 6.5 8.5 12l5.5 5.5" />
@@ -1656,7 +1712,7 @@ function AddItemSheet({
           value={name}
           onChange={(event) => setName(event.target.value)}
           placeholder={t.varios.otraCana}
-          className="w-full rounded-xl border border-line bg-paper px-4 py-3 focus:border-amber focus:outline-none"
+          className="w-full rounded-pieza border border-line bg-paper px-4 py-3 focus:border-amber focus:outline-none"
         />
         <div className="flex gap-2">
           <input
@@ -1664,7 +1720,7 @@ function AddItemSheet({
             onChange={(event) => setQty(event.target.value)}
             inputMode="numeric"
             aria-label="Cantidad"
-            className="tnum w-20 rounded-xl border border-line bg-paper px-3 py-3 text-center focus:border-amber focus:outline-none"
+            className="tnum w-20 rounded-pieza border border-line bg-paper px-3 py-3 text-center focus:border-amber focus:outline-none"
           />
           <input
             value={price}
@@ -1672,13 +1728,13 @@ function AddItemSheet({
             inputMode="decimal"
             placeholder="2,50"
             aria-label="Precio por unidad"
-            className="tnum min-w-0 flex-1 rounded-xl border border-line bg-paper px-3 py-3 text-right focus:border-amber focus:outline-none"
+            className="tnum min-w-0 flex-1 rounded-pieza border border-line bg-paper px-3 py-3 text-right focus:border-amber focus:outline-none"
           />
         </div>
         <button
           type="submit"
           disabled={!name.trim() || parseMoney(price) <= 0}
-          className="w-full min-h-[52px] rounded-xl bg-amber text-[15px] font-bold text-paper disabled:opacity-40"
+          className="w-full min-h-[52px] rounded-pieza bg-amber text-[15px] font-bold text-paper disabled:opacity-40"
         >
           {t.comanda.anadir}
         </button>

@@ -120,7 +120,7 @@ export default function CuentasSheet({
         )}
 
         {state.ticket.closed && !isCompleted && (
-          <div className="rounded-bloque border border-mint/40 bg-mint/[0.08] px-4 py-3.5">
+          <div className="rounded-bloque bg-mint/[0.10] px-4 py-3.5">
             <p className="text-[15px] font-bold text-mint">{t.cuentas.mesaCerrada}</p>
             <p className="mt-1 text-[13px] leading-relaxed text-ink-soft">
               {t.cuentas.mesaCerradaAviso}
@@ -129,7 +129,7 @@ export default function CuentasSheet({
         )}
 
         {isCompleted ? (
-          <div className="rounded-bloque border border-amber/40 bg-amber/[0.08] px-4 py-4 text-center">
+          <div className="rounded-bloque bg-amber/[0.10] px-4 py-4 text-center">
             <p className="text-[21px] font-bold tracking-[-0.025em] text-amber">
               {t.cuentas.diviCompletado}
             </p>
@@ -156,7 +156,7 @@ export default function CuentasSheet({
           return (
             <section
               key={pago.fromId}
-              className="rounded-bloque border border-mint/40 bg-mint/[0.08] px-4 py-3.5"
+              className="rounded-bloque bg-mint/[0.10] px-4 py-3.5"
             >
               <div className="flex items-center gap-3">
                 <Avatar name={quien.name} avatar={quien.avatar} color={quien.color} size={32} />
@@ -177,14 +177,14 @@ export default function CuentasSheet({
                 <button
                   type="button"
                   onClick={() => onResolver(pago.fromId, true)}
-                  className="min-h-[46px] flex-1 rounded-xl bg-mint text-[15px] font-bold text-paper transition-transform active:scale-[0.98]"
+                  className="min-h-[46px] flex-1 rounded-pieza bg-mint text-[15px] font-bold text-paper transition-transform active:scale-[0.98]"
                 >
                   {t.cobro.siLlego}
                 </button>
                 <button
                   type="button"
                   onClick={() => onResolver(pago.fromId, false)}
-                  className="min-h-[46px] flex-1 rounded-xl border border-line text-[15px] font-semibold text-ink-soft transition-colors active:bg-paper-3"
+                  className="min-h-[46px] flex-1 rounded-pieza border border-line text-[15px] font-semibold text-ink-soft transition-colors active:bg-paper-3"
                 >
                   {t.cobro.noLlego}
                 </button>
@@ -313,7 +313,7 @@ function Fila({
         <button
           type="button"
           onClick={onPagar}
-          className="min-h-10 shrink-0 rounded-xl bg-amber px-3.5 text-[13px] font-bold text-paper transition-transform active:scale-[0.97]"
+          className="min-h-10 shrink-0 rounded-pieza bg-amber px-3.5 text-[13px] font-bold text-paper transition-transform active:scale-[0.97]"
         >
           {t.cuentas.pagarAhora}
         </button>
@@ -324,7 +324,7 @@ function Fila({
           type="button"
           onClick={onToggle}
           aria-pressed={person.settled}
-          className={`min-h-10 shrink-0 rounded-xl px-3.5 text-[13px] font-semibold transition-colors ${
+          className={`min-h-10 shrink-0 rounded-pieza px-3.5 text-[13px] font-semibold transition-colors ${
             person.settled
               ? "text-mint"
               : "border border-line text-ink-soft active:bg-paper-3"
@@ -447,15 +447,26 @@ function Bloque({
 }) {
   return (
     <section
-      className={`rounded-bloque border px-4 py-4 ${
+      className={`rounded-bloque px-4 py-4 ${
         tono === "bien"
-          ? "border-mint/30 bg-mint/[0.08]"
+          ? "bg-mint/[0.10]"
           : tono === "aviso"
-            ? "border-clay/40 bg-clay/[0.08]"
-            : "border-line-soft bg-paper"
+            ? "bg-clay/[0.10]"
+            : "bg-paper"
       }`}
     >
-      <p className="stamp text-ink-faint">{label}</p>
+      {/*
+        En minúscula, y no con la mayúscula de ticket.
+
+        Por aquí pasa «Falta por devolverle a Rocío», que es una frase entera
+        con el nombre de una persona dentro. Impresa en un ticket no la ha visto
+        nadie: es lenguaje de aplicación con el disfraz puesto, y espaciada en
+        mayúsculas se lee peor y ocupa dos líneas. La regla de la casa está en
+        `globals.css` — ¿esa palabra estaría impresa en el papel?—, y aquí la
+        respuesta es que no. «Total del ticket», unas líneas más arriba, sí lo
+        estaría, y por eso ésa se queda como está.
+      */}
+      <p className="text-[12px] text-ink-faint">{label}</p>
       <p
         className={`tnum mt-2 text-[24px] font-bold leading-none tracking-[-0.02em] ${
           tono === "bien" ? "text-mint" : "text-ink"
