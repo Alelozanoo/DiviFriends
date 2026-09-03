@@ -10,6 +10,7 @@ import MisDivisBoton from "@/components/MisDivis";
 import ComoFuncionaSheet from "@/components/ComoFuncionaSheet";
 import LangSwitch from "@/components/LangSwitch";
 import CuentaBoton from "@/components/CuentaBoton";
+import RegistroSheet from "@/components/RegistroSheet";
 import { I18nProvider, useT, useLang, type Lang } from "@/lib/i18n";
 import { inicio } from "@/lib/i18n/config";
 
@@ -224,6 +225,9 @@ function Cuerpo() {
           </span>
         </div>
       </footer>
+
+      {/* Sin sesión, lo primero que se ve: «Continuar con Google» o «Ahora no». */}
+      <RegistroSheet />
     </main>
   );
 }

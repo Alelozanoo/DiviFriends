@@ -28,11 +28,20 @@ import { Avatar, CerrarHoja, Sheet } from "./ui";
 export default function MisDivisBoton() {
   const t = useT();
   const { divis } = useMisDivis();
+  const { usuario } = useCuenta();
   const [abierta, setAbierta] = useState(false);
 
-  // `null` es «todavía no lo sé» —servidor o hidratación—, y pintar el icono
-  // para quitarlo medio segundo después es un parpadeo en cada visita.
-  if (divis === null || divis.length === 0) return null;
+  /*
+    Sólo con sesión. Se decidió el 3 de septiembre de 2026, junto con la hoja
+    de «Continuar con Google» de la portada: sin cuenta, la esquina dice una
+    sola cosa —entrar— y no compite con nada. Las divis de este móvil siguen
+    guardadas y vuelven a verse en cuanto entras; mientras tanto, a cada mesa
+    se llega con su enlace o su código, como siempre.
+
+    `null` es «todavía no lo sé» —servidor o hidratación—, y pintar el icono
+    para quitarlo medio segundo después es un parpadeo en cada visita.
+  */
+  if (!usuario || divis === null || divis.length === 0) return null;
 
   /*
     El punto sólo cuando hay dinero de por medio, y sin número: el número ya

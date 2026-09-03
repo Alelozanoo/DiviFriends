@@ -120,6 +120,13 @@ export const es = {
     debesTu: "Lo que debes tú",
   },
 
+  registro: {
+    titulo: "Antes de empezar",
+    entradilla:
+      "Con cuenta, tu nombre, tus divis y tus avisos te siguen de un móvil a otro. Y te avisamos cuando te paguen.",
+    google: "Continuar con Google",
+    luego: "Ahora no",
+  },
   misDivis: {
     titulo: "Tus divis",
     donde: "en este móvil",

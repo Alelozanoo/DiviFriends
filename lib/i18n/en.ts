@@ -105,6 +105,13 @@ export const en: Dict = {
     debesTu: "What you owe",
   },
 
+  registro: {
+    titulo: "Before you start",
+    entradilla:
+      "With an account, your name, your divis and your notifications follow you from one phone to the next. And we let you know when you get paid.",
+    google: "Continue with Google",
+    luego: "Not now",
+  },
   misDivis: {
     titulo: "Your divis",
     donde: "on this phone",
