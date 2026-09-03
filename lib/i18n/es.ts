@@ -18,6 +18,9 @@ export const es = {
   home: {
     claim: "La cuenta se reparte",
     claimAmber: "sola",
+    claimMovil: "La cuenta del bar, repartida al céntimo.",
+    entradillaMovil: "Una foto al ticket y cada uno marca lo que ha tomado.",
+    capturaAlt: "La comanda de DiviFriends: cada línea del ticket, con quién la ha marcado",
     tituloLargo: "La cuenta se reparte",
     tituloLargoAmber: "antes de pedir la segunda",
     entradilla:
@@ -80,9 +83,10 @@ export const es = {
   /* --------------------------------------------------------- subir foto */
   subir: {
     titulo: "Sube la foto del ticket",
-    boton: "Subir foto",
+    boton: "Haz foto al ticket",
     conFoto: "Entrar con una foto",
     conCodigo: "Entrar con un código",
+    entraConEl: "¿Te han pasado un código? Entra con él",
     fotoAyuda: "Se lee sola y te abre la mesa.",
     tienesCodigo: "¿Te han pasado un código?",
     preparando: "Preparando la foto…",
@@ -613,7 +617,7 @@ export const es = {
     otraCana: "Otra caña",
     comanda: "Comanda",
     codigoCorto: "El código tiene seis caracteres.",
-    codigoNoExiste: "No encuentro esa comanda. Revisa el código del ticket.",
+    codigoNoExiste: "El código no es correcto. Revísalo en el ticket.",
   },
 
   /* --------------------------------------------------- enlace de cookies */

@@ -50,7 +50,7 @@ export default function CuentaBoton() {
             await entrar();
           }}
           disabled={ocupado}
-          className="flex min-h-[40px] items-center gap-2 rounded-pieza border border-line px-3 text-[13px] font-semibold text-ink-soft transition-colors hover:border-amber hover:text-ink disabled:opacity-60 lg:min-h-[44px] lg:px-4 lg:text-[14px]"
+          className="flex min-h-[40px] items-center gap-2 rounded-full border border-line px-3.5 text-[13px] font-semibold text-ink-soft transition-colors hover:border-amber hover:text-ink disabled:opacity-60 lg:min-h-[44px] lg:px-4 lg:text-[14px]"
         >
           <G />
           <span className="lg:hidden">{t.cuenta.entrar}</span>

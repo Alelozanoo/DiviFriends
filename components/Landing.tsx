@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import Logo, { Wordmark } from "@/components/Logo";
 import TicketUploader from "@/components/TicketUploader";
@@ -36,18 +37,31 @@ function Cuerpo() {
   return (
     <main id="contenido" className="flex flex-1 flex-col lg:block">
       {/* ---------------------------------------------------------------- hero */}
-      {/* En el móvil se estira para que el pie caiga abajo del todo, y lo de
-          dentro va centrado: a quien entra por primera vez, sin divis guardados,
-          le sobraban cuatro dedos de negro entre la tarjeta y el pie. Centrado,
-          ese aire se reparte arriba y abajo y deja de parecer un hueco. */}
-      <section className="relative flex flex-1 flex-col justify-center overflow-hidden lg:block">
+      {/*
+        En el móvil, una sola pantalla y sin scroll.
+
+        La portada del móvil se rehizo el 3 de septiembre de 2026 después de
+        dos versiones que él llamó «muy IA»: el papel crema con dos botones y
+        un visor de cámara dibujado. Lo que quedó es lo contrario de un
+        decorado: el titular, la captura real de la comanda desvaneciéndose
+        por abajo, y el botón. Nada dibujado, nada que imite un ticket.
+
+        Todo cabe en la primera pantalla porque la sección se estira hasta
+        el pie y la captura ocupa lo que sobra: en un iPhone pequeño se ve
+        menos comanda; en uno grande, más. Lo que nunca cambia de sitio es el
+        botón, que va donde llega el pulgar.
+      */}
+      <section className="relative flex flex-1 flex-col overflow-hidden lg:block">
+        {/* El halo ámbar sólo en el escritorio: en el móvil la captura ya
+            pone la luz, y un degradado detrás de un titular es justo lo que
+            hace que una portada parezca generada. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute -top-40 left-1/2 h-[38rem] w-[38rem] -translate-x-1/2 rounded-full opacity-[0.14] blur-3xl"
+          className="pointer-events-none absolute -top-40 left-1/2 hidden h-[38rem] w-[38rem] -translate-x-1/2 rounded-full opacity-[0.14] blur-3xl lg:block"
           style={{ background: "radial-gradient(circle, var(--amber), transparent 65%)" }}
         />
 
-        <div className="mx-auto max-w-6xl px-[var(--gutter)] pb-8 pt-8 lg:px-5 lg:pb-20 lg:pt-16">
+        <div className="mx-auto w-full max-w-6xl px-[var(--gutter)] pt-7 lg:px-5 lg:pb-20 lg:pt-16">
           {/*
             La marca, más pequeña de lo que era.
 
@@ -64,14 +78,6 @@ function Cuerpo() {
               <Wordmark className="text-[19px] font-bold tracking-[-0.03em] lg:text-3xl" />
             </Link>
             {/*
-              La cuenta, en la esquina y opcional.
-
-              En el móvil la marca va centrada y esto se cuelga a la derecha
-              sin moverla; en el ordenador la cabecera se abre y cada cosa va a
-              su lado. Es pequeño a propósito: la portada sigue siendo para
-              subir la foto, y quien no quiera cuenta no debería ni verlo.
-            */}
-            {/*
               Sin `transform` en este envoltorio, y no es manía: una
               transformación en un antecesor convierte el `position: fixed` de
               las hojas en «fijo respecto a este div», y la hoja de la cuenta
@@ -87,45 +93,31 @@ function Cuerpo() {
           </header>
 
           {/*
-            El reclamo, sólo en el móvil. El titular grande y el párrafo se
-            quedan para el ordenador, pero sin nada la pantalla no decía qué es
-            esto: era una tarjeta suelta en un hueco negro.
+            El titular del móvil: centrado, corto y en peso medio.
+
+            No es el del escritorio. Allí hay sitio para una frase larga y un
+            párrafo; aquí cabe una idea y media línea debajo, y el ojo tiene
+            que irse enseguida a la captura. En peso medio y no en negrita
+            porque lo que grita en esta pantalla es el botón, no el texto.
           */}
-          <p className="mb-6 text-balance text-center text-[31px] font-bold leading-[1.08] tracking-[-0.035em] text-ink lg:hidden">
-            {t.home.claim} <span className="text-amber">{t.home.claimAmber}</span>
-          </p>
+          <div className="lg:hidden">
+            <p className="mx-auto max-w-[22ch] text-balance text-center text-[29px] font-semibold leading-[1.1] tracking-[-0.025em] text-ink">
+              {t.home.claimMovil}
+            </p>
+            <p className="mx-auto mt-2.5 max-w-[34ch] text-balance text-center text-[15px] leading-[1.45] text-ink-soft">
+              {t.home.entradillaMovil}
+            </p>
+          </div>
 
-          <div className="flex flex-col gap-10 lg:flex-row lg:items-center lg:gap-16">
-            <div className="order-1 w-full lg:order-2 lg:max-w-md">
-              {/*
-                Una sola caja.
-
-                Había tres metidas una dentro de otra —la tarjeta, el recuadro
-                de puntos y el fondo de dentro—, cada una con su borde y su
-                radio, y el ojo no sabía cuál era el sitio donde se toca. Ahora
-                el rótulo va fuera, como el sello de una sección, y debajo hay
-                un solo bloque con las dos maneras de empezar.
-              */}
-              {/* Sin rótulo encima: el papel ya dice dónde se empieza. */}
+          {/* El escritorio, como estaba: el texto a la izquierda y el papel
+              a la derecha. Se oculta por CSS y no se borra, así que sigue en
+              el HTML para los buscadores. */}
+          <div className="hidden lg:flex lg:flex-row lg:items-center lg:gap-16">
+            <div className="order-2 w-full lg:max-w-md">
               <TicketUploader />
-
-
-
-              {/* La frase que había aquí se imprime ahora dentro del papel,
-                  en `TicketUploader`: llena el claro que dejaba la hoja alta y
-                  deja de estirar la portada por abajo. */}
             </div>
 
-            {/*
-              En el móvil esto no se ve.
-
-              Quien entra desde el teléfono viene a repartir una cuenta, no a
-              leer de qué va: el titular, el párrafo y los sellos le empujaban
-              la app fuera de la pantalla. Se oculta por CSS y no se borra, así
-              que sigue en el HTML para los buscadores —que indexan con
-              navegador móvil— y para quien abra la web en un ordenador.
-            */}
-            <div className="hidden flex-1 lg:block order-2 lg:order-1">
+            <div className="order-1 flex-1">
               <h1 className="text-[2.6rem] font-bold leading-[1.02] tracking-[-0.03em] sm:text-6xl">
                 {t.home.tituloLargo}
                 <br />
@@ -154,6 +146,45 @@ function Cuerpo() {
               </p>
             </div>
           </div>
+        </div>
+
+        {/*
+          La comanda de verdad, dentro de un móvil que no termina.
+
+          Es una captura real de la app, con las letras nuevas, y no un dibujo
+          de ella: es lo único de esta pantalla que enseña qué vas a tener en
+          la mano. El marco es sólo los bordes de arriba, y todo el bloque se
+          desvanece por abajo con una máscara, así que la comanda parece
+          seguir por debajo del botón en vez de cortarse contra él.
+
+          Ocupa lo que sobra entre el texto y el botón, con un mínimo para
+          que en un móvil pequeño siga viéndose la cabecera de la comanda y la
+          primera línea marcada.
+        */}
+        <div
+          className="relative mt-5 min-h-[170px] flex-1 overflow-hidden lg:hidden"
+          style={{
+            maskImage: "linear-gradient(to bottom, #000 40%, transparent 100%)",
+            WebkitMaskImage: "linear-gradient(to bottom, #000 40%, transparent 100%)",
+          }}
+        >
+          <div className="absolute left-1/2 top-0 w-[250px] -translate-x-1/2 rounded-t-[38px] border border-b-0 border-line bg-black p-[7px] pb-0">
+            <Image
+              src="/portada-comanda.jpg"
+              alt={t.home.capturaAlt}
+              width={900}
+              height={1323}
+              priority
+              sizes="250px"
+              className="w-full rounded-t-[31px]"
+            />
+          </div>
+        </div>
+
+        {/* Las acciones del móvil: el botón ámbar y el enlace del código.
+            Sin papel: la variante «aire» de `TicketUploader`. */}
+        <div className="px-[var(--gutter)] pb-3 pt-4 lg:hidden">
+          <TicketUploader variante="aire" />
         </div>
       </section>
 
@@ -191,22 +222,21 @@ function Cuerpo() {
       </div>
 
       {/*
-        En el móvil el pie va centrado y en dos líneas cortas. Antes tenía la
-        marca pegada a la izquierda y el enlace de cookies suelto a la derecha,
-        a otra altura y con la frase de en medio partiéndose en dos: la raya de
-        arriba cruzaba entera y debajo no había nada alineado con nada.
+        El pie, en una sola línea en el móvil.
 
+        Para que la portada quepa en la pantalla sin scroll, el pie del móvil
+        se queda con los enlaces y pierde el lema, que ya está dicho arriba.
         En pantalla ancha sí hay sitio para las dos puntas, y ahí se queda como
         estaba.
       */}
       <footer className="border-t border-line">
-        <div className="mx-auto flex max-w-6xl flex-col items-center gap-2 px-[var(--gutter)] py-6 text-[13px] text-ink-faint sm:flex-row sm:justify-between sm:gap-4 sm:px-5 sm:py-8">
-          <p className="text-center sm:text-left">
+        <div className="mx-auto flex max-w-6xl flex-col items-center gap-2 px-[var(--gutter)] py-2 text-[13px] text-ink-faint sm:flex-row sm:justify-between sm:gap-4 sm:px-5 sm:py-8">
+          <p className="hidden text-center sm:block sm:text-left">
             <Wordmark className="font-semibold" /> · {t.home.pieLema}
           </p>
           {/* Con hueco para el dedo: los tres enlaces del pie median 20 px de
               alto, la mitad de lo que hace falta para acertar sin mirar. */}
-          <span className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 [&_a]:py-2 [&_button]:py-2">
+          <span className="flex flex-wrap items-center justify-center gap-x-4 gap-y-0 [&_a]:py-2 [&_button]:py-2">
             <LangSwitch enPortada />
             <ComoFuncionaSheet />
             <Link

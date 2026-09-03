@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { EV, track } from "@/lib/track";
-import { useLang, useT } from "@/lib/i18n";
+import { useT } from "@/lib/i18n";
 import JoinByCode from "./JoinByCode";
 
 /**
@@ -76,13 +76,20 @@ const TINTA_SUAVE = "text-[#6b5f52]";
 export default function TicketUploader({
   targetCode,
   onSuccess,
+  variante = "papel",
 }: {
   targetCode?: string;
   onSuccess?: (receiptId: string | null) => void;
+  /**
+   * `papel` es la hoja crema de siempre, la del escritorio. `aire` es la
+   * portada del móvil desde el 3 de septiembre de 2026: sin papel, sólo el
+   * botón ámbar, el enlace del código y, mientras se lee, la barra. Lo que
+   * hay alrededor —el titular, la captura de la comanda— lo pone `Landing`.
+   */
+  variante?: "papel" | "aire";
 } = {}) {
   const router = useRouter();
   const t = useT();
-  const lang = useLang();
   /*
     Una sola entrada, sin `capture`.
 
@@ -237,8 +244,112 @@ export default function TicketUploader({
 
   const busy = phase === "reading" || phase === "parsing";
 
+  /*
+    El campo de la foto, uno solo y fuera de la vista.
+
+    Lo pulsan los dos botones —el del papel y el del móvil— a través de
+    `fileRef`. Se quedó fuera sin querer el 3 de septiembre de 2026, en el
+    commit que imprimió el papel como un ticket (`bdd36a4`), y desde entonces
+    el botón no hacía nada en la web publicada: `fileRef.current` era null y
+    el clic se perdía sin error. Va aquí arriba, antes de las dos ramas, para
+    que ninguna pueda volver a olvidárselo.
+  */
+  const entrada = (
+    <input
+      ref={fileRef}
+      type="file"
+      accept="image/*"
+      className="sr-only"
+      onChange={(event) => {
+        const file = event.target.files?.[0];
+        event.target.value = "";
+        if (file) void upload(file);
+      }}
+    />
+  );
+
+  if (variante === "aire") {
+    return (
+      <div className="w-full">
+        {entrada}
+        {pidiendoCodigo ? (
+          <section>
+            <p className="text-[19px] font-bold leading-tight tracking-[-0.025em]">{t.subir.codigoTitulo}</p>
+            <p className="mt-1 text-[13px] leading-relaxed text-ink-soft">{t.subir.codigoAyuda}</p>
+            <div className="mt-4">
+              <JoinByCode tono="oscuro" />
+            </div>
+            <button
+              type="button"
+              onClick={() => setPidiendoCodigo(false)}
+              className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-2 text-[14px] font-semibold text-ink-soft"
+            >
+              <span aria-hidden className="text-amber">{"\u2190"}</span>
+              {t.subir.conFoto}
+            </button>
+          </section>
+        ) : busy ? (
+          <section className="flex flex-col items-center text-center">
+            {vista && <Escaner src={vista} />}
+            <span className={`text-[19px] font-bold leading-tight tracking-[-0.025em] ${vista ? "mt-4" : ""}`}>
+              {getDynamicCopy()}
+            </span>
+            <span className="mt-2 max-w-sm text-[13px] leading-relaxed text-ink-soft">
+              {progress < 85 ? t.subir.tardo : t.subir.cuadrando}
+            </span>
+            <div className="mt-4 w-full">
+              <div className="mb-2 flex justify-between text-[12px] text-ink-soft">
+                <span>{t.subir.progreso}</span>
+                <span className="tnum">{progress}%</span>
+              </div>
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-paper-3">
+                <div
+                  className="h-full rounded-full bg-amber transition-all ease-linear"
+                  style={{ width: `${progress}%`, transitionDuration: targetCode ? "300ms" : "90ms" }}
+                />
+              </div>
+            </div>
+          </section>
+        ) : (
+          <div className="grid gap-1">
+            {/* Los tres sellos en una línea, encima del botón, como en el
+                escritorio: es lo único que promete la portada. */}
+            {!targetCode && <p className="mb-2 text-center text-[13px] text-ink-faint">{t.home.sellos.join(" · ")}</p>}
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="flex min-h-[54px] w-full items-center justify-center gap-2.5 rounded-full bg-amber px-5 text-[16px] font-bold text-paper transition-transform active:scale-[0.98]"
+            >
+              <Camara />
+              {t.subir.boton}
+            </button>
+            {!targetCode && (
+              <button
+                type="button"
+                onClick={() => setPidiendoCodigo(true)}
+                className="min-h-[44px] w-full text-[14px] font-semibold text-ink-soft underline decoration-line underline-offset-[3px]"
+              >
+                {t.subir.entraConEl}
+              </button>
+            )}
+          </div>
+        )}
+
+        {error && (
+          <p
+            role="alert"
+            className="mt-3 rounded-pieza border border-clay/40 bg-clay/10 px-4 py-3 text-[13px] leading-relaxed text-clay"
+          >
+            {error}
+          </p>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="w-full">
+      {entrada}
       {/*
         Esto no es una tarjeta: es el papel.
 
@@ -271,30 +382,20 @@ export default function TicketUploader({
         {/* Los dientes de arriba, como en `ComoVa`: el mismo truco de la casa,
             una tira con la máscara y su gemela girada al final. */}
         <div className={`${PAPEL} torn-top h-2.5`} />
-        <div className={`${PAPEL} relative overflow-hidden px-[var(--gutter)] pb-5 pt-4`}>
+        <div className={`${PAPEL} relative overflow-hidden px-[var(--gutter)] pb-2 pt-2`}>
           {/*
-            Un ticket impreso, no una hoja en blanco.
+            Sólo lo que se toca.
 
-            La versión anterior era un rectángulo crema con un botón arriba y
-            un claro de cuatrocientos píxeles debajo: tenía la forma de un
-            ticket y nada de lo que hace que un ticket se lea como tal. Lo que
-            lo hace es la estructura —cabecera, filetes, líneas, código de
-            barras—, y aquí las dos maneras de entrar son las dos líneas del
-            ticket. El alto sale de lo impreso, sin `min-h` que estirar.
-
-            Todo lo que va en mayúsculas de impresora estaría impreso en un
-            ticket de verdad: el nombre de la casa y la fecha de hoy. Nada
-            más, que la regla de `.stamp` es esa.
+            Llevaba una cabecera impresa —«DIVIFRIENDS» y la fecha de hoy—, un
+            título que decía lo mismo que el botón de debajo, y un código de
+            barras que no codificaba nada. Era la escenografía de un ticket, y
+            se notaba: el 3 de septiembre de 2026 él lo vio de un vistazo,
+            «fíjate que pone la fecha, ¿para qué?». Un ticket de verdad lleva
+            esas cosas porque las imprime una máquina; aquí las ponía una
+            plantilla. Quedan el papel, los dientes y las dos maneras de
+            entrar, cada una con su botón. El título lo pone el reclamo que
+            hay encima del papel.
           */}
-          <div className={`flex items-baseline justify-between ${TINTA_SUAVE}`}>
-            <span className="stamp">DiviFriends</span>
-            {/* La de este aparato, que es la única fecha verdadera de un
-                ticket que aún no existe. Con la del servidor no cuadraría
-                al hidratar y sería mentira a partir de las doce. */}
-            <span className="stamp" suppressHydrationWarning>{fechaDeHoy(lang)}</span>
-          </div>
-          <Filete className="mt-3" />
-
           {pidiendoCodigo ? (
             /*
               La misma tarjeta, la otra puerta.
@@ -321,20 +422,24 @@ export default function TicketUploader({
           ) : (
             <>
               {/* ── línea 1: la foto */}
-              <section className="flex flex-col items-center py-6 text-center">
+              <section className="flex flex-col items-center py-4 text-center">
                 {vista && <Escaner src={vista} />}
 
-                <span className={`text-[21px] font-bold leading-tight tracking-[-0.025em] ${vista ? "mt-4" : ""}`}>
-                  {busy ? getDynamicCopy() : t.subir.titulo}
-                </span>
-
+                {/* En reposo no hay título: el botón ya dice qué hacer. El
+                    texto sólo aparece mientras se lee la foto, que es cuando
+                    hay algo que contar. */}
                 {busy && (
-                  <span className={`mt-2 max-w-sm text-[13px] leading-relaxed ${TINTA_SUAVE}`}>
-                    {progress < 85 ? t.subir.tardo : t.subir.cuadrando}
-                  </span>
+                  <>
+                    <span className={`text-[19px] font-bold leading-tight tracking-[-0.025em] ${vista ? "mt-4" : ""}`}>
+                      {getDynamicCopy()}
+                    </span>
+                    <span className={`mt-2 max-w-sm text-[13px] leading-relaxed ${TINTA_SUAVE}`}>
+                      {progress < 85 ? t.subir.tardo : t.subir.cuadrando}
+                    </span>
+                  </>
                 )}
 
-                <div className="mt-3.5 min-h-[52px] w-full">
+                <div className={`min-h-[52px] w-full ${busy ? "mt-3.5" : ""}`}>
                   {busy ? (
                     <div className="w-full pt-2 text-left">
                       <div className={`text-[12px] mb-2 flex justify-between ${TINTA_SUAVE}`}>
@@ -366,12 +471,9 @@ export default function TicketUploader({
                          todo el contraste: en un ticket, lo impreso es negro.
                          La cámara va dentro del botón y pequeña: dice «foto»
                          sin volver a ser el pictograma en tesela de antes. */
-                      className="flex min-h-[54px] w-full items-center justify-center gap-2.5 rounded-pieza bg-[#14100d] px-4 text-[16px] font-bold text-[#f4ece0] transition-transform active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
+                      className="flex min-h-[56px] w-full items-center justify-center gap-2.5 rounded-pieza bg-[#14100d] px-4 text-[17px] font-bold text-[#f4ece0] transition-transform active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
                     >
-                      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                        <path d="M4 8.5h3l1.5-2h7L17 8.5h3a1 1 0 0 1 1 1V18a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5a1 1 0 0 1 1-1Z" />
-                        <circle cx="12" cy="13" r="3.2" />
-                      </svg>
+                      <Camara />
                       {t.subir.boton}
                     </button>
                   )}
@@ -388,7 +490,7 @@ export default function TicketUploader({
               {!targetCode && !busy && (
                 <>
                   <Filete />
-                  <section className="py-5 text-center">
+                  <section className="pb-3 pt-4 text-center">
                     <p className="text-[14px] font-semibold">{t.subir.tienesCodigo}</p>
                     <button
                       type="button"
@@ -404,14 +506,6 @@ export default function TicketUploader({
             </>
           )}
 
-          {/* ── el pie: código de barras y la letra pequeña */}
-          <Filete />
-          <div className="pt-4">
-            <CodigoDeBarras />
-            <p className={`mt-2.5 text-balance text-center text-[12px] leading-relaxed lg:hidden ${TINTA_SUAVE}`}>
-              {t.pasos.asiSeVe}
-            </p>
-          </div>
         </div>
         {/* Los dientes de abajo: la misma tira girada, que es como se hace en
             `ComoVa` y en la página de imprimir. */}
@@ -428,6 +522,16 @@ export default function TicketUploader({
       )}
 
     </div>
+  );
+}
+
+/** La cámara del botón, pequeña: dice «foto» sin ser un pictograma en tesela. */
+function Camara() {
+  return (
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M4 8.5h3l1.5-2h7L17 8.5h3a1 1 0 0 1 1 1V18a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5a1 1 0 0 1 1-1Z" />
+      <circle cx="12" cy="13" r="3.2" />
+    </svg>
   );
 }
 
@@ -484,31 +588,4 @@ function Filete({ className = "" }: { className?: string }) {
       }}
     />
   );
-}
-
-/**
- * Un código de barras que no codifica nada, y lo sabe: es lo que lleva un
- * ticket al pie, y es lo que hace que el papel se lea como impreso y no como
- * un formulario crema. Tres degradados a distinto paso, para que las barras
- * no salgan a intervalos iguales.
- */
-function CodigoDeBarras() {
-  return (
-    <div
-      aria-hidden
-      className="mx-auto h-7 w-[68%] opacity-[0.82]"
-      style={{
-        backgroundImage: [
-          "repeating-linear-gradient(90deg, #14100d 0 2px, transparent 2px 7px)",
-          "repeating-linear-gradient(90deg, #14100d 0 1px, transparent 1px 4px)",
-          "repeating-linear-gradient(90deg, transparent 0 9px, #f4ece0 9px 11px, transparent 11px 23px)",
-        ].join(","),
-      }}
-    />
-  );
-}
-
-/** «3 sept», en el idioma de la portada. */
-function fechaDeHoy(lang: string): string {
-  return new Date().toLocaleDateString(lang === "en" ? "en-GB" : "es-ES", { day: "numeric", month: "short" });
 }

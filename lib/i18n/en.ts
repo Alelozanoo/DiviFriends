@@ -16,6 +16,9 @@ export const en: Dict = {
   home: {
     claim: "Split the bill",
     claimAmber: "by itself",
+    claimMovil: "The bar bill, split to the cent.",
+    entradillaMovil: "One photo of the receipt and everyone taps what they had.",
+    capturaAlt: "The DiviFriends bill: every line of the receipt, with who claimed it",
     tituloLargo: "The bill is settled",
     tituloLargoAmber: "before the next round arrives",
     entradilla:
@@ -67,9 +70,10 @@ export const en: Dict = {
 
   subir: {
     titulo: "Upload a photo of the receipt",
-    boton: "Upload photo",
+    boton: "Take a photo of the bill",
     conFoto: "Start with a photo",
     conCodigo: "Join with a code",
+    entraConEl: "Got a code? Enter with it",
     fotoAyuda: "It reads itself and opens the table.",
     tienesCodigo: "Got a code from someone?",
     preparando: "Getting the photo ready…",
@@ -564,7 +568,7 @@ export const en: Dict = {
     otraCana: "Another beer",
     comanda: "Bill",
     codigoCorto: "The code is six characters.",
-    codigoNoExiste: "Can't find that bill. Check the code on the receipt.",
+    codigoNoExiste: "That code isn't right. Check it on the receipt.",
   },
 
   cookies: {
