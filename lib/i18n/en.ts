@@ -516,6 +516,18 @@ export const en: Dict = {
     si: "Accept",
   },
 
+  bienvenida: {
+    titulo: "Your account is ready",
+    entradilla: "Two things and you're set: how friends find you, and how they pay you back.",
+    usuarioAyuda: "This is what you give friends instead of the code.",
+    usuarioEjemplo: "yourname",
+    comoTePagan: "How they pay you",
+    comoTePaganAyuda:
+      "If you put the card down one day, the table pays you back in one tap. You can leave it for later.",
+    guardar: "Save and start",
+    luego: "I'll do it later",
+  },
+
   varios: {
     eligeAvatar: "Pick your picture",
     otraCana: "Another beer",

@@ -31,6 +31,13 @@ type Estado = {
   pendientes: Pendientes;
   /** El usuario elegido, `@así`, o null si sigue con el código. */
   usuarioNombre: string | null;
+  /**
+   * Si ya sabemos lo que hay en la cuenta. Sin esto no se distingue «no
+   * tienes usuario» de «todavía no ha llegado», y la bienvenida saldría un
+   * instante a quien lo eligió hace meses. Sin red se queda en `false`: es
+   * mejor no preguntar nada que preguntar lo que ya está contestado.
+   */
+  cargada: boolean;
   ocupado: boolean;
   fallo: FalloEntrada | null;
 };
@@ -55,6 +62,7 @@ let estado: Estado = {
   avisos: true,
   pendientes: NADA,
   usuarioNombre: null,
+  cargada: false,
   ocupado: false,
   fallo: null,
 };
@@ -246,7 +254,7 @@ async function sincroniza(user: User) {
     const nube = await api(user, "GET");
 
     if (typeof nube.avisos === "boolean") pon({ avisos: nube.avisos });
-    pon({ usuarioNombre: nube.usuario ?? null });
+    pon({ usuarioNombre: nube.usuario ?? null, cargada: true });
     if (nube.divis?.length) fundir(nube.divis);
     void recargaPendientes();
 
@@ -295,7 +303,7 @@ function arranca() {
   onUsuario((user) => {
     desengancha?.();
     desengancha = null;
-    pon({ usuario: user, fallo: null, pendientes: NADA, usuarioNombre: null });
+    pon({ usuario: user, fallo: null, pendientes: NADA, usuarioNombre: null, cargada: false });
     if (user) void sincroniza(user);
   });
 }
@@ -314,6 +322,7 @@ const enServidor: Estado = {
   avisos: true,
   pendientes: NADA,
   usuarioNombre: null,
+  cargada: false,
   ocupado: false,
   fallo: null,
 };

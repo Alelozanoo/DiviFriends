@@ -5,9 +5,13 @@ import { ponAvisos, ponUsuario, recargaPendientes, useCuenta } from "@/lib/cuent
 import { useT, rellena } from "@/lib/i18n";
 import { useGlobalProfile } from "@/lib/useGlobalProfile";
 import AmigosSheet from "./AmigosSheet";
+import BienvenidaSheet from "./BienvenidaSheet";
 import { EditNameSheet } from "./EditNameSheet";
 import NotificacionesSheet from "./NotificacionesSheet";
 import { Avatar, CerrarHoja, Sheet } from "./ui";
+
+/** Dónde se apunta a quién ya se le enseñó la bienvenida en este aparato. */
+const SALTADA = "divi.bienvenida";
 
 /**
  * La esquina de la cuenta, en la cabecera de la portada.
@@ -23,9 +27,15 @@ import { Avatar, CerrarHoja, Sheet } from "./ui";
  */
 export default function CuentaBoton() {
   const t = useT();
-  const { usuario, usuarioNombre, entrar, salir, borrar, fallo, ocupado, avisos, pendientes } = useCuenta();
+  const { usuario, usuarioNombre, cargada, entrar, salir, borrar, fallo, ocupado, avisos, pendientes } = useCuenta();
   const { profile, saveProfile } = useGlobalProfile();
   const [hoja, setHoja] = useState<null | "cuenta" | "perfil" | "amigos" | "avisos" | "usuario" | "borrar" | "fallo">(null);
+  // A quién ya se le preguntó en este móvil. Se guarda el uid y no un «sí»,
+  // porque en un móvil prestado entran dos personas y la segunda tiene que
+  // ver su bienvenida igual.
+  const [saltada, setSaltada] = useState(() =>
+    typeof window === "undefined" ? null : localStorage.getItem(SALTADA),
+  );
 
   if (usuario === undefined) return null;
 
@@ -59,6 +69,23 @@ export default function CuentaBoton() {
 
   const nombre = profile?.name || usuario.displayName?.split(" ")[0] || "";
   const sinVer = pendientes.solicitudes + pendientes.avisos;
+
+  /*
+    La bienvenida sale mientras no haya usuario elegido, que es lo único de
+    la hoja que no se puede rellenar solo y lo que hace falta para que te
+    añadan. En cuanto lo eliges deja de salir en todos tus móviles, porque
+    vive en la cuenta. Sólo cuando no hay ninguna otra hoja abierta: nadie
+    quiere dos ventanas encima.
+  */
+  const bienvenida = cargada && !usuarioNombre && saltada !== usuario.uid && hoja === null;
+  const cierraBienvenida = () => {
+    setSaltada(usuario.uid);
+    try {
+      localStorage.setItem(SALTADA, usuario.uid);
+    } catch {
+      /* modo incógnito lleno: como mucho vuelve a salir a la próxima */
+    }
+  };
 
   return (
     <>
@@ -100,6 +127,17 @@ export default function CuentaBoton() {
           </svg>
         </button>
       </div>
+
+      {bienvenida && (
+        <BienvenidaSheet
+          nombre={nombre}
+          avatar={profile?.avatar}
+          bizum={profile?.bizum}
+          revolut={profile?.revolut}
+          onGuardar={(perfil) => saveProfile(perfil)}
+          onCerrar={cierraBienvenida}
+        />
+      )}
 
       {hoja === "avisos" && <NotificacionesSheet onClose={() => setHoja(null)} />}
 

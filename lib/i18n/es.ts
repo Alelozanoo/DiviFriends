@@ -562,6 +562,19 @@ export const es = {
     si: "Aceptar",
   },
 
+  /* ------------------------------------------------------ la bienvenida */
+  bienvenida: {
+    titulo: "Ya tienes cuenta",
+    entradilla: "Dos cosas y estás: cómo te encuentran tus amigos y cómo te devuelven el dinero.",
+    usuarioAyuda: "Es lo que le das a tus amigos en vez del código.",
+    usuarioEjemplo: "tunombre",
+    comoTePagan: "Cómo te pagan",
+    comoTePaganAyuda:
+      "Si un día pones tú la tarjeta, la mesa te devuelve su parte de un toque. Puedes dejarlo para luego.",
+    guardar: "Guardar y empezar",
+    luego: "Lo hago luego",
+  },
+
   /* ------------------------------------------------------- avatar y varios */
   varios: {
     eligeAvatar: "Elige tu foto de perfil",
