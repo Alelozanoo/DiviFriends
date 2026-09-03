@@ -18,8 +18,11 @@ env:
     value: AIzaSyCyPf42j4BKn82uCGPT2R2AasbdXb-m0oA
     availability: [ BUILD, RUNTIME ]
 
+  # Nuestro dominio y no el de Firebase: es lo que Google enseña en la ventana
+  # de entrada («Ir a divifriends.es»). Lo sirve el proxy de `/__/auth/*` en
+  # next.config.ts, y la vuelta está dada de alta en el cliente OAuth.
   - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-    value: divifriends-2964.firebaseapp.com
+    value: divifriends.es
     availability: [ BUILD, RUNTIME ]
 
   - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
