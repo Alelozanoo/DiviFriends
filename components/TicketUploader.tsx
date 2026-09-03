@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { EV, track } from "@/lib/track";
-import { useT } from "@/lib/i18n";
+import { useLang, useT } from "@/lib/i18n";
 import JoinByCode from "./JoinByCode";
 
 /**
@@ -82,6 +82,7 @@ export default function TicketUploader({
 } = {}) {
   const router = useRouter();
   const t = useT();
+  const lang = useLang();
   /*
     Una sola entrada, sin `capture`.
 
@@ -270,178 +271,150 @@ export default function TicketUploader({
         {/* Los dientes de arriba, como en `ComoVa`: el mismo truco de la casa,
             una tira con la máscara y su gemela girada al final. */}
         <div className={`${PAPEL} torn-top h-2.5`} />
-        <div className={`${PAPEL} relative overflow-hidden`}>
-        {/*
-          La misma tarjeta, dos puertas.
+        <div className={`${PAPEL} relative overflow-hidden px-[var(--gutter)] pb-5 pt-4`}>
+          {/*
+            Un ticket impreso, no una hoja en blanco.
 
-          El código se pedía en una hoja que subía por encima de todo, y para
-          una sola casilla de seis letras era mucho aparato: tapabas la portada
-          entera para escribir un código. Ahora la tarjeta se da la vuelta en su
-          sitio y el pie de abajo cambia de palabra para volver.
-        */}
-        {/*
-          El papel, alto.
+            La versión anterior era un rectángulo crema con un botón arriba y
+            un claro de cuatrocientos píxeles debajo: tenía la forma de un
+            ticket y nada de lo que hace que un ticket se lea como tal. Lo que
+            lo hace es la estructura —cabecera, filetes, líneas, código de
+            barras—, y aquí las dos maneras de entrar son las dos líneas del
+            ticket. El alto sale de lo impreso, sin `min-h` que estirar.
 
-          Un ticket es estrecho y largo, y esto medía 360 por 235: la forma de
-          una tarjeta de crédito, no la de un ticket. El alto no lo pone el
-          contenido —son dos líneas y un botón— sino el `min-h`, con el
-          contenido arriba, que es por donde empieza lo impreso en un ticket:
-          centrado dejaba el título flotando en medio de una hoja en blanco.
-          En dvh y no en píxeles porque tiene que
-          seguir cabiendo con el reclamo arriba y el pie abajo, y eso depende
-          de la pantalla. En el ordenador se apaga: allí el papel va en una
-          columna al lado del titular y estirarlo sólo abre un hueco.
-        */}
-        {pidiendoCodigo ? (
-          <div className="flex min-h-[50dvh] w-full flex-col items-center justify-start gap-3.5 px-[var(--gutter)] pb-10 pt-9 text-center lg:min-h-0 lg:justify-center lg:py-10">
-            <span className="text-[21px] font-bold leading-tight tracking-[-0.025em]">
-              {t.subir.codigoTitulo}
-            </span>
-            <span className={`max-w-xs text-[13px] leading-relaxed ${TINTA_SUAVE}`}>
-              {t.subir.codigoAyuda}
-            </span>
-            <div className="w-full">
-              <JoinByCode />
-            </div>
+            Todo lo que va en mayúsculas de impresora estaría impreso en un
+            ticket de verdad: el nombre de la casa y la fecha de hoy. Nada
+            más, que la regla de `.stamp` es esa.
+          */}
+          <div className={`flex items-baseline justify-between ${TINTA_SUAVE}`}>
+            <span className="stamp">DiviFriends</span>
+            {/* La de este aparato, que es la única fecha verdadera de un
+                ticket que aún no existe. Con la del servidor no cuadraría
+                al hidratar y sería mentira a partir de las doce. */}
+            <span className="stamp" suppressHydrationWarning>{fechaDeHoy(lang)}</span>
           </div>
-        ) : (
-          <div className="flex min-h-[50dvh] w-full flex-col items-center justify-start gap-3.5 px-[var(--gutter)] pb-10 pt-9 text-center lg:min-h-0 lg:justify-center lg:py-10">
-            {/*
-              En cuanto la foto está lista se enseña con el escáner encima. Leer
-              un ticket tarda varios segundos y un icono parpadeando no dice nada:
-              ver tu propia foto con la línea pasando por encima cuenta que se
-              está trabajando sobre ella, y que la que has hecho vale.
-            */}
-            {/*
-              Ya no hay pictograma de cámara esperando dentro de un cuadradito
-              ámbar. Ese apilado —icono en tesela, titular en negrita, botón
-              pastilla a todo el ancho— es la tarjeta de héroe que sale por
-              defecto en cualquier web generada, y aquí encima sobraba: el
-              objeto del que estamos hablando es la hoja sobre la que está
-              puesto, no un dibujo de una cámara. Cuando hay foto de verdad sí
-              se enseña, porque entonces sí hay algo que mirar.
-            */}
-            {vista && <Escaner src={vista} />}
+          <Filete className="mt-3" />
 
-            <span className="text-[21px] font-bold leading-tight tracking-[-0.025em]">
-              {busy ? getDynamicCopy() : t.subir.titulo}
-            </span>
+          {pidiendoCodigo ? (
+            /*
+              La misma tarjeta, la otra puerta.
 
-            {/* Sólo mientras trabaja: al empezar, la frase de apoyo repetía lo que
-                ya dicen el título y los dos botones de debajo. */}
-            {busy && (
-              <span className={`max-w-sm text-[13px] leading-relaxed ${TINTA_SUAVE}`}>
-                {progress < 85 ? t.subir.tardo : t.subir.cuadrando}
-              </span>
-            )}
+              El código se pedía en una hoja que subía por encima de todo, y
+              para una casilla de seis letras era mucho aparato. La sección
+              del código se da la vuelta en su sitio: cabecera y pie se quedan.
+            */
+            <section className="py-6">
+              <p className="text-[19px] font-bold leading-tight tracking-[-0.025em]">{t.subir.codigoTitulo}</p>
+              <p className={`mt-1 text-[13px] leading-relaxed ${TINTA_SUAVE}`}>{t.subir.codigoAyuda}</p>
+              <div className="mt-4">
+                <JoinByCode />
+              </div>
+              <button
+                type="button"
+                onClick={() => setPidiendoCodigo(false)}
+                className={`mt-4 flex min-h-[44px] w-full items-center justify-center gap-2 text-[14px] font-semibold ${TINTA_SUAVE}`}
+              >
+                <span aria-hidden className="text-amber-deep">{"\u2190"}</span>
+                {t.subir.conFoto}
+              </button>
+            </section>
+          ) : (
+            <>
+              {/* ── línea 1: la foto */}
+              <section className="flex flex-col items-center py-6 text-center">
+                {vista && <Escaner src={vista} />}
 
-            <div className="min-h-[52px] w-full">
-              {busy ? (
-                <div className="w-full pt-2 text-left">
-                  <div className={`text-[12px] mb-2 flex justify-between ${TINTA_SUAVE}`}>
-                    <span>{t.subir.progreso}</span>
-                    <span className="tnum">{progress}%</span>
-                  </div>
-                  {/* Sobre el crema, el ámbar de la marca se queda en gris
-                      claro: la barra la lleva el ámbar oscuro, que es el mismo
-                      color un par de pasos más abajo. */}
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#dcd2c2]">
-                    <div
-                      className="h-full rounded-full bg-amber-deep transition-all ease-linear"
-                      style={{
-                        width: `${progress}%`,
-                        // Pegada al número cuando el recorrido es corto; con
-                        // holgura cuando la barra va a saltos de 400 ms.
-                        transitionDuration: targetCode ? "300ms" : "90ms",
-                      }}
-                    />
-                  </div>
+                <span className={`text-[21px] font-bold leading-tight tracking-[-0.025em] ${vista ? "mt-4" : ""}`}>
+                  {busy ? getDynamicCopy() : t.subir.titulo}
+                </span>
+
+                {busy && (
+                  <span className={`mt-2 max-w-sm text-[13px] leading-relaxed ${TINTA_SUAVE}`}>
+                    {progress < 85 ? t.subir.tardo : t.subir.cuadrando}
+                  </span>
+                )}
+
+                <div className="mt-3.5 min-h-[52px] w-full">
+                  {busy ? (
+                    <div className="w-full pt-2 text-left">
+                      <div className={`text-[12px] mb-2 flex justify-between ${TINTA_SUAVE}`}>
+                        <span>{t.subir.progreso}</span>
+                        <span className="tnum">{progress}%</span>
+                      </div>
+                      {/* Sobre el crema, el ámbar de la marca se queda en gris
+                          claro: la barra la lleva el ámbar oscuro, que es el
+                          mismo color un par de pasos más abajo. */}
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#dcd2c2]">
+                        <div
+                          className="h-full rounded-full bg-amber-deep transition-all ease-linear"
+                          style={{
+                            width: `${progress}%`,
+                            // Pegada al número cuando el recorrido es corto; con
+                            // holgura cuando la barra va a saltos de 400 ms.
+                            transitionDuration: targetCode ? "300ms" : "90ms",
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => fileRef.current?.click()}
+                      /* Tinta sobre papel. El ámbar es el color de la marca
+                         sobre el fondo oscuro, pero sobre el crema pierde casi
+                         todo el contraste: en un ticket, lo impreso es negro.
+                         La cámara va dentro del botón y pequeña: dice «foto»
+                         sin volver a ser el pictograma en tesela de antes. */
+                      className="flex min-h-[54px] w-full items-center justify-center gap-2.5 rounded-pieza bg-[#14100d] px-4 text-[16px] font-bold text-[#f4ece0] transition-transform active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
+                    >
+                      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <path d="M4 8.5h3l1.5-2h7L17 8.5h3a1 1 0 0 1 1 1V18a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5a1 1 0 0 1 1-1Z" />
+                        <circle cx="12" cy="13" r="3.2" />
+                      </svg>
+                      {t.subir.boton}
+                    </button>
+                  )}
                 </div>
-              ) : (
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => fileRef.current?.click()}
-                  /* Tinta sobre papel. El ámbar es el color de la marca sobre
-                     el fondo oscuro, pero sobre el crema pierde casi todo el
-                     contraste y deja de leerse como el sitio donde hay que
-                     tocar: en un ticket, lo impreso es negro. */
-                  className="min-h-[52px] w-full rounded-pieza bg-[#14100d] px-4 text-[15px] font-bold text-[#f4ece0] transition-transform active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
-                >
-                  {t.subir.boton}
-                </button>
+
+                {!busy && (
+                  <span className={`mt-2.5 text-[12.5px] leading-relaxed ${TINTA_SUAVE}`}>{t.subir.fotoAyuda}</span>
+                )}
+              </section>
+
+              {/* ── línea 2: el código. Un botón de verdad, con borde, y no
+                  una línea de texto: era lo que menos parecía tocable de la
+                  hoja y es la puerta por la que entra la mitad de la mesa. */}
+              {!targetCode && !busy && (
+                <>
+                  <Filete />
+                  <section className="py-5 text-center">
+                    <p className="text-[14px] font-semibold">{t.subir.tienesCodigo}</p>
+                    <button
+                      type="button"
+                      onClick={() => setPidiendoCodigo(true)}
+                      className="mt-2.5 flex min-h-[50px] w-full items-center justify-center gap-2 rounded-pieza border-[1.5px] border-[#14100d] px-4 text-[15px] font-bold transition-colors active:bg-[#e6dccc]"
+                    >
+                      <span aria-hidden className="text-amber-deep">#</span>
+                      {t.subir.conCodigo}
+                    </button>
+                  </section>
+                </>
               )}
-            </div>
+            </>
+          )}
 
-            {/*
-              La letra pequeña, dentro del papel.
-
-              Estaba fuera, debajo de la hoja, y ahí hacía dos cosas malas:
-              alargaba la portada por abajo y dejaba el papel con un claro de
-              doscientos píxeles por dentro. Impresa aquí llena ese hueco y
-              encima cae donde cae en un ticket de verdad —debajo de lo que
-              importa, al pie del papel y en cuerpo pequeño—. Va con `mt-auto`
-              a propósito: pegada al título dejaba un solo claro enorme debajo,
-              y abajo parte el blanco en dos y la hoja se lee como impresa de
-              arriba abajo. Sólo cuando no está trabajando: con
-              la barra en marcha, lo que hay que leer es el porcentaje.
-            */}
-            {!busy && (
-              <span className={`mt-auto max-w-[19rem] text-balance pt-6 text-[12.5px] leading-relaxed lg:hidden ${TINTA_SUAVE}`}>
-                {t.pasos.asiSeVe}
-              </span>
-            )}
+          {/* ── el pie: código de barras y la letra pequeña */}
+          <Filete />
+          <div className="pt-4">
+            <CodigoDeBarras />
+            <p className={`mt-2.5 text-balance text-center text-[12px] leading-relaxed lg:hidden ${TINTA_SUAVE}`}>
+              {t.pasos.asiSeVe}
+            </p>
           </div>
-        )}
-
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          className="sr-only"
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            event.target.value = "";
-            if (file) void upload(file);
-          }}
-        />
-
-        {/*
-          La otra puerta, dentro de la misma tarjeta y detrás del filete.
-
-          Quien llega con un enlace o un QR no tiene que subir ninguna foto:
-          sólo meter el código. Estaba en una segunda tarjeta debajo, y dos
-          cajas seguidas hacían dudar de si eran lo mismo o dos sitios
-          distintos. Aquí se lee lo que es: la misma puerta, la otra manera.
-        */}
-        {!targetCode && !busy && (
-          <>
-            {/* El filete de la impresora, pintado con la tinta del papel: el
-                `.rule` de la casa usa `--line`, que sobre el crema se ve como
-                un tajo negro en vez de como una perforación. */}
-            <div
-              className="h-px"
-              style={{
-                backgroundImage: "linear-gradient(90deg, #c9bda9 0 6px, transparent 6px 12px)",
-                backgroundSize: "12px 1px",
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => setPidiendoCodigo(!pidiendoCodigo)}
-              className={`flex min-h-[52px] w-full items-center justify-center gap-2 whitespace-nowrap px-4 text-[15px] font-semibold transition-colors active:bg-[#e6dccc] ${TINTA_SUAVE}`}
-            >
-              {/* Una sola línea: la pregunta más el enlace se partían en dos en
-                  390 px y el botón perdía la forma de puerta. Y es un acto, no
-                  una pregunta, igual que «Subir foto». */}
-              <span aria-hidden className="text-amber-deep">{pidiendoCodigo ? "\u2190" : "#"}</span>
-              {pidiendoCodigo ? t.subir.conFoto : t.subir.conCodigo}
-            </button>
-          </>
-        )}
         </div>
         {/* Los dientes de abajo: la misma tira girada, que es como se hace en
-            `ComoVa` y en la p\u00e1gina de imprimir. */}
+            `ComoVa` y en la página de imprimir. */}
         <div className={`${PAPEL} torn-top h-2.5 rotate-180`} />
       </div>
 
@@ -495,4 +468,47 @@ function Escaner({ src }: { src: string }) {
       </div>
     </div>
   );
+}
+
+
+/** El filete de la impresora, con la tinta del papel: el `.rule` de la casa
+    usa `--line`, que sobre el crema se ve como un tajo negro. */
+function Filete({ className = "" }: { className?: string }) {
+  return (
+    <div
+      aria-hidden
+      className={`h-px ${className}`}
+      style={{
+        backgroundImage: "linear-gradient(90deg, #c9bda9 0 6px, transparent 6px 12px)",
+        backgroundSize: "12px 1px",
+      }}
+    />
+  );
+}
+
+/**
+ * Un código de barras que no codifica nada, y lo sabe: es lo que lleva un
+ * ticket al pie, y es lo que hace que el papel se lea como impreso y no como
+ * un formulario crema. Tres degradados a distinto paso, para que las barras
+ * no salgan a intervalos iguales.
+ */
+function CodigoDeBarras() {
+  return (
+    <div
+      aria-hidden
+      className="mx-auto h-7 w-[68%] opacity-[0.82]"
+      style={{
+        backgroundImage: [
+          "repeating-linear-gradient(90deg, #14100d 0 2px, transparent 2px 7px)",
+          "repeating-linear-gradient(90deg, #14100d 0 1px, transparent 1px 4px)",
+          "repeating-linear-gradient(90deg, transparent 0 9px, #f4ece0 9px 11px, transparent 11px 23px)",
+        ].join(","),
+      }}
+    />
+  );
+}
+
+/** «3 sept», en el idioma de la portada. */
+function fechaDeHoy(lang: string): string {
+  return new Date().toLocaleDateString(lang === "en" ? "en-GB" : "es-ES", { day: "numeric", month: "short" });
 }

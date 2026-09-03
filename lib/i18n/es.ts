@@ -83,6 +83,8 @@ export const es = {
     boton: "Subir foto",
     conFoto: "Entrar con una foto",
     conCodigo: "Entrar con un código",
+    fotoAyuda: "Se lee sola y te abre la mesa.",
+    tienesCodigo: "¿Te han pasado un código?",
     preparando: "Preparando la foto…",
     abriendoMesa: "Abriendo la mesa…",
     analizando: "Analizando foto…",
