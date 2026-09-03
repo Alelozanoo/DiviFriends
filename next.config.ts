@@ -42,6 +42,42 @@ const nextConfig: NextConfig = {
         source: "/metricas",
         headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
       },
+      {
+        // El manejador de Google mete un iframe suyo dentro de la propia
+        // portada para cerrar la entrada. Con `frame-ancestors 'none'` de
+        // arriba no podría ni siendo del mismo dominio: aquí, y sólo aquí,
+        // se permite el mismo origen. Va la última porque la última manda.
+        source: "/__/auth/:path*",
+        headers: [
+          { key: "Content-Security-Policy", value: "frame-ancestors 'self'" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+        ],
+      },
+    ]);
+  },
+
+  /**
+   * La entrada con Google, servida desde nuestro dominio.
+   *
+   * Firebase atiende la ventana de Google en `<proyecto>.firebaseapp.com`, y
+   * eso es lo que Google enseña en la ventana: «Ir a
+   * divifriends-2964.firebaseapp.com». Con esto, `/__/auth/*` de divifriends.es
+   * se sirve desde ahí sin que el navegador lo sepa, y en cuanto la
+   * configuración pública diga `authDomain: divifriends.es` la ventana dirá
+   * «Ir a divifriends.es». De paso Safari deja de partir la entrada, porque
+   * ya no hay un dominio ajeno guardando cosas en medio.
+   *
+   * El cambio de `authDomain` no va aquí a propósito: antes hay que dar de
+   * alta `https://divifriends.es/__/auth/handler` en el cliente OAuth de la
+   * consola de Google, y hacerlo al revés deja a todo el mundo sin entrar.
+   * Hasta entonces esta ruta no la pisa nadie.
+   */
+  rewrites() {
+    return Promise.resolve([
+      {
+        source: "/__/auth/:path*",
+        destination: "https://divifriends-2964.firebaseapp.com/__/auth/:path*",
+      },
     ]);
   },
 };
