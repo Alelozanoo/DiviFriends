@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import comanda from "@/assets/portada-comanda.jpg";
 import Logo, { Wordmark } from "@/components/Logo";
 import TicketUploader from "@/components/TicketUploader";
 import { CambiarCookies } from "@/components/Consent";
@@ -160,6 +161,14 @@ function Cuerpo() {
           Ocupa lo que sobra entre el texto y el botón, con un mínimo para
           que en un móvil pequeño siga viéndose la cabecera de la comanda y la
           primera línea marcada.
+
+          La captura se importa y no se sirve desde `public/`, y no es por
+          gusto: la primera versión iba en `public/portada-comanda.jpg` y en
+          App Hosting salía un 404 —igual que `public/logos/*`, que llevaba
+          desde agosto sin servirse y nadie lo había notado— mientras el
+          logo de al lado, de agosto, sí. Importada, Next la empaqueta en
+          `/_next/static/media/` con un hash, por el mismo camino que el
+          JavaScript, y ese camino sí llega.
         */}
         <div
           className="relative mt-5 min-h-[170px] flex-1 overflow-hidden lg:hidden"
@@ -170,10 +179,8 @@ function Cuerpo() {
         >
           <div className="absolute left-1/2 top-0 w-[250px] -translate-x-1/2 rounded-t-[38px] border border-b-0 border-line bg-black p-[7px] pb-0">
             <Image
-              src="/portada-comanda.jpg"
+              src={comanda}
               alt={t.home.capturaAlt}
-              width={900}
-              height={1323}
               priority
               sizes="250px"
               className="w-full rounded-t-[31px]"
