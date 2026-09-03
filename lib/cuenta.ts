@@ -40,6 +40,8 @@ type Estado = {
   cargada: boolean;
   ocupado: boolean;
   fallo: FalloEntrada | null;
+  /** El código de Firebase detrás de `fallo`, para poder preguntar «¿qué te ha salido?». */
+  falloCodigo: string | null;
 };
 
 export interface Pendientes {
@@ -65,6 +67,7 @@ let estado: Estado = {
   cargada: false,
   ocupado: false,
   fallo: null,
+  falloCodigo: null,
 };
 const oyentes = new Set<() => void>();
 
@@ -325,6 +328,7 @@ const enServidor: Estado = {
   cargada: false,
   ocupado: false,
   fallo: null,
+  falloCodigo: null,
 };
 
 /* -------------------------------------------------------------- el hook */
@@ -337,12 +341,16 @@ export function useCuenta() {
   );
 
   const entrar = useCallback(async () => {
-    pon({ ocupado: true, fallo: null });
+    pon({ ocupado: true, fallo: null, falloCodigo: null });
     try {
       await entrarConGoogle();
       // El usuario llega por `onUsuario`; aquí no hay nada más que hacer.
     } catch (fallo) {
-      pon({ fallo: fallo instanceof EntradaError ? fallo.motivo : "otro" });
+      pon(
+        fallo instanceof EntradaError
+          ? { fallo: fallo.motivo, falloCodigo: fallo.codigo }
+          : { fallo: "otro", falloCodigo: (fallo as { code?: string }).code ?? String(fallo).slice(0, 80) },
+      );
     } finally {
       pon({ ocupado: false });
     }

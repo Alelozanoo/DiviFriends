@@ -84,13 +84,26 @@ const FALLOS: Record<string, FalloEntrada | null> = {
   "auth/configuration-not-found": "apagado",
   "auth/unauthorized-domain": "apagado",
   "auth/popup-blocked": "bloqueado",
+  // El navegador de dentro de WhatsApp, Instagram o TikTok: no sabe abrir
+  // ventanas y Google no deja entrar desde ahí. La salida es la misma que
+  // con la ventana bloqueada: abrirlo en Safari o Chrome.
+  "auth/operation-not-supported-in-this-environment": "bloqueado",
+  "auth/web-storage-unsupported": "bloqueado",
   "auth/popup-closed-by-user": null,
   "auth/cancelled-popup-request": null,
   "auth/network-request-failed": "sinRed",
 };
 
 export class EntradaError extends Error {
-  constructor(public motivo: FalloEntrada) {
+  /**
+   * `codigo` es el de Firebase, tal cual. Se enseña en pequeño debajo del
+   * aviso: tres códigos distintos comparten el texto de «apagado», y sin
+   * verlo no hay forma de saber desde fuera cuál le salió a alguien.
+   */
+  constructor(
+    public motivo: FalloEntrada,
+    public codigo: string,
+  ) {
     super(motivo);
   }
 }
@@ -98,7 +111,7 @@ export class EntradaError extends Error {
 /** `null` si la persona cerró la ventana sin terminar. */
 export async function entrarConGoogle(): Promise<User | null> {
   const auth = clientAuth();
-  if (!auth) throw new EntradaError("apagado");
+  if (!auth) throw new EntradaError("apagado", "sin-config");
   try {
     const { user } = await signInWithPopup(auth, new GoogleAuthProvider());
     return user;
@@ -106,7 +119,7 @@ export async function entrarConGoogle(): Promise<User | null> {
     const codigo = (fallo as { code?: string }).code ?? "";
     const motivo = codigo in FALLOS ? FALLOS[codigo] : "otro";
     if (motivo === null) return null;
-    throw new EntradaError(motivo);
+    throw new EntradaError(motivo, codigo || "sin-codigo");
   }
 }
 

@@ -29,7 +29,7 @@ const SALTADA = "divi.bienvenida";
  */
 export default function CuentaBoton() {
   const t = useT();
-  const { usuario, usuarioNombre, cargada, entrar, salir, fallo, ocupado, avisos, pendientes } = useCuenta();
+  const { usuario, usuarioNombre, cargada, entrar, salir, fallo, falloCodigo, ocupado, avisos, pendientes } = useCuenta();
   const { profile, saveProfile } = useGlobalProfile();
   const [hoja, setHoja] = useState<null | "cuenta" | "perfil" | "amigos" | "avisos" | "usuario" | "resumen" | "fallo">(null);
   // A quién ya se le preguntó en este móvil. Se guarda el uid y no un «sí»,
@@ -60,6 +60,9 @@ export default function CuentaBoton() {
         {fallo && hoja !== "fallo" && <AbreFallo onAbrir={() => setHoja("fallo")} />}
         {hoja === "fallo" && fallo && (
           <Sheet onClose={() => setHoja(null)} titulo={t.cuenta.falloTitulo} sub={t.cuenta[fallo]}>
+            {/* El código, en pequeño: es lo que hay que leer en voz alta
+                cuando alguien dice «a mí no me deja». */}
+            {falloCodigo && <p className="tnum mt-3 text-[12px] text-ink-faint">{falloCodigo}</p>}
             <div className="mt-5">
               <CerrarHoja onClick={() => setHoja(null)}>{t.cuenta.cerrar}</CerrarHoja>
             </div>
