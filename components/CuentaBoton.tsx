@@ -6,6 +6,7 @@ import { useT, rellena } from "@/lib/i18n";
 import { useGlobalProfile } from "@/lib/useGlobalProfile";
 import AmigosSheet from "./AmigosSheet";
 import BienvenidaSheet from "./BienvenidaSheet";
+import { EnlaceBorrado } from "./BorrarCuenta";
 import { EditNameSheet } from "./EditNameSheet";
 import NotificacionesSheet from "./NotificacionesSheet";
 import { Avatar, CerrarHoja, Sheet } from "./ui";
@@ -27,9 +28,9 @@ const SALTADA = "divi.bienvenida";
  */
 export default function CuentaBoton() {
   const t = useT();
-  const { usuario, usuarioNombre, cargada, entrar, salir, borrar, fallo, ocupado, avisos, pendientes } = useCuenta();
+  const { usuario, usuarioNombre, cargada, entrar, salir, fallo, ocupado, avisos, pendientes } = useCuenta();
   const { profile, saveProfile } = useGlobalProfile();
-  const [hoja, setHoja] = useState<null | "cuenta" | "perfil" | "amigos" | "avisos" | "usuario" | "borrar" | "fallo">(null);
+  const [hoja, setHoja] = useState<null | "cuenta" | "perfil" | "amigos" | "avisos" | "usuario" | "fallo">(null);
   // A quién ya se le preguntó en este móvil. Se guarda el uid y no un «sí»,
   // porque en un móvil prestado entran dos personas y la segunda tiene que
   // ver su bienvenida igual.
@@ -195,11 +196,12 @@ export default function CuentaBoton() {
             </Opcion>
             <p className="-mt-1 px-1 text-[12px] leading-relaxed text-ink-faint">{t.cuenta.salirNota}</p>
 
-            <Opcion tono="clay" onClick={() => setHoja("borrar")}>
-              {t.cuenta.borrar}
-            </Opcion>
-
             <CerrarHoja onClick={() => setHoja(null)}>{t.cuenta.cerrar}</CerrarHoja>
+
+            {/* Borrar la cuenta no vive aquí: estaba pegado a lo que se pulsa
+                a diario y no hay papelera que valga si se pulsa sin querer.
+                Queda el camino, en gris y al final de todo. */}
+            <EnlaceBorrado onIr={() => setHoja(null)} />
           </div>
         </Sheet>
       )}
@@ -222,23 +224,6 @@ export default function CuentaBoton() {
         />
       )}
 
-      {hoja === "borrar" && (
-        <Sheet onClose={() => setHoja("cuenta")} titulo={t.cuenta.borrarTitulo} sub={t.cuenta.borrarAviso}>
-          <div className="mt-5 grid gap-2.5">
-            <button
-              type="button"
-              onClick={async () => {
-                setHoja(null);
-                await borrar();
-              }}
-              className="min-h-[52px] rounded-pieza bg-clay text-[15px] font-bold text-paper transition-transform active:scale-[0.98]"
-            >
-              {t.cuenta.borrarSi}
-            </button>
-            <CerrarHoja onClick={() => setHoja("cuenta")}>{t.cuenta.borrarNo}</CerrarHoja>
-          </div>
-        </Sheet>
-      )}
     </>
   );
 }

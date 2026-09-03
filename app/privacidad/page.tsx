@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import BorrarCuenta from "@/components/BorrarCuenta";
 import { RESPONSABLE } from "@/lib/responsable";
 
 /**
@@ -138,8 +139,8 @@ export default function PrivacidadPage() {
         </div>
         <p className="mt-4 text-[13px] leading-relaxed text-ink-faint">
           La base legal sigue siendo el servicio que pides (artículo 6.1.b del RGPD). La cuenta se
-          borra desde «Tu cuenta» → «Borrar mi cuenta», al momento y entera: el perfil, las divis y
-          la entrada con Google. Las mesas en las que estuviste no se tocan, porque son de la mesa.
+          borra desde el botón del final de esta página, al momento y entera: el perfil, las divis
+          y la entrada con Google. Las mesas en las que estuviste no se tocan, porque son de la mesa.
         </p>
       </Bloque>
 
@@ -244,8 +245,8 @@ export default function PrivacidadPage() {
           mesa»— y con ello desaparecen tu nombre, tu foto y lo que hubieras marcado.
         </p>
         <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
-          Una cuenta dura hasta que la borras tú, desde «Tu cuenta» → «Borrar mi cuenta». No hay
-          que escribir a nadie.
+          Una cuenta dura hasta que la borras tú, con el botón del final de esta página. No hay que
+          escribir a nadie.
         </p>
         <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
           Y si quieres que se borre una mesa entera antes de tiempo, escribe a{" "}
@@ -273,6 +274,18 @@ export default function PrivacidadPage() {
           </a>
           .
         </p>
+      </Bloque>
+
+      <Bloque titulo="Borrar tu cuenta" id="borrar">
+        <p className="text-[15px] leading-relaxed text-ink-soft">
+          Aquí y al momento, sin escribir a nadie. Se van tu perfil, tus divis y la entrada con
+          Google. Las mesas en las que estuviste no se tocan: son de la mesa, no tuyas.
+        </p>
+        <p className="mt-3 text-[13px] leading-relaxed text-ink-faint">
+          El botón está en esta página y no en el menú de la cuenta a propósito: allí quedaba
+          pegado a lo que se pulsa a diario, y esto no tiene vuelta atrás.
+        </p>
+        <BorrarCuenta />
       </Bloque>
 
       <Bloque titulo="Menores">
@@ -312,14 +325,18 @@ function Bloque({
   titulo,
   children,
   tono = "normal",
+  id,
 }: {
   titulo: string;
   children: React.ReactNode;
   tono?: "normal" | "aviso";
+  /** Para poder enlazar a un bloque desde fuera. */
+  id?: string;
 }) {
   return (
     <section
-      className={`mt-6 rounded-caja border p-5 ${
+      id={id}
+      className={`mt-6 scroll-mt-6 rounded-caja border p-5 ${
         tono === "aviso" ? "border-clay/30 bg-clay/[0.05]" : "border-line-soft bg-paper-2"
       }`}
     >
