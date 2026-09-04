@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import iphone from "@/assets/portada-iphone.webp";
 import Logo, { Wordmark } from "@/components/Logo";
 import TicketUploader from "@/components/TicketUploader";
@@ -16,6 +16,8 @@ import LangSwitch from "@/components/LangSwitch";
 import CuentaBoton from "@/components/CuentaBoton";
 import RegistroSheet from "@/components/RegistroSheet";
 import Inicio from "@/components/Inicio";
+import Admin from "@/components/Admin";
+import { RESPONSABLE } from "@/lib/responsable";
 import { useCuenta } from "@/lib/cuenta";
 import { I18nProvider, useT, useLang, type Lang } from "@/lib/i18n";
 import { inicio } from "@/lib/i18n/config";
@@ -41,12 +43,16 @@ function Cuerpo() {
   const lang = useLang();
   const { usuario, cargada, terminos } = useCuenta();
   const router = useRouter();
+  // La cuenta de la casa ve el panel; «Ver mis mesas» la pasa a lo de todos.
+  const admin = usuario?.email?.toLowerCase() === RESPONSABLE.correo;
+  const [comoUsuario, setComoUsuario] = useState(false);
 
   // Con cuenta pero sin haber pasado por el registro —foto, usuario, cómo te
-  // pagan y los términos— se va allí antes que a ninguna otra parte.
+  // pagan y los términos— se va allí antes que a ninguna otra parte. La casa
+  // no se registra: no es una usuaria.
   useEffect(() => {
-    if (usuario && cargada && !terminos) router.replace("/registro");
-  }, [usuario, cargada, terminos, router]);
+    if (usuario && cargada && !terminos && !admin) router.replace("/registro");
+  }, [usuario, cargada, terminos, admin, router]);
 
   /*
     Con cuenta, la portada es otra: tus mesas, no la web de venta.
@@ -59,7 +65,7 @@ function Cuerpo() {
   if (usuario) {
     return (
       <main id="contenido" className="flex flex-1 flex-col">
-        <Inicio />
+        {admin && !comoUsuario ? <Admin onComoUsuario={() => setComoUsuario(true)} /> : <Inicio />}
       </main>
     );
   }

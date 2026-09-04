@@ -2,6 +2,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import { adminAuth, firestore } from "./firebaseAdmin";
 import { fundeDivis as funde, limpiaQuitadas, type Quitadas } from "./fundeDivis";
 import type { DiviGuardado } from "./misDivis";
+import { RESPONSABLE } from "./responsable";
 import { StoreError } from "./store";
 
 /**
@@ -73,6 +74,10 @@ export interface Quien {
   uid: string;
   email: string | null;
   nombre: string | null;
+  /** Si Google (o quien sea) da el correo por verificado. */
+  verificado: boolean;
+  /** Por dónde entró: `google.com`, `password`… */
+  proveedor: string | null;
 }
 
 /**
@@ -92,10 +97,31 @@ export async function usuarioDe(request: Request): Promise<Quien | null> {
       uid: claims.uid,
       email: typeof claims.email === "string" ? claims.email : null,
       nombre: typeof claims.name === "string" ? claims.name : null,
+      verificado: claims.email_verified === true,
+      proveedor: typeof claims.firebase?.sign_in_provider === "string" ? claims.firebase.sign_in_provider : null,
     };
   } catch {
     return null;
   }
+}
+
+/**
+ * La cuenta de la casa: la que entra con hola@divifriends.es.
+ *
+ * Es lo que abre el panel de admin y nada más. Se compara con el correo del
+ * token de Google, que es de quien Google dice que es: nadie puede ponerse
+ * ese correo sin tener el buzón.
+ */
+export function esAdmin(quien: Quien | null): quien is Quien {
+  return (
+    quien !== null &&
+    quien.email?.toLowerCase() === RESPONSABLE.correo &&
+    // Verificado y por Google: si algún día se activa la entrada por correo y
+    // contraseña, nadie puede darse de alta con este correo sin tener el buzón
+    // y colarse por aquí.
+    quien.verificado &&
+    quien.proveedor === "google.com"
+  );
 }
 
 /* --------------------------------------------------------------- limpiar */
