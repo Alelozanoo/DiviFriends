@@ -1,19 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
-import { ponAvisos, ponUsuario, recargaPendientes, useCuenta } from "@/lib/cuenta";
+import { ponAvisos, ponNovedades, ponUsuario, recargaPendientes, useCuenta } from "@/lib/cuenta";
 import { useT, rellena } from "@/lib/i18n";
 import { useGlobalProfile } from "@/lib/useGlobalProfile";
 import AmigosSheet from "./AmigosSheet";
-import BienvenidaSheet from "./BienvenidaSheet";
 import { EnlaceBorrado } from "./BorrarCuenta";
 import { EditNameSheet } from "./EditNameSheet";
 import NotificacionesSheet from "./NotificacionesSheet";
 import ResumenSheet from "./ResumenSheet";
 import { Avatar, CerrarHoja, Sheet } from "./ui";
-
-/** Dónde se apunta a quién ya se le enseñó la bienvenida en este aparato. */
-const SALTADA = "divi.bienvenida";
 
 /**
  * La esquina de la cuenta, en la cabecera de la portada.
@@ -29,16 +26,9 @@ const SALTADA = "divi.bienvenida";
  */
 export default function CuentaBoton() {
   const t = useT();
-  const { usuario, usuarioNombre, cargada, entrar, salir, fallo, falloCodigo, ocupado, avisos, pendientes } = useCuenta();
+  const { usuario, usuarioNombre, usuarioCambiado, entrar, salir, fallo, falloCodigo, ocupado, avisos, novedades, pendientes } = useCuenta();
   const { profile, saveProfile } = useGlobalProfile();
   const [hoja, setHoja] = useState<null | "cuenta" | "perfil" | "amigos" | "avisos" | "usuario" | "resumen" | "fallo">(null);
-  // A quién ya se le preguntó en este móvil. Se guarda el uid y no un «sí»,
-  // porque en un móvil prestado entran dos personas y la segunda tiene que
-  // ver su bienvenida igual.
-  const [saltada, setSaltada] = useState(() =>
-    typeof window === "undefined" ? null : localStorage.getItem(SALTADA),
-  );
-
   if (usuario === undefined) return null;
 
   if (usuario === null) {
@@ -74,23 +64,6 @@ export default function CuentaBoton() {
 
   const nombre = profile?.name || usuario.displayName?.split(" ")[0] || "";
   const sinVer = pendientes.solicitudes + pendientes.avisos;
-
-  /*
-    La bienvenida sale mientras no haya usuario elegido, que es lo único de
-    la hoja que no se puede rellenar solo y lo que hace falta para que te
-    añadan. En cuanto lo eliges deja de salir en todos tus móviles, porque
-    vive en la cuenta. Sólo cuando no hay ninguna otra hoja abierta: nadie
-    quiere dos ventanas encima.
-  */
-  const bienvenida = cargada && !usuarioNombre && saltada !== usuario.uid && hoja === null;
-  const cierraBienvenida = () => {
-    setSaltada(usuario.uid);
-    try {
-      localStorage.setItem(SALTADA, usuario.uid);
-    } catch {
-      /* modo incógnito lleno: como mucho vuelve a salir a la próxima */
-    }
-  };
 
   return (
     <>
@@ -132,17 +105,6 @@ export default function CuentaBoton() {
           </svg>
         </button>
       </div>
-
-      {bienvenida && (
-        <BienvenidaSheet
-          nombre={nombre}
-          avatar={profile?.avatar}
-          bizum={profile?.bizum}
-          revolut={profile?.revolut}
-          onGuardar={(perfil) => saveProfile(perfil)}
-          onCerrar={cierraBienvenida}
-        />
-      )}
 
       {hoja === "avisos" && <NotificacionesSheet onClose={() => setHoja(null)} />}
 
@@ -191,6 +153,28 @@ export default function CuentaBoton() {
             </button>
             <p className="-mt-1 px-1 text-[12px] leading-relaxed text-ink-faint">{t.cuenta.avisosNota}</p>
 
+            {/* Las novedades: lo que se marcó (o no) al registrarse, y la
+                baja en un toque, que es lo que promete el pie de los correos. */}
+            <button
+              type="button"
+              role="switch"
+              aria-checked={novedades}
+              onClick={() => void ponNovedades(!novedades)}
+              className="flex min-h-[54px] w-full items-center justify-between gap-3 rounded-pieza border border-line-soft bg-paper px-3.5 text-left text-[15px] font-semibold"
+            >
+              <span>{t.cuenta.novedades}</span>
+              <span className={`text-[13px] font-normal ${novedades ? "text-mint" : "text-ink-faint"}`}>
+                {novedades ? t.cuenta.avisosSi : t.cuenta.avisosNo}
+              </span>
+            </button>
+            <p className="-mt-1 px-1 text-[12px] leading-relaxed text-ink-faint">{t.cuenta.novedadesNota}</p>
+
+            {/* Lo legal vive aquí, y no en un pie: con cuenta la portada es
+                una pantalla de app, y en una app esto está en el perfil. */}
+            <EnlaceHoja href="/terminos">{t.cuenta.terminos}</EnlaceHoja>
+            <EnlaceHoja href="/privacidad">{t.cookies.privacidad}</EnlaceHoja>
+            <EnlaceHoja href="/aviso-legal">{t.cookies.avisoLegal}</EnlaceHoja>
+
             <Opcion
               onClick={async () => {
                 setHoja(null);
@@ -211,7 +195,9 @@ export default function CuentaBoton() {
         </Sheet>
       )}
 
-      {hoja === "usuario" && <UsuarioSheet actual={usuarioNombre} onClose={() => setHoja("cuenta")} />}
+      {hoja === "usuario" && (
+        <UsuarioSheet actual={usuarioNombre} cambiado={usuarioCambiado} onClose={() => setHoja("cuenta")} />
+      )}
 
       {hoja === "resumen" && <ResumenSheet onClose={() => setHoja("cuenta")} />}
 
@@ -239,16 +225,39 @@ export default function CuentaBoton() {
  * Elegir el usuario. Único, y es lo que se enseña a tus amigos en vez del
  * código: `@alelozano`. El servidor comprueba que esté libre.
  */
-function UsuarioSheet({ actual, onClose }: { actual: string | null; onClose: () => void }) {
+function UsuarioSheet({
+  actual,
+  cambiado,
+  onClose,
+}: {
+  actual: string | null;
+  /** Cuándo lo cambió por última vez, para saber si toca esperar. */
+  cambiado: string | null;
+  onClose: () => void;
+}) {
   const t = useT();
   const [valor, setValor] = useState(actual ?? "");
   const [aviso, setAviso] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
   const limpio = valor.trim().replace(/^@/, "").toLowerCase();
   const vale = /^[a-z0-9_]{3,20}$/.test(limpio);
+  /*
+    Una vez cada catorce días. El servidor lo hace cumplir igual; esto es para
+    decirlo antes de que escriba, con la fecha, y no después con un error.
+  */
+  const hasta = actual && cambiado ? new Date(new Date(cambiado).getTime() + 14 * 24 * 60 * 60 * 1000) : null;
+  // La hora se lee una vez al abrir la hoja: pintar no puede depender del reloj.
+  const [ahora] = useState(() => Date.now());
+  const bloqueado = hasta !== null && hasta.getTime() > ahora;
+  const fecha = (d: Date) => d.toLocaleDateString("es-ES", { day: "numeric", month: "long" });
 
   return (
-    <Sheet onClose={onClose} titulo={t.cuenta.usuario} sub={t.cuenta.usuarioAyuda}>
+    <Sheet onClose={onClose} titulo={t.cuenta.usuario} sub={`${t.cuenta.usuarioAyuda} ${t.cuenta.usuarioNota14}`}>
+      {bloqueado && hasta && cambiado && (
+        <p className="mt-4 rounded-pieza border border-line-soft bg-paper px-3.5 py-3 text-[13px] leading-relaxed text-ink-soft">
+          {rellena(t.cuenta.usuarioBloqueado, { desde: fecha(new Date(cambiado)), hasta: fecha(hasta) })}
+        </p>
+      )}
       <form
         className="mt-5 grid gap-3"
         onSubmit={async (e) => {
@@ -270,6 +279,7 @@ function UsuarioSheet({ actual, onClose }: { actual: string | null; onClose: () 
           <span className="text-[16px] font-semibold text-ink-soft">@</span>
           <input
             autoFocus
+            disabled={bloqueado}
             value={valor.replace(/^@/, "")}
             onChange={(e) => setValor(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "").slice(0, 20))}
             placeholder="alelozano"
@@ -288,7 +298,7 @@ function UsuarioSheet({ actual, onClose }: { actual: string | null; onClose: () 
         )}
         <button
           type="submit"
-          disabled={!vale || ocupado || limpio === actual}
+          disabled={!vale || ocupado || limpio === actual || bloqueado}
           className="min-h-[52px] rounded-pieza bg-amber text-[15px] font-bold text-paper transition-transform active:scale-[0.98] disabled:opacity-50"
         >
           {t.cuenta.usuarioGuardar}
@@ -337,6 +347,19 @@ function Opcion({
       <span>{children}</span>
       {extra && <span className="tnum shrink-0 text-[12px] font-bold text-clay">{extra}</span>}
     </button>
+  );
+}
+
+/** Una fila de la hoja que lleva a otra página, con el mismo aspecto que las opciones. */
+function EnlaceHoja({ href, children }: { href: "/terminos" | "/privacidad" | "/aviso-legal"; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="flex min-h-[54px] w-full items-center justify-between gap-3 rounded-pieza border border-line-soft bg-paper px-3.5 text-[15px] font-semibold text-ink transition-colors active:bg-paper-3"
+    >
+      <span>{children}</span>
+      <span aria-hidden className="text-ink-faint">›</span>
+    </Link>
   );
 }
 

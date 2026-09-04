@@ -7,6 +7,8 @@ import {
 } from "@/lib/cuentaServer";
 import { borraRastro, ponUsuario } from "@/lib/amigosServer";
 import { fail, puerta, cuerpo } from "@/lib/api";
+import { apuntaEnHoja } from "@/lib/hojaRegistros";
+import { avisaAlta } from "@/lib/correo";
 import { callerKey, TOPES } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
@@ -52,10 +54,40 @@ export async function PATCH(request: Request) {
       divis?: unknown;
       avisos?: unknown;
       usuario?: unknown;
+      /** Códigos de divis que se quitan de la cuenta. */
+      quitar?: unknown;
+      /** `true` al aceptar los términos en el registro. */
+      terminos?: unknown;
+      /** Si quiere las novedades por correo. */
+      novedades?: unknown;
     }>(request, 600_000, { estricto: true });
     // El usuario tiene su propia reserva de unicidad; va aparte del resto.
     if (body.usuario !== undefined) await ponUsuario(quien.uid, body.usuario);
-    return NextResponse.json(await actualiza(quien, body));
+    // Para saber si es la primera vez que acepta los términos: eso es un alta.
+    const antes = body.terminos === true ? await leeOCrea(quien) : null;
+    const cuenta = await actualiza(quien, body);
+    // Los términos y las novedades se apuntan también en la hoja de registros,
+    // antes de contestar: en Cloud Run lo que queda pendiente al contestar se
+    // puede quedar sin hacer.
+    if ((body.terminos === true || typeof body.novedades === "boolean") && quien.email) {
+      await apuntaEnHoja({
+        correo: quien.email,
+        nombre: cuenta.perfil?.name,
+        terminos: cuenta.terminos,
+        novedades: cuenta.novedades,
+      });
+    }
+    if (antes && !antes.terminos && cuenta.terminos && quien.email) {
+      await avisaAlta({
+        nombre: cuenta.perfil?.name ?? "",
+        correo: quien.email,
+        usuario: cuenta.usuario,
+        novedades: cuenta.novedades,
+        bizum: cuenta.perfil?.bizum,
+        revolut: cuenta.perfil?.revolut,
+      });
+    }
+    return NextResponse.json(cuenta);
   } catch (error) {
     return fail(error);
   }
@@ -74,6 +106,8 @@ export async function DELETE(request: Request) {
     // la cuenta: si algo falla a medias, la cuenta sigue ahí para reintentar.
     await borraRastro(quien.uid);
     await borraCuenta(quien.uid);
+    // Fuera de la hoja también: quien borra la cuenta no quiere seguir en ninguna lista.
+    if (quien.email) await apuntaEnHoja({ accion: "borrar", correo: quien.email });
     return NextResponse.json({ ok: true });
   } catch (error) {
     return fail(error);

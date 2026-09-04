@@ -2,7 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import comanda from "@/assets/portada-comanda.jpg";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import iphone from "@/assets/portada-iphone.webp";
 import Logo, { Wordmark } from "@/components/Logo";
 import TicketUploader from "@/components/TicketUploader";
 import { CambiarCookies } from "@/components/Consent";
@@ -13,6 +15,8 @@ import ComoFuncionaSheet from "@/components/ComoFuncionaSheet";
 import LangSwitch from "@/components/LangSwitch";
 import CuentaBoton from "@/components/CuentaBoton";
 import RegistroSheet from "@/components/RegistroSheet";
+import Inicio from "@/components/Inicio";
+import { useCuenta } from "@/lib/cuenta";
 import { I18nProvider, useT, useLang, type Lang } from "@/lib/i18n";
 import { inicio } from "@/lib/i18n/config";
 
@@ -35,6 +39,31 @@ export default function Landing({ lang }: { lang: Lang }) {
 function Cuerpo() {
   const t = useT();
   const lang = useLang();
+  const { usuario, cargada, terminos } = useCuenta();
+  const router = useRouter();
+
+  // Con cuenta pero sin haber pasado por el registro —foto, usuario, cómo te
+  // pagan y los términos— se va allí antes que a ninguna otra parte.
+  useEffect(() => {
+    if (usuario && cargada && !terminos) router.replace("/registro");
+  }, [usuario, cargada, terminos, router]);
+
+  /*
+    Con cuenta, la portada es otra: tus mesas, no la web de venta.
+
+    El servidor pinta siempre la de venta —`/` es estática y no sabe quién
+    llega— y en cuanto Firebase dice que hay sesión, se cambia. A quien tiene
+    cuenta le parpadea la de venta un instante al entrar; es el precio de que
+    la portada de todos los demás cargue en 128 ms.
+  */
+  if (usuario) {
+    return (
+      <main id="contenido" className="flex flex-1 flex-col">
+        <Inicio />
+      </main>
+    );
+  }
+
   return (
     <main id="contenido" className="flex flex-1 flex-col lg:block">
       {/* ---------------------------------------------------------------- hero */}
@@ -110,15 +139,20 @@ function Cuerpo() {
             </p>
           </div>
 
-          {/* El escritorio, como estaba: el texto a la izquierda y el papel
-              a la derecha. Se oculta por CSS y no se borra, así que sigue en
-              el HTML para los buscadores. */}
-          <div className="hidden lg:flex lg:flex-row lg:items-center lg:gap-16">
-            <div className="order-2 w-full lg:max-w-md">
-              <TicketUploader />
-            </div>
+          {/*
+            El escritorio, con lo mismo que el móvil.
 
-            <div className="order-1 flex-1">
+            El papel crema con los dos botones se fue del móvil el 3 de
+            septiembre de 2026 por parecer un ticket de mentira, y en el
+            ordenador seguía. Ahora es lo mismo a lo ancho: el titular y el
+            párrafo a la izquierda con el botón y el enlace del código
+            debajo, y a la derecha la comanda de verdad dentro de un móvil.
+            El papel se queda sólo donde hay un ticket de verdad: dentro de la
+            mesa, al añadir uno. Se oculta por CSS y no se borra, así que
+            sigue en el HTML para los buscadores.
+          */}
+          <div className="hidden lg:flex lg:flex-row lg:items-center lg:gap-20">
+            <div className="flex-1">
               <h1 className="text-[2.6rem] font-bold leading-[1.02] tracking-[-0.03em] sm:text-6xl">
                 {t.home.tituloLargo}
                 <br />
@@ -129,41 +163,45 @@ function Cuerpo() {
                 {t.home.entradilla}
               </p>
 
-              {/*
-                Una línea, no tres píldoras.
+              {/* Los sellos («Gratis · Sin registro · Sin instalar») los
+                  pinta la propia variante, en una línea y sin píldoras. */}
+              <div className="mt-8 max-w-sm">
+                <TicketUploader variante="aire" />
+              </div>
+            </div>
 
-                Eran tres insignias con su palito verde, que es el número
-                canónico y el adorno más repetido que hay: una píldora sólo se
-                gana el sitio si lleva un dato vivo dentro —un estado, una
-                cuenta—, y «Gratis» no lo es. Puestas en fila y con borde
-                parecían el comparativo de planes de una web de suscripción,
-                que es justo lo contrario de lo que esto es.
-
-                Dicho en un renglón ocupa la mitad, se lee antes y no promete
-                que haya un plan de pago en alguna parte.
-              */}
-              <p className="mt-5 text-[15px] text-ink-soft lg:mt-7">
-                {t.home.sellos.join(" · ")}
-              </p>
+            {/* El iPhone de verdad, recortado sin fondo, con la comanda dentro:
+                nada dibujado con CSS. Más pequeño que a tamaño natural y
+                desvaneciéndose desde la mitad, como en el móvil: entero
+                ocupaba la pantalla del ordenador de arriba abajo. */}
+            <div
+              className="relative h-[500px] w-[290px] shrink-0 overflow-hidden"
+              style={{
+                maskImage: "linear-gradient(to bottom, #000 48%, transparent 100%)",
+                WebkitMaskImage: "linear-gradient(to bottom, #000 48%, transparent 100%)",
+              }}
+            >
+              <Image src={iphone} alt={t.home.capturaAlt} priority sizes="290px" className="w-[290px] max-w-none" />
             </div>
           </div>
         </div>
 
         {/*
-          La comanda de verdad, dentro de un móvil que no termina.
+          La comanda de verdad, dentro de un iPhone que no termina.
 
-          Es una captura real de la app, con las letras nuevas, y no un dibujo
-          de ella: es lo único de esta pantalla que enseña qué vas a tener en
-          la mano. El marco es sólo los bordes de arriba, y todo el bloque se
-          desvanece por abajo con una máscara, así que la comanda parece
-          seguir por debajo del botón en vez de cortarse contra él.
+          Es una captura real de la app, con las letras nuevas, dentro del
+          iPhone recortado sin fondo que vive en el motor de los reels
+          (`reel-motor/motor/moviles`, ver su `moviles.md`): él rechazó el
+          móvil dibujado con CSS. Todo el bloque se desvanece por abajo con
+          una máscara, así que la comanda parece seguir por debajo del botón
+          en vez de cortarse contra él.
 
           Ocupa lo que sobra entre el texto y el botón, con un mínimo para
           que en un móvil pequeño siga viéndose la cabecera de la comanda y la
           primera línea marcada.
 
           La captura se importa y no se sirve desde `public/`, y no es por
-          gusto: la primera versión iba en `public/portada-comanda.jpg` y en
+          gusto: la primera versión iba en `public/` y en
           App Hosting salía un 404 —igual que `public/logos/*`, que llevaba
           desde agosto sin servirse y nadie lo había notado— mientras el
           logo de al lado, de agosto, sí. Importada, Next la empaqueta en
@@ -177,15 +215,13 @@ function Cuerpo() {
             WebkitMaskImage: "linear-gradient(to bottom, #000 40%, transparent 100%)",
           }}
         >
-          <div className="absolute left-1/2 top-0 w-[250px] -translate-x-1/2 rounded-t-[38px] border border-b-0 border-line bg-black p-[7px] pb-0">
-            <Image
-              src={comanda}
-              alt={t.home.capturaAlt}
-              priority
-              sizes="250px"
-              className="w-full rounded-t-[31px]"
-            />
-          </div>
+          <Image
+            src={iphone}
+            alt={t.home.capturaAlt}
+            priority
+            sizes="270px"
+            className="absolute left-1/2 top-0 w-[270px] max-w-none -translate-x-1/2"
+          />
         </div>
 
         {/* Las acciones del móvil: el botón ámbar y el enlace del código.

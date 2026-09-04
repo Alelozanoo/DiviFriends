@@ -84,6 +84,22 @@ env:
     value: gemini
     availability: [ RUNTIME ]
 
+  # --- La hoja de registros ---------------------------------------------------
+  # Un Apps Script pegado en una hoja de cálculo (docs/hoja-registros.gs) que
+  # apunta quién aceptó los términos y quién quiere novedades, por correo.
+  # Sin estas dos variables la app no manda nada y funciona igual.
+  #
+  # Activada el 4 de septiembre de 2026. El secreto vive en Secret Manager
+  # (`firebase apphosting:secrets:set hoja-registros-secreto`) y tiene que
+  # ser el mismo que SECRETO en el script; si se cambia en un sitio, se
+  # cambia en el otro y se vuelve a desplegar (el script, como nueva versión).
+  - variable: HOJA_REGISTROS_URL
+    value: https://script.google.com/macros/s/AKfycbznB-6K2xDRVVhRk17Owj7bmGKleMl9_A13KFmApL5v0wsNMj7a09JujAKlwk3l2CnU/exec
+    availability: [ RUNTIME ]
+  - variable: HOJA_REGISTROS_SECRETO
+    secret: hoja-registros-secreto
+    availability: [ RUNTIME ]
+
   # --- Secretos -------------------------------------------------------------
   # Viven en Secret Manager, nunca en el repo. Sólo en RUNTIME: las claves no
   # deben quedar incrustadas en el bundle compilado, que es público.
@@ -147,4 +163,10 @@ env:
 
   - variable: CORREO_TOPE_DIA
     value: "600"
+    availability: [ RUNTIME ]
+
+  # A quién le llega un correo cada vez que alguien se registra (acepta los
+  # términos por primera vez). Sale de hola@ y cuenta en el tope del día.
+  - variable: ALTAS_A
+    value: alehandrolozano@gmail.com
     availability: [ RUNTIME ]

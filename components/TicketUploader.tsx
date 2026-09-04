@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { EV, track } from "@/lib/track";
 import { useT } from "@/lib/i18n";
 import JoinByCode from "./JoinByCode";
+import { CerrarHoja, Sheet } from "./ui";
 
 /**
  * Reduce la foto antes de subirla. Además de ahorrar ancho de banda, el canvas
@@ -46,6 +47,11 @@ async function toJpegBase64(
 
 type Phase = "idle" | "reading" | "parsing" | "error";
 
+/** Lo que se puede pedir desde fuera a través de `ref`. */
+export interface TicketUploaderHandle {
+  abrirFoto: () => void;
+}
+
 /**
  * Lo que se tarda en entrar en la mesa. A propósito, y ni un milisegundo menos.
  *
@@ -77,6 +83,7 @@ export default function TicketUploader({
   targetCode,
   onSuccess,
   variante = "papel",
+  ref,
 }: {
   targetCode?: string;
   onSuccess?: (receiptId: string | null) => void;
@@ -86,7 +93,9 @@ export default function TicketUploader({
    * botón ámbar, el enlace del código y, mientras se lee, la barra. Lo que
    * hay alrededor —el titular, la captura de la comanda— lo pone `Landing`.
    */
-  variante?: "papel" | "aire";
+  variante?: "papel" | "aire" | "flotante";
+  /** Para abrir el selector de la foto desde fuera: el botón grande del estado vacío de `Inicio`. */
+  ref?: React.Ref<TicketUploaderHandle>;
 } = {}) {
   const router = useRouter();
   const t = useT();
@@ -104,6 +113,11 @@ export default function TicketUploader({
   const [dragging, setDragging] = useState(false);
   const [vista, setVista] = useState<string | null>(null);
   const [pidiendoCodigo, setPidiendoCodigo] = useState(false);
+  /** El menú del botón flotante: foto o código. */
+  const [menuAbierto, setMenuAbierto] = useState(false);
+
+  // El botón grande del estado vacío de `Inicio` abre el mismo selector.
+  useImperativeHandle(ref, () => ({ abrirFoto: () => fileRef.current?.click() }), []);
   const [progress, setProgress] = useState(0);
   /** Cuándo se tocó el botón: la barra se mide desde ahí, no desde cada fase. */
   const arranque = useRef(0);
@@ -267,6 +281,115 @@ export default function TicketUploader({
       }}
     />
   );
+
+  /*
+    La variante flotante: el botón ámbar abajo a la derecha, que abre un
+    menú de dos opciones —la foto o el código— y nada más en pantalla.
+
+    Es la entrada de quien ya tiene cuenta (`Inicio`). Lo que pasa después
+    es lo de siempre —el selector del sistema, la barra, la mesa— sólo que
+    la lectura y el código salen en una hoja, porque debajo hay una lista y
+    no un papel donde pintarlos.
+  */
+  if (variante === "flotante") {
+    return (
+      <>
+        {entrada}
+        {menuAbierto && (
+          <div
+            aria-hidden
+            onClick={() => setMenuAbierto(false)}
+            className="fixed inset-0 z-30 bg-[#080503]/60"
+          />
+        )}
+        <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+20px)] right-4 z-40 flex flex-col items-end gap-2 lg:right-[calc(50%-208px)]">
+          {menuAbierto && (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuAbierto(false);
+                  setPidiendoCodigo(true);
+                }}
+                className="pop flex min-h-[46px] items-center gap-2.5 rounded-bloque border border-line-soft bg-paper-2 py-2.5 pl-3.5 pr-4 text-[16px] font-semibold shadow-[var(--sombra-flotante)]"
+              >
+                <span aria-hidden className="w-5 text-center font-bold text-amber">#</span>
+                {t.subir.conCodigo}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuAbierto(false);
+                  fileRef.current?.click();
+                }}
+                className="pop flex min-h-[46px] items-center gap-2.5 rounded-bloque border border-line-soft bg-paper-2 py-2.5 pl-3.5 pr-4 text-[16px] font-semibold shadow-[var(--sombra-flotante)]"
+              >
+                <span className="grid w-5 place-items-center text-amber"><Camara /></span>
+                {t.subir.boton}
+              </button>
+            </>
+          )}
+          <button
+            type="button"
+            onClick={() => setMenuAbierto((v) => !v)}
+            aria-expanded={menuAbierto}
+            aria-label={t.inicio.nuevaMesa}
+            className="grid h-[62px] w-[62px] place-items-center rounded-full bg-amber text-paper shadow-[0_14px_30px_-10px_rgba(232,176,75,0.55),0_6px_16px_-8px_rgba(0,0,0,0.8)] transition-transform active:scale-95"
+          >
+            {menuAbierto ? (
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden>
+                <path d="M6 6l12 12M18 6 6 18" />
+              </svg>
+            ) : (
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M4 8.5h3l1.5-2h7L17 8.5h3a1 1 0 0 1 1 1V18a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5a1 1 0 0 1 1-1Z" />
+                <circle cx="12" cy="13" r="3.2" />
+              </svg>
+            )}
+          </button>
+        </div>
+
+        {busy && (
+          <Sheet onClose={() => undefined} fijo titulo={getDynamicCopy()} sub={progress < 85 ? t.subir.tardo : t.subir.cuadrando}>
+            <div className="mt-5 flex flex-col items-center">
+              {vista && <Escaner src={vista} />}
+              <div className="mt-5 w-full">
+                <div className="mb-2 flex justify-between text-[12px] text-ink-soft">
+                  <span>{t.subir.progreso}</span>
+                  <span className="tnum">{progress}%</span>
+                </div>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-paper-3">
+                  <div
+                    className="h-full rounded-full bg-amber transition-all ease-linear"
+                    style={{ width: `${progress}%`, transitionDuration: targetCode ? "300ms" : "90ms" }}
+                  />
+                </div>
+              </div>
+            </div>
+          </Sheet>
+        )}
+
+        {pidiendoCodigo && !busy && (
+          <Sheet onClose={() => setPidiendoCodigo(false)} titulo={t.subir.codigoTitulo} sub={t.subir.codigoAyuda}>
+            <div className="mt-5">
+              <JoinByCode tono="oscuro" />
+            </div>
+            <div className="mt-3">
+              <CerrarHoja onClick={() => setPidiendoCodigo(false)}>{t.cuenta.cerrar}</CerrarHoja>
+            </div>
+          </Sheet>
+        )}
+
+        {error && !busy && (
+          <Sheet onClose={() => setError(null)} titulo={t.subir.fallo} sub={error}>
+            <div className="mt-5">
+              <CerrarHoja onClick={() => setError(null)}>{t.cuenta.cerrar}</CerrarHoja>
+            </div>
+          </Sheet>
+        )}
+      </>
+    );
+  }
 
   if (variante === "aire") {
     return (

@@ -60,6 +60,64 @@ function smtp(): nodemailer.Transporter {
   return transporte;
 }
 
+/* ------------------------------------------------------- el aviso de alta */
+
+/** A quién se le avisa de cada registro nuevo. Sin esto no se manda nada. */
+const ALTAS_A = process.env.ALTAS_A ?? "";
+
+/**
+ * «Se ha registrado alguien», al buzón de Alejandro.
+ *
+ * Sale la primera vez que una cuenta acepta los términos, desde hola@ y al
+ * correo de `ALTAS_A`. No pasa por la campana ni por el registro de
+ * `correos` —no es un aviso a un usuario— pero sí cuenta en el tope global
+ * del día, porque el buzón de Hostinger cuenta todo lo que sale.
+ *
+ * Nunca rompe el registro: si el correo falla, se apunta en el log y la
+ * cuenta queda igual de creada.
+ */
+export async function avisaAlta(p: {
+  nombre: string;
+  correo: string;
+  usuario: string | null;
+  novedades: boolean;
+  bizum?: string;
+  revolut?: string;
+}): Promise<void> {
+  if (!hayCorreo || !ALTAS_A) return;
+  const cabe = await consume([{ key: "correo_global_dia", max: TOPE_GLOBAL, windowMs: DIA }]);
+  if (!cabe.ok) {
+    console.warn("correo: aviso de alta sin mandar, tope del día");
+    return;
+  }
+  const nombre = limpio(p.nombre, 40) || "Alguien";
+  const cuando = new Date().toLocaleString("es-ES", { timeZone: "Europe/Madrid", dateStyle: "medium", timeStyle: "short" });
+  const lineas = [
+    `${nombre} acaba de registrarse en DiviFriends.`,
+    "",
+    `Correo: ${p.correo}`,
+    `Usuario: ${p.usuario ? "@" + p.usuario : "sin elegir"}`,
+    `Novedades: ${p.novedades ? "sí" : "no"}`,
+    `Bizum: ${p.bizum ? "sí" : "no"} · Revolut: ${p.revolut ? "sí" : "no"}`,
+    `Cuándo: ${cuando}`,
+  ];
+  try {
+    await smtp().sendMail({
+      from: { name: "DiviFriends", address: USUARIO },
+      to: ALTAS_A,
+      replyTo: p.correo,
+      subject: `Nuevo registro: ${nombre}`,
+      text: lineas.join("\n"),
+      html: `<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;font-size:15px;line-height:1.5;color:#14100d">${lineas
+        .map((l) => (l ? `<p style="margin:0 0 6px">${escapa(l)}</p>` : '<p style="margin:0 0 12px"></p>'))
+        .join("")}</div>`,
+      headers: { "Auto-Submitted": "auto-generated" },
+    });
+  } catch (fallo) {
+    console.error("correo: el aviso de alta no ha salido", (fallo as Error).message);
+  }
+}
+
 /* ------------------------------------------------------------ la baja */
 
 /**

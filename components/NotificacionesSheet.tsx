@@ -26,6 +26,13 @@ import { Avatar, CerrarHoja, Sheet } from "./ui";
  *
  * Abrirla es leerlos: el número de la campana se apaga al entrar, no al tocar
  * cada uno. Las solicitudes se aceptan desde aquí mismo.
+ *
+ * Dos cosas que fallaban y se arreglaron el 3 de septiembre de 2026: el punto
+ * de «nuevo» se quedaba encendido aunque tocaras el aviso —ahora se apaga al
+ * tocarlo, que es lo que uno espera—, y el enlace guardado era una dirección
+ * absoluta que en los avisos anteriores al 1 de septiembre apuntaba a la
+ * dirección interna del contenedor, así que tocarlos no llevaba a ningún
+ * sitio. Se usa sólo la ruta, que siempre es de esta web.
  */
 export default function NotificacionesSheet({ onClose }: { onClose: () => void }) {
   const t = useT();
@@ -113,8 +120,13 @@ export default function NotificacionesSheet({ onClose }: { onClose: () => void }
               {avisos.map((a) => (
                 <li key={a.id}>
                   <Link
-                    href={a.url}
-                    onClick={onClose}
+                    href={rutaDe(a.url)}
+                    onClick={() => {
+                      setAvisos((lista) =>
+                        lista ? lista.map((x) => (x.id === a.id ? { ...x, leido: true } : x)) : lista,
+                      );
+                      onClose();
+                    }}
                     className={`flex min-h-[56px] items-center gap-3 rounded-pieza px-3 py-2 transition-colors active:bg-paper-3 ${
                       a.leido ? "bg-paper" : "bg-clay/[0.10]"
                     }`}
@@ -138,6 +150,19 @@ export default function NotificacionesSheet({ onClose }: { onClose: () => void }
       </div>
     </Sheet>
   );
+}
+
+/**
+ * Sólo la ruta del aviso, nunca su dominio: el aviso se creó en el servidor
+ * con la dirección que él veía, y detrás del proxy no siempre era la pública.
+ */
+function rutaDe(url: string): string {
+  try {
+    const u = new URL(url, "https://divifriends.es");
+    return `${u.pathname}${u.search}`;
+  } catch {
+    return "/";
+  }
 }
 
 /* Un dibujo por tipo. Trazo de 1,9, como los del menú de la mesa. */

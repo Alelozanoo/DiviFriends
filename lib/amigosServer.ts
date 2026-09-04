@@ -81,6 +81,14 @@ const RESERVADOS = new Set([
   "api",
 ]);
 
+/** Lo que hay que esperar para volver a cambiar el usuario. */
+const CAMBIO_USUARIO_MS = 14 * 24 * 60 * 60 * 1000;
+
+/** «18 de septiembre», para decir cuándo se podrá cambiar otra vez. */
+function fechaLarga(iso: string): string {
+  return new Date(iso).toLocaleDateString("es-ES", { day: "numeric", month: "long" });
+}
+
 export async function ponUsuario(uid: string, raw: unknown): Promise<string> {
   const usuario = limpiaUsuario(raw);
   if (!usuario)
@@ -100,16 +108,36 @@ export async function ponUsuario(uid: string, raw: unknown): Promise<string> {
       const [mio, ocupado] = await Promise.all([tx.get(ref), tx.get(reserva)]);
       const anterior = mio.get("usuario") as string | undefined;
       if (anterior === usuario) return;
+      /*
+        Una vez cada catorce días, y sólo cuenta cambiarlo: elegirlo la primera
+        vez es gratis. Si no, quien te añadió ayer por @pepe no te encuentra hoy
+        por @pepe_2. Se pidió el 4 de septiembre de 2026.
+      */
+      const cambiado = mio.get("usuarioCambiado") as string | undefined;
+      if (anterior && cambiado) {
+        const libre = new Date(cambiado).getTime() + CAMBIO_USUARIO_MS;
+        if (Date.now() < libre) throw new Error(`pronto:${new Date(libre).toISOString()}`);
+      }
       if (ocupado.exists && ocupado.get("uid") !== uid)
         throw new Error("ocupado");
       tx.set(reserva, { uid, desde: new Date().toISOString() });
-      tx.set(ref, { usuario }, { merge: true });
+      tx.set(
+        ref,
+        { usuario, ...(anterior ? { usuarioCambiado: new Date().toISOString() } : {}) },
+        { merge: true },
+      );
       // El anterior se libera para quien lo quiera.
       if (anterior) tx.delete(db.collection(USUARIOS).doc(anterior));
     });
   } catch (fallo) {
-    if ((fallo as Error).message === "ocupado")
+    const motivo = (fallo as Error).message;
+    if (motivo === "ocupado")
       throw new StoreError("Ese usuario ya lo tiene otra persona.", 409);
+    if (motivo.startsWith("pronto:"))
+      throw new StoreError(
+        `El usuario sólo se puede cambiar una vez cada 14 días. Podrás cambiarlo a partir del ${fechaLarga(motivo.slice(7))}.`,
+        429,
+      );
     throw fallo;
   }
   return usuario;

@@ -1,5 +1,6 @@
 import { FieldValue } from "firebase-admin/firestore";
 import { adminAuth, firestore } from "./firebaseAdmin";
+import { fundeDivis as funde, limpiaQuitadas, type Quitadas } from "./fundeDivis";
 import type { DiviGuardado } from "./misDivis";
 import { StoreError } from "./store";
 
@@ -39,10 +40,18 @@ export interface Cuenta {
   email: string | null;
   perfil: PerfilCuenta | null;
   divis: DiviGuardado[];
+  /** Las divis que se quitaron, por código, con la hora: ver `lib/fundeDivis.ts`. */
+  quitadas: Quitadas;
   /** Los correos de la mesa: invitaciones, cierre, pagos. Encendidos salvo que se apaguen. */
   avisos: boolean;
   /** El usuario elegido, `@así`, o null si sigue con el código. */
   usuario: string | null;
+  /** La última vez que lo cambió; elegirlo la primera vez no cuenta. */
+  usuarioCambiado: string | null;
+  /** Cuándo aceptó los términos, o null si todavía no ha pasado por el registro. */
+  terminos: string | null;
+  /** Si quiere enterarse de las novedades por correo. Apagado salvo que lo marque. */
+  novedades: boolean;
   creada: string;
   actualizada: string;
 }
@@ -210,29 +219,17 @@ export function limpiaDivis(raw: unknown): DiviGuardado[] {
 /* ---------------------------------------------------------------- fundir */
 
 /**
- * Dos listas de divis, una: por código, y la que se vio más tarde manda.
- *
- * Es la misma regla en el móvil y aquí, para que dé igual desde qué lado
- * llegue el cambio. Se ordena por fecha y se corta al tope.
+ * Dos listas de divis, una: por código, la que se vio más tarde manda, y las
+ * quitadas se quedan fuera. La regla vive en `lib/fundeDivis.ts`, compartida
+ * con el móvil; aquí sólo se le añade la poda de peso del documento.
  */
 export function fundeDivis(
   a: DiviGuardado[],
   b: DiviGuardado[],
-): DiviGuardado[] {
-  const porCodigo = new Map<string, DiviGuardado>();
-  for (const divi of [...a, ...b]) {
-    const previa = porCodigo.get(divi.code);
-    if (
-      !previa ||
-      new Date(divi.at).getTime() >= new Date(previa.at).getTime()
-    ) {
-      porCodigo.set(divi.code, divi);
-    }
-  }
-  const lista = [...porCodigo.values()].sort(
-    (x, y) => new Date(y.at).getTime() - new Date(x.at).getTime(),
-  );
-  return poda(lista.slice(0, TOPE_DIVIS));
+  quitadas: Quitadas = {},
+): { divis: DiviGuardado[]; quitadas: Quitadas } {
+  const fundido = funde(a, b, quitadas, TOPE_DIVIS);
+  return { divis: poda(fundido.divis), quitadas: fundido.quitadas };
 }
 
 function poda(divis: DiviGuardado[]): DiviGuardado[] {
@@ -258,8 +255,12 @@ function aCuenta(
     email: typeof datos?.email === "string" ? datos.email : null,
     perfil: limpiaPerfil(datos?.perfil),
     divis: limpiaDivis(datos?.divis),
+    quitadas: limpiaQuitadas(datos?.quitadas),
     avisos: datos?.avisos !== false,
     usuario: typeof datos?.usuario === "string" ? datos.usuario : null,
+    usuarioCambiado: typeof datos?.usuarioCambiado === "string" ? datos.usuarioCambiado : null,
+    terminos: typeof datos?.terminos === "string" ? datos.terminos : null,
+    novedades: datos?.novedades === true,
     creada:
       typeof datos?.creada === "string"
         ? datos.creada
@@ -290,7 +291,10 @@ export async function leeOCrea(quien: Quien): Promise<Cuenta> {
     email: quien.email,
     perfil: null,
     divis: [],
+    quitadas: {},
     avisos: true,
+    terminos: null,
+    novedades: false,
     creada: ahora,
     actualizada: ahora,
   };
@@ -300,11 +304,18 @@ export async function leeOCrea(quien: Quien): Promise<Cuenta> {
 
 /**
  * Guarda lo que llegue: el perfil entero, las divis fundidas con las que ya
- * había, o las dos cosas. Devuelve la cuenta como queda.
+ * había, las que se quitan, o todo junto. Devuelve la cuenta como queda.
  */
 export async function actualiza(
   quien: Quien,
-  cambios: { perfil?: unknown; divis?: unknown; avisos?: unknown },
+  cambios: {
+    perfil?: unknown;
+    divis?: unknown;
+    avisos?: unknown;
+    quitar?: unknown;
+    terminos?: unknown;
+    novedades?: unknown;
+  },
 ): Promise<Cuenta> {
   const actual = await leeOCrea(quien);
   const parche: Record<string, unknown> = {
@@ -313,13 +324,34 @@ export async function actualiza(
 
   if (typeof cambios.avisos === "boolean") parche.avisos = cambios.avisos;
 
+  // Los términos se aceptan una vez y se apunta cuándo: esa fecha es la
+  // prueba. No se desaceptan desde aquí; para eso está borrar la cuenta.
+  if (cambios.terminos === true && !actual.terminos) parche.terminos = new Date().toISOString();
+  if (typeof cambios.novedades === "boolean") parche.novedades = cambios.novedades;
+
   if (cambios.perfil !== undefined) {
     const perfil = limpiaPerfil(cambios.perfil);
     if (!perfil) throw new StoreError("El perfil necesita al menos un nombre.");
     parche.perfil = perfil;
   }
-  if (cambios.divis !== undefined) {
-    parche.divis = fundeDivis(actual.divis, limpiaDivis(cambios.divis));
+  /*
+    Quitar es una marca con hora, no un hueco en la lista: un hueco lo rellena
+    la siguiente fusión con la copia de cualquier móvil. Ver `lib/fundeDivis.ts`.
+  */
+  const quitar = Array.isArray(cambios.quitar)
+    ? cambios.quitar
+        .filter((c): c is string => typeof c === "string")
+        .map((c) => c.toUpperCase())
+        .filter((c) => /^[A-Z0-9]{4,12}$/.test(c))
+        .slice(0, TOPE_DIVIS)
+    : [];
+  if (cambios.divis !== undefined || quitar.length > 0) {
+    const marcas: Quitadas = { ...actual.quitadas };
+    const ahora = new Date().toISOString();
+    for (const code of quitar) marcas[code] = ahora;
+    const fundido = fundeDivis(actual.divis, limpiaDivis(cambios.divis ?? []), marcas);
+    parche.divis = fundido.divis;
+    parche.quitadas = fundido.quitadas;
   }
 
   await doc(quien.uid).set(parche, { merge: true });

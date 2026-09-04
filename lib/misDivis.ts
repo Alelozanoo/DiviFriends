@@ -3,6 +3,7 @@ import { rellena } from "./i18n";
 import type { Dict } from "./i18n/es";
 
 import { useCallback, useSyncExternalStore } from "react";
+import { fundeDivis, type Quitadas } from "./fundeDivis";
 
 /**
  * Las comandas por las que has pasado, guardadas en este móvil.
@@ -23,6 +24,8 @@ import { useCallback, useSyncExternalStore } from "react";
  */
 
 const CLAVE = "divi.mis-divis";
+/** Las que se quitaron y la cuenta todavía no sabe: se guardan por si se va la red. */
+const CLAVE_QUITADAS = "divi.mis-divis.quitadas";
 export const EVENTO = "divi:mis-divis";
 /**
  * Doce eran «lo de este fin de semana», que es para lo que servía la lista.
@@ -100,8 +103,51 @@ export function recordar(divi: DiviGuardado): void {
   guardar([divi, ...resto].slice(0, TOPE));
 }
 
+/**
+ * Quitar una divi del móvil, y apuntarlo para la cuenta.
+ *
+ * Sólo borrarla de aquí no bastaba: con cuenta, la siguiente subida fundía
+ * la lista sin ella con la de la nube —que sí la tenía— y volvía. El código
+ * se apunta como pendiente y `programaSubida` se lo manda a la cuenta como
+ * `quitar`; la cuenta pone la marca y ya no la devuelve.
+ */
 export function olvidar(code: string): void {
   guardar(leerCrudo().filter((d) => d.code !== code));
+  apuntaQuitada(code);
+}
+
+function leerQuitadas(): string[] {
+  try {
+    const raw = window.localStorage.getItem(CLAVE_QUITADAS);
+    const datos = raw ? (JSON.parse(raw) as unknown) : [];
+    return Array.isArray(datos) ? datos.filter((c): c is string => typeof c === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function escribeQuitadas(codes: string[]): void {
+  try {
+    if (codes.length === 0) window.localStorage.removeItem(CLAVE_QUITADAS);
+    else window.localStorage.setItem(CLAVE_QUITADAS, JSON.stringify(codes));
+  } catch {
+    // Sin sitio: como mucho la cuenta la devuelve una vez y se vuelve a quitar.
+  }
+}
+
+function apuntaQuitada(code: string): void {
+  escribeQuitadas([...leerQuitadas().filter((c) => c !== code), code].slice(-30));
+}
+
+/** Lo que hay que decirle a la cuenta que se quitó. */
+export function quitadasPendientes(): string[] {
+  return leerQuitadas();
+}
+
+/** La cuenta ya lo sabe: se dejan de mandar. */
+export function confirmaQuitadas(codes: string[]): void {
+  if (codes.length === 0) return;
+  escribeQuitadas(leerQuitadas().filter((c) => !codes.includes(c)));
 }
 
 export function olvidarTodo(): void {
@@ -116,23 +162,15 @@ export function todos(): DiviGuardado[] {
 /**
  * Mete las divis de la cuenta en las del móvil.
  *
- * Por código, y la que se vio más tarde manda: es la misma regla que aplica el
- * servidor, para que dé igual desde qué lado llegue el cambio. Sólo escribe si
- * de verdad cambia algo; si no, el evento haría que la cuenta se volviera a
- * mandar a sí misma en bucle.
+ * Por código, la que se vio más tarde manda, y las que la cuenta tiene
+ * marcadas como quitadas se van también de aquí: es la misma regla que aplica
+ * el servidor (`lib/fundeDivis.ts`), para que dé igual desde qué lado llegue
+ * el cambio. Sólo escribe si de verdad cambia algo; si no, el evento haría
+ * que la cuenta se volviera a mandar a sí misma en bucle.
  */
-export function fundir(remotas: DiviGuardado[]): void {
+export function fundir(remotas: DiviGuardado[], quitadas: Quitadas = {}): void {
   const locales = leerCrudo();
-  const porCodigo = new Map<string, DiviGuardado>();
-  for (const divi of [...locales, ...remotas]) {
-    const previa = porCodigo.get(divi.code);
-    if (!previa || new Date(divi.at).getTime() >= new Date(previa.at).getTime()) {
-      porCodigo.set(divi.code, divi);
-    }
-  }
-  const lista = [...porCodigo.values()]
-    .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
-    .slice(0, TOPE);
+  const { divis: lista } = fundeDivis(locales, remotas, quitadas, TOPE);
   if (JSON.stringify(lista) !== JSON.stringify(locales)) guardar(lista);
 }
 

@@ -4,7 +4,8 @@ import { useCallback, useSyncExternalStore } from "react";
 import type { User } from "firebase/auth";
 import { EntradaError, entrarConGoogle, onUsuario, salirDeGoogle, type FalloEntrada } from "./firebaseClient";
 import { processImageToAvatarBase64 } from "./avatarUpload";
-import { EVENTO, fundir, todos, type DiviGuardado } from "./misDivis";
+import { confirmaQuitadas, EVENTO, fundir, quitadasPendientes, todos, type DiviGuardado } from "./misDivis";
+import type { Quitadas } from "./fundeDivis";
 import { EVENTO_PERFIL, escribirPerfil, leerPerfil, type GlobalProfile } from "./useGlobalProfile";
 
 /**
@@ -31,6 +32,12 @@ type Estado = {
   pendientes: Pendientes;
   /** El usuario elegido, `@así`, o null si sigue con el código. */
   usuarioNombre: string | null;
+  /** La última vez que cambió el usuario, para saber cuándo podrá otra vez. */
+  usuarioCambiado: string | null;
+  /** Cuándo aceptó los términos; null hasta que pasa por el registro. */
+  terminos: string | null;
+  /** Si quiere las novedades por correo. */
+  novedades: boolean;
   /**
    * Si ya sabemos lo que hay en la cuenta. Sin esto no se distingue «no
    * tienes usuario» de «todavía no ha llegado», y la bienvenida saldría un
@@ -64,6 +71,9 @@ let estado: Estado = {
   avisos: true,
   pendientes: NADA,
   usuarioNombre: null,
+  usuarioCambiado: null,
+  terminos: null,
+  novedades: false,
   cargada: false,
   ocupado: false,
   fallo: null,
@@ -92,8 +102,12 @@ async function api(user: User, metodo: "GET" | "PATCH" | "DELETE", cuerpo?: unkn
     error?: string;
     perfil?: GlobalProfile | null;
     divis?: DiviGuardado[];
+    quitadas?: Quitadas;
     avisos?: boolean;
     usuario?: string | null;
+    usuarioCambiado?: string | null;
+    terminos?: string | null;
+    novedades?: boolean;
   };
   if (!r.ok) throw new Error(datos.error ?? "No se ha podido hablar con la cuenta.");
   return datos;
@@ -149,7 +163,26 @@ export async function ponUsuario(usuario: string): Promise<void> {
   const user = estado.usuario;
   if (!user) return;
   const datos = await api(user, "PATCH", { usuario });
-  pon({ usuarioNombre: datos.usuario ?? usuario });
+  pon({
+    usuarioNombre: datos.usuario ?? usuario,
+    usuarioCambiado: datos.usuarioCambiado ?? estado.usuarioCambiado,
+  });
+}
+
+/** Aceptar los términos al registrarse, y decir si quieres las novedades. */
+export async function aceptaTerminos(novedades: boolean): Promise<void> {
+  const user = estado.usuario;
+  if (!user) return;
+  const datos = await api(user, "PATCH", { terminos: true, novedades });
+  pon({ terminos: datos.terminos ?? new Date().toISOString(), novedades: datos.novedades === true });
+}
+
+/** Cambiar de idea sobre las novedades, desde la cuenta. */
+export async function ponNovedades(novedades: boolean): Promise<void> {
+  const user = estado.usuario;
+  if (!user) return;
+  const datos = await api(user, "PATCH", { novedades });
+  pon({ novedades: datos.novedades === true });
 }
 export const pideAmigo = (codigo: string) =>
   llama<{ amigos: Amigo[]; perfil: { nombre: string } }>("/api/cuenta/amigos", "POST", { codigo });
@@ -227,12 +260,16 @@ function programaSubida(user: User) {
     subiendo = null;
     try {
       const perfil = leerPerfil();
+      // Las quitadas van con nombre: sin ellas, la cuenta rellenaría el hueco.
+      const quitar = quitadasPendientes();
       const datos = await api(user, "PATCH", {
         ...(perfil?.name ? { perfil } : {}),
         divis: todos(),
+        ...(quitar.length > 0 ? { quitar } : {}),
       });
+      confirmaQuitadas(quitar);
       if (datos.divis) {
-        fundir(datos.divis);
+        fundir(datos.divis, datos.quitadas);
         pon({ divis: datos.divis.length });
       }
     } catch {
@@ -257,8 +294,14 @@ async function sincroniza(user: User) {
     const nube = await api(user, "GET");
 
     if (typeof nube.avisos === "boolean") pon({ avisos: nube.avisos });
-    pon({ usuarioNombre: nube.usuario ?? null, cargada: true });
-    if (nube.divis?.length) fundir(nube.divis);
+    pon({
+      usuarioNombre: nube.usuario ?? null,
+      usuarioCambiado: nube.usuarioCambiado ?? null,
+      terminos: nube.terminos ?? null,
+      novedades: nube.novedades === true,
+      cargada: true,
+    });
+    if (nube.divis?.length || nube.quitadas) fundir(nube.divis ?? [], nube.quitadas);
     void recargaPendientes();
 
     const local = leerPerfil();
@@ -278,8 +321,13 @@ async function sincroniza(user: User) {
       await api(user, "PATCH", { perfil });
     }
 
-    const subida = await api(user, "PATCH", { divis: todos() });
-    if (subida.divis) fundir(subida.divis);
+    const quitar = quitadasPendientes();
+    const subida = await api(user, "PATCH", {
+      divis: todos(),
+      ...(quitar.length > 0 ? { quitar } : {}),
+    });
+    confirmaQuitadas(quitar);
+    if (subida.divis) fundir(subida.divis, subida.quitadas);
     pon({ divis: subida.divis?.length ?? 0 });
   } catch {
     // Sin red al entrar: la sesión existe igual y se sincroniza al primer
@@ -325,6 +373,9 @@ const enServidor: Estado = {
   avisos: true,
   pendientes: NADA,
   usuarioNombre: null,
+  usuarioCambiado: null,
+  terminos: null,
+  novedades: false,
   cargada: false,
   ocupado: false,
   fallo: null,
