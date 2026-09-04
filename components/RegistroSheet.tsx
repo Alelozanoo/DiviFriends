@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { EVENTO, leer } from "@/lib/consent";
-import { useCuenta } from "@/lib/cuenta";
+import { CLAVE_REGISTRO, useCuenta } from "@/lib/cuenta";
 import { useT } from "@/lib/i18n";
 import { PIXEL_ID } from "@/lib/track";
 import { G } from "./CuentaBoton";
 import { Sheet } from "./ui";
 
-/** Dónde se apunta en este móvil que ya se ofreció, y cuándo. */
-const CLAVE = "divi.registro";
+/** Dónde se apunta en este móvil que ya se ofreció, y cuándo. Cerrar la sesión también lo apunta. */
+const CLAVE = CLAVE_REGISTRO;
 
 /**
  * Lo que tarda en volver a salir después de «Ahora no».

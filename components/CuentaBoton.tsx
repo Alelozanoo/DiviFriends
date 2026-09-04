@@ -9,7 +9,6 @@ import AmigosSheet from "./AmigosSheet";
 import { EnlaceBorrado } from "./BorrarCuenta";
 import { EditNameSheet } from "./EditNameSheet";
 import NotificacionesSheet from "./NotificacionesSheet";
-import ResumenSheet from "./ResumenSheet";
 import { Avatar, CerrarHoja, Sheet } from "./ui";
 
 /**
@@ -28,7 +27,7 @@ export default function CuentaBoton() {
   const t = useT();
   const { usuario, usuarioNombre, usuarioCambiado, entrar, salir, fallo, falloCodigo, ocupado, avisos, novedades, pendientes } = useCuenta();
   const { profile, saveProfile } = useGlobalProfile();
-  const [hoja, setHoja] = useState<null | "cuenta" | "perfil" | "amigos" | "avisos" | "usuario" | "resumen" | "fallo">(null);
+  const [hoja, setHoja] = useState<null | "cuenta" | "perfil" | "amigos" | "avisos" | "privacidad" | "fallo">(null);
   if (usuario === undefined) return null;
 
   if (usuario === null) {
@@ -110,11 +109,20 @@ export default function CuentaBoton() {
 
       {hoja === "cuenta" && (
         <Sheet onClose={() => setHoja(null)} titulo={t.cuenta.titulo} sub={usuario.email ?? undefined}>
+          {/*
+            Cuatro cosas y ya. Estaba lleno: tus números (que ya se ven en la
+            portada), el usuario aparte del perfil, dos interruptores de
+            correo, tres páginas legales, cerrar, salir y borrar. Se pidió
+            simplificarlo el 4 de septiembre de 2026: lo tuyo, tus amigos,
+            salir en rojo, y todo lo legal y los correos detrás de una sola
+            puerta al final.
+          */}
           <div className="mt-5 grid gap-2.5">
-            {/* Quién eres, tal y como te verá la mesa, y tu usuario debajo. */}
+            {/* Quién eres, tal y como te verá la mesa, y tu usuario debajo.
+                Tocarlo edita el perfil, que es donde vive también el usuario. */}
             <button
               type="button"
-              onClick={() => setHoja("usuario")}
+              onClick={() => setHoja("perfil")}
               className="flex items-center gap-3 rounded-pieza bg-paper px-3.5 py-3 text-left transition-colors active:bg-paper-3"
             >
               <Avatar name={nombre || "?"} avatar={profile?.avatar} color="#e8b04b" size={44} />
@@ -124,10 +132,8 @@ export default function CuentaBoton() {
                   {usuarioNombre ? `@${usuarioNombre}` : t.cuenta.usuarioElige}
                 </span>
               </span>
-              <span className="shrink-0 text-[12px] text-ink-faint">{t.cuenta.cambiar}</span>
             </button>
 
-            <Opcion onClick={() => setHoja("resumen")}>{t.resumen.titulo}</Opcion>
             <Opcion onClick={() => setHoja("perfil")}>{t.cuenta.editarPerfil}</Opcion>
             <Opcion
               onClick={() => setHoja("amigos")}
@@ -135,7 +141,31 @@ export default function CuentaBoton() {
             >
               {t.cuenta.amigos}
             </Opcion>
+            <Opcion
+              tono="clay"
+              onClick={async () => {
+                setHoja(null);
+                await salir();
+              }}
+            >
+              {t.cuenta.salir}
+            </Opcion>
 
+            {/* Lo legal y los correos, detrás de una sola puerta, al final. */}
+            <button
+              type="button"
+              onClick={() => setHoja("privacidad")}
+              className="mt-1 block py-2 text-center text-[12.5px] text-ink-faint underline underline-offset-2 transition-colors active:text-ink-soft"
+            >
+              {t.cuenta.privacidad}
+            </button>
+          </div>
+        </Sheet>
+      )}
+
+      {hoja === "privacidad" && (
+        <Sheet onClose={() => setHoja("cuenta")} titulo={t.cuenta.privacidad} sub={t.cuenta.notificacionesSub}>
+          <div className="mt-5 grid gap-2.5">
             {/* Los correos de la mesa. Encendidos por defecto porque son de
                 servicio —te avisan de algo tuyo—, y apagables aquí y desde el
                 pie de cada correo, sin entrar. La campana sigue igual. */}
@@ -169,42 +199,25 @@ export default function CuentaBoton() {
             </button>
             <p className="-mt-1 px-1 text-[12px] leading-relaxed text-ink-faint">{t.cuenta.novedadesNota}</p>
 
-            {/* Lo legal vive aquí, y no en un pie: con cuenta la portada es
-                una pantalla de app, y en una app esto está en el perfil. */}
+
             <EnlaceHoja href="/terminos">{t.cuenta.terminos}</EnlaceHoja>
             <EnlaceHoja href="/privacidad">{t.cookies.privacidad}</EnlaceHoja>
             <EnlaceHoja href="/aviso-legal">{t.cookies.avisoLegal}</EnlaceHoja>
 
-            <Opcion
-              onClick={async () => {
-                setHoja(null);
-                await salir();
-              }}
-            >
-              {t.cuenta.salir}
-            </Opcion>
-            <p className="-mt-1 px-1 text-[12px] leading-relaxed text-ink-faint">{t.cuenta.salirNota}</p>
+            <CerrarHoja onClick={() => setHoja("cuenta")}>{t.cuenta.cerrar}</CerrarHoja>
 
-            <CerrarHoja onClick={() => setHoja(null)}>{t.cuenta.cerrar}</CerrarHoja>
-
-            {/* Borrar la cuenta no vive aquí: estaba pegado a lo que se pulsa
-                a diario y no hay papelera que valga si se pulsa sin querer.
-                Queda el camino, en gris y al final de todo. */}
+            {/* Borrar la cuenta, en gris y al final de todo, que no hay
+                papelera que valga si se pulsa sin querer. */}
             <EnlaceBorrado onIr={() => setHoja(null)} />
           </div>
         </Sheet>
       )}
 
-      {hoja === "usuario" && (
-        <UsuarioSheet actual={usuarioNombre} cambiado={usuarioCambiado} onClose={() => setHoja("cuenta")} />
-      )}
-
-      {hoja === "resumen" && <ResumenSheet onClose={() => setHoja("cuenta")} />}
-
       {hoja === "amigos" && <AmigosSheet onClose={() => setHoja("cuenta")} />}
 
       {hoja === "perfil" && (
         <EditNameSheet
+          usuario={{ actual: usuarioNombre, cambiado: usuarioCambiado, onGuardar: ponUsuario }}
           currentName={nombre}
           currentAvatar={profile?.avatar}
           currentBizum={profile?.bizum}
@@ -218,94 +231,6 @@ export default function CuentaBoton() {
       )}
 
     </>
-  );
-}
-
-/**
- * Elegir el usuario. Único, y es lo que se enseña a tus amigos en vez del
- * código: `@alelozano`. El servidor comprueba que esté libre.
- */
-function UsuarioSheet({
-  actual,
-  cambiado,
-  onClose,
-}: {
-  actual: string | null;
-  /** Cuándo lo cambió por última vez, para saber si toca esperar. */
-  cambiado: string | null;
-  onClose: () => void;
-}) {
-  const t = useT();
-  const [valor, setValor] = useState(actual ?? "");
-  const [aviso, setAviso] = useState<string | null>(null);
-  const [ocupado, setOcupado] = useState(false);
-  const limpio = valor.trim().replace(/^@/, "").toLowerCase();
-  const vale = /^[a-z0-9_]{3,20}$/.test(limpio);
-  /*
-    Una vez cada catorce días. El servidor lo hace cumplir igual; esto es para
-    decirlo antes de que escriba, con la fecha, y no después con un error.
-  */
-  const hasta = actual && cambiado ? new Date(new Date(cambiado).getTime() + 14 * 24 * 60 * 60 * 1000) : null;
-  // La hora se lee una vez al abrir la hoja: pintar no puede depender del reloj.
-  const [ahora] = useState(() => Date.now());
-  const bloqueado = hasta !== null && hasta.getTime() > ahora;
-  const fecha = (d: Date) => d.toLocaleDateString("es-ES", { day: "numeric", month: "long" });
-
-  return (
-    <Sheet onClose={onClose} titulo={t.cuenta.usuario} sub={`${t.cuenta.usuarioAyuda} ${t.cuenta.usuarioNota14}`}>
-      {bloqueado && hasta && cambiado && (
-        <p className="mt-4 rounded-pieza border border-line-soft bg-paper px-3.5 py-3 text-[13px] leading-relaxed text-ink-soft">
-          {rellena(t.cuenta.usuarioBloqueado, { desde: fecha(new Date(cambiado)), hasta: fecha(hasta) })}
-        </p>
-      )}
-      <form
-        className="mt-5 grid gap-3"
-        onSubmit={async (e) => {
-          e.preventDefault();
-          if (!vale || ocupado) return;
-          setOcupado(true);
-          setAviso(null);
-          try {
-            await ponUsuario(limpio);
-            onClose();
-          } catch (fallo) {
-            setAviso((fallo as Error).message);
-          } finally {
-            setOcupado(false);
-          }
-        }}
-      >
-        <label className="flex min-h-[52px] items-center gap-1 rounded-pieza border border-line bg-paper px-4 transition-colors focus-within:border-amber">
-          <span className="text-[16px] font-semibold text-ink-soft">@</span>
-          <input
-            autoFocus
-            disabled={bloqueado}
-            value={valor.replace(/^@/, "")}
-            onChange={(e) => setValor(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "").slice(0, 20))}
-            placeholder="alelozano"
-            aria-label={t.cuenta.usuario}
-            autoCapitalize="none"
-            autoComplete="off"
-            autoCorrect="off"
-            spellCheck={false}
-            className="w-full min-w-0 bg-transparent text-[16px] font-semibold focus:outline-none"
-          />
-        </label>
-        {aviso && (
-          <p className="text-[13px] text-clay" role="alert">
-            {aviso}
-          </p>
-        )}
-        <button
-          type="submit"
-          disabled={!vale || ocupado || limpio === actual || bloqueado}
-          className="min-h-[52px] rounded-pieza bg-amber text-[15px] font-bold text-paper transition-transform active:scale-[0.98] disabled:opacity-50"
-        >
-          {t.cuenta.usuarioGuardar}
-        </button>
-        <CerrarHoja onClick={onClose}>{t.perfil.cancelar}</CerrarHoja>
-      </form>
-    </Sheet>
   );
 }
 

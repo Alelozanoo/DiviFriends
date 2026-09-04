@@ -51,6 +51,9 @@ type Estado = {
   falloCodigo: string | null;
 };
 
+/** Dónde apunta `RegistroSheet` que ya se ofreció entrar; al salir se apunta también. */
+export const CLAVE_REGISTRO = "divi.registro";
+
 export interface Pendientes {
   solicitudes: number;
   avisos: number;
@@ -413,6 +416,14 @@ export function useCuenta() {
    */
   const salir = useCallback(async () => {
     await salirDeGoogle();
+    // Quien acaba de cerrar la sesión no quiere que la portada le pida entrar
+    // otra vez nada más llegar: la hoja de Google se calla como si hubiera
+    // dicho «ahora no».
+    try {
+      localStorage.setItem(CLAVE_REGISTRO, String(Date.now()));
+    } catch {
+      /* sin sitio: como mucho vuelve a salir */
+    }
   }, []);
 
   /** Borrar de verdad: el servidor quita el documento y la identidad. */

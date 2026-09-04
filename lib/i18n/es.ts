@@ -204,6 +204,8 @@ export const es = {
     avisosNo: "apagados",
     avisosNota: "Te llega un correo cuando un amigo te mete en una mesa, cuando se cierra y cuando te pagan. Nada más, y nunca publicidad.",
     entrarLargo: "Entrar con Google",
+    notificaciones: "Notificaciones",
+    notificacionesSub: "Los correos de tus mesas y las novedades de la app. Se encienden y se apagan aquí.",
     novedades: "Novedades de DiviFriends",
     novedadesNota: "De vez en cuando, lo nuevo de la app. Sin publicidad de terceros, y se apaga aquí cuando quieras.",
     terminos: "Términos y condiciones",

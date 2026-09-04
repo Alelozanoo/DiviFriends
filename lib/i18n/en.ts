@@ -188,6 +188,8 @@ export const en: Dict = {
     avisosNo: "off",
     avisosNota: "You get an email when a friend adds you to a table, when it closes and when you get paid. Nothing else, never ads.",
     entrarLargo: "Sign in with Google",
+    notificaciones: "Notifications",
+    notificacionesSub: "Emails about your tables and what's new in the app. Switch them on or off here.",
     novedades: "DiviFriends news",
     novedadesNota: "Now and then, what's new in the app. No third-party ads, and you can switch it off here whenever you like.",
     terminos: "Terms and conditions",

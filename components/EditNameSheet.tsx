@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useT } from "@/lib/i18n";
+import { rellena, useT } from "@/lib/i18n";
 import { Avatar, CerrarHoja, Sheet } from "./ui";
 import { processImageToAvatarBase64 } from "@/lib/avatarUpload";
 import { MarcaBizum, MarcaRevolut } from "./marcas";
@@ -13,6 +13,7 @@ export function EditNameSheet({
   currentRevolut,
   onSave,
   onClose,
+  usuario,
 }: {
   currentName: string;
   currentAvatar?: string;
@@ -20,6 +21,13 @@ export function EditNameSheet({
   currentRevolut?: string;
   onSave: (name: string, avatar?: string, bizum?: string, revolut?: string) => Promise<unknown>;
   onClose: () => void;
+  /**
+   * El `@usuario`, sólo con cuenta. Va aquí y no en una hoja aparte desde el
+   * 4 de septiembre de 2026: es parte del perfil. Se guarda antes que el
+   * resto, porque es lo único que el servidor puede rechazar (cogido, o
+   * cambiado hace menos de catorce días).
+   */
+  usuario?: { actual: string | null; cambiado: string | null; onGuardar: (usuario: string) => Promise<void> };
 }) {
   const t = useT();
   const [name, setName] = useState(currentName);
@@ -28,7 +36,18 @@ export function EditNameSheet({
   const [revolut, setRevolut] = useState(currentRevolut || "");
   const [busy, setBusy] = useState(false);
   const [preguntandoSalir, setPreguntandoSalir] = useState(false);
+  const [alias, setAlias] = useState(usuario?.actual ?? "");
+  const [fallo, setFallo] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Una vez cada catorce días; la hora se lee al abrir, no al pintar.
+  const [ahora] = useState(() => Date.now());
+  const hasta =
+    usuario?.actual && usuario.cambiado
+      ? new Date(new Date(usuario.cambiado).getTime() + 14 * 24 * 60 * 60 * 1000)
+      : null;
+  const bloqueado = hasta !== null && hasta.getTime() > ahora;
+  const fecha = (d: Date) => d.toLocaleDateString("es-ES", { day: "numeric", month: "long" });
+  const aliasVale = alias === "" || /^[a-z0-9_]{3,20}$/.test(alias);
 
   /*
     Si has tocado algo, cerrar no puede ser gratis.
@@ -41,7 +60,8 @@ export function EditNameSheet({
     name !== currentName ||
     avatar !== (currentAvatar || "") ||
     bizum !== (currentBizum || "") ||
-    revolut !== (currentRevolut || "");
+    revolut !== (currentRevolut || "") ||
+    alias !== (usuario?.actual ?? "");
 
   const intentarCerrar = () => (sucio ? setPreguntandoSalir(true) : onClose());
 
@@ -74,8 +94,18 @@ export function EditNameSheet({
         className="mt-5 flex flex-col gap-4"
         onSubmit={async (event) => {
           event.preventDefault();
-          if (!name.trim() || busy) return;
+          if (!name.trim() || busy || !aliasVale) return;
           setBusy(true);
+          setFallo(null);
+          if (usuario && alias && alias !== usuario.actual) {
+            try {
+              await usuario.onGuardar(alias);
+            } catch (error) {
+              setFallo(error instanceof Error ? error.message : t.comanda.errorGuardar);
+              setBusy(false);
+              return;
+            }
+          }
           await onSave(
             name.trim(),
             avatar || undefined,
@@ -154,6 +184,32 @@ export function EditNameSheet({
           </button>
         )}
 
+        {usuario && (
+          <div>
+            <p className="text-[12px] text-ink-faint">{t.cuenta.usuario}</p>
+            <div className="mt-1.5 flex min-h-[52px] items-center rounded-xl border border-line bg-paper px-4 transition-colors focus-within:border-amber">
+              <span className="text-[16px] font-semibold text-ink-soft">@</span>
+              <input
+                value={alias}
+                disabled={bloqueado}
+                onChange={(event) => setAlias(event.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "").slice(0, 20))}
+                placeholder="tunombre"
+                aria-label={t.cuenta.usuario}
+                autoCapitalize="none"
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
+                className="w-full min-w-0 bg-transparent px-1 text-[16px] font-semibold focus:outline-none disabled:opacity-60"
+              />
+            </div>
+            <p className="mt-1.5 text-[12px] leading-relaxed text-ink-faint">
+              {bloqueado && hasta && usuario.cambiado
+                ? rellena(t.cuenta.usuarioBloqueado, { desde: fecha(new Date(usuario.cambiado)), hasta: fecha(hasta) })
+                : t.cuenta.usuarioNota14}
+            </p>
+          </div>
+        )}
+
     <p className="text-[12px] mt-1 text-ink-faint">{t.perfil.datosPago}</p>
         <div className="-mt-2 flex flex-col gap-2">
           {/*
@@ -190,9 +246,15 @@ export function EditNameSheet({
           </div>
         </div>
 
+        {fallo && (
+          <p role="alert" className="text-[13px] font-semibold text-clay">
+            {fallo}
+          </p>
+        )}
+
         <button
           type="submit"
-          disabled={!name.trim() || busy}
+          disabled={!name.trim() || busy || !aliasVale}
           className="mt-1 min-h-[52px] w-full rounded-xl bg-amber text-[15px] font-bold text-paper transition-transform active:scale-[0.98] disabled:opacity-50"
         >
           {t.cobro.guardar}
