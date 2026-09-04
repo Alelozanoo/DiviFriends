@@ -2,6 +2,7 @@ import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import nodemailer from "nodemailer";
 import { firestore } from "./firebaseAdmin";
 import { consume, TOPES } from "./rateLimit";
+import { claveRecordatorio, textoRecordatorio, type Tono } from "./recordatorio";
 
 /**
  * Los correos de la app, y sobre todo sus frenos.
@@ -162,7 +163,7 @@ const ORIGENES = new Set(["divifriends.es", "www.divifriends.es"]);
 
 /* -------------------------------------------------------------- mandar */
 
-export type TipoAviso = "invitacion" | "cierre" | "pago" | "solicitud";
+export type TipoAviso = "invitacion" | "cierre" | "pago" | "solicitud" | "recordatorio";
 
 export interface Aviso {
   /** A quién, por su cuenta. */
@@ -440,6 +441,46 @@ export function correoSolicitud(p: {
 }
 
 /** «Rocío te ha pagado 18,44 €». */
+/**
+ * «Me debes», mandado por quien puso la tarjeta.
+ *
+ * El texto y la clave viven en `lib/recordatorio.ts`, que es puro y se puede
+ * probar sin Firebase delante: son lo único de este correo que puede acabar
+ * diciéndole a alguien una cifra que no es.
+ */
+export function correoRecordatorio(p: {
+  uid: string;
+  email: string;
+  origen: string;
+  code: string;
+  mesa: string | null;
+  /** Quien lo manda: el que pagó. */
+  quien: string;
+  cents: number;
+  tono: Tono;
+  /** El día, `AAAA-MM-DD`: una vez por persona, mesa y día. */
+  dia: string;
+}): Aviso {
+  const t = textoRecordatorio({
+    mesa: p.mesa,
+    quien: p.quien,
+    dinero: euros(p.cents),
+    tono: p.tono,
+  });
+  return {
+    uid: p.uid,
+    tipo: "recordatorio",
+    email: p.email,
+    origen: p.origen,
+    clave: claveRecordatorio(p.code, p.uid, p.dia),
+    asunto: t.asunto,
+    texto: t.texto,
+    porque: `${p.quien}, que puso la tarjeta, te lo ha pedido desde su cuenta de DiviFriends`,
+    url: `${p.origen}/t/${p.code}`,
+    boton: t.boton,
+  };
+}
+
 export function correoPago(p: {
   uid: string;
   email: string;

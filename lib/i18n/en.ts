@@ -151,6 +151,31 @@ export const en: Dict = {
     sinSesionTexto: "With Google, one tap. Then you pick your username and how you get paid.",
     google: "Continue with Google",
   },
+  recordar: {
+    boton: "Remind them by email",
+    titulo: "Remind {name}",
+    entradilla: "We email them the amount, the table and the link. You pick the tone.",
+    leLlega: "Goes by email, to their account",
+    tono: "The tone",
+    tonos: {
+      neutro: { nombre: "Neutral", muestra: "“You owe them €12.50. Whenever you can.”" },
+      serio: { nombre: "Serious", muestra: "“Still waiting on €12.50. Today, if possible.”" },
+      gracioso: { nombre: "Funny", muestra: "“Your €12.50 haven't evaporated. Peace.”" },
+      agresivo: { nombre: "Blunt", muestra: "“€12.50. Today. It's not a favour, it's your bill.”" },
+    },
+    unaAlDia: "Once a day per person: a second try sends nothing.",
+    enviar: "Send the email",
+    enviando: "Sending…",
+    mandadoTitulo: "Sent",
+    mandado: "On its way, with the link to the table.",
+    noMandadoTitulo: "Not sent",
+    repetido: "You already wrote to them today about this table. Try again tomorrow.",
+    sinCuenta: "{name} isn't registered on DiviFriends, so there's no email to write to. Tell them to sign in with Google and the next one will reach them.",
+    baja: "{name} has emails turned off. They'll still see it in their bell when they open the site.",
+    tope: "Today's emails are all used up. More tomorrow.",
+    fallo: "Couldn't send it. Try again later.",
+  },
+
   misDivis: {
     titulo: "Your divis",
     donde: "on this phone",
@@ -521,6 +546,7 @@ export const en: Dict = {
 
   mesa: {
     titulo: "The table",
+    invitarFallo: "Couldn't add them. Try again.",
     anadeAmigo: "Add a friend",
     anadido: "In ✓",
     todosDentro: "All your friends are already at the table.",

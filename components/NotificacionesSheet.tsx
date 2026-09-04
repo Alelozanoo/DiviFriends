@@ -200,6 +200,14 @@ function Icono({ tipo }: { tipo: AvisoCampana["tipo"] }) {
           <path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" />
         </svg>
       );
+    case "recordatorio":
+      // Un sobre: es el único aviso que es, literalmente, una carta de alguien.
+      return (
+        <svg {...comun}>
+          <rect x="3.5" y="6" width="17" height="12.5" rx="2" />
+          <path d="m4.5 7.5 7.5 6 7.5-6" />
+        </svg>
+      );
     default:
       return (
         <svg {...comun}>

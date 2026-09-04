@@ -166,6 +166,32 @@ export const es = {
     sinSesionTexto: "Con Google, en un toque. Después eliges tu usuario y cómo te pagan.",
     google: "Continuar con Google",
   },
+  /* ------------------------------------------------------ recordar */
+  recordar: {
+    boton: "Recordárselo por correo",
+    titulo: "Recordárselo a {name}",
+    entradilla: "Le mandamos un correo con la cifra, la mesa y el enlace. Tú eliges el tono.",
+    leLlega: "Le llega por correo, a su cuenta",
+    tono: "El tono",
+    tonos: {
+      neutro: { nombre: "Neutro", muestra: "«Te toca devolverle 12,50 €. Cuando puedas.»" },
+      serio: { nombre: "Serio", muestra: "«Sigue esperando 12,50 €. Hoy, si puede ser.»" },
+      gracioso: { nombre: "Gracioso", muestra: "«Tus 12,50 € no se han evaporado. Aquí paz.»" },
+      agresivo: { nombre: "Agresivo", muestra: "«12,50 €. Hoy. No es un favor, es tu cuenta.»" },
+    },
+    unaAlDia: "Una vez al día por persona: al segundo intento no sale nada.",
+    enviar: "Enviar el correo",
+    enviando: "Enviando…",
+    mandadoTitulo: "Enviado",
+    mandado: "Le llega ahora, con el enlace a la mesa.",
+    noMandadoTitulo: "No ha salido",
+    repetido: "Ya le has escrito hoy por esta mesa. Mañana puedes otra vez.",
+    sinCuenta: "{name} no está registrado en DiviFriends, así que no hay correo al que escribir. Dile que entre con Google y la próxima le llegará.",
+    baja: "{name} tiene los correos apagados. Lo verá igual en su campana al abrir la web.",
+    tope: "Hoy ya han salido todos los correos que salen. Mañana más.",
+    fallo: "No se ha podido mandar. Inténtalo más tarde.",
+  },
+
   misDivis: {
     titulo: "Tus divis",
     donde: "en este móvil",
@@ -562,6 +588,7 @@ export const es = {
   /* -------------------------------------------------------------- mesa */
   mesa: {
     titulo: "La mesa",
+    invitarFallo: "No se ha podido meter. Inténtalo otra vez.",
     anadeAmigo: "Mete a un amigo",
     anadido: "Dentro ✓",
     todosDentro: "Todos tus amigos están ya en la mesa.",

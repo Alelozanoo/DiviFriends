@@ -433,7 +433,7 @@ export interface MesaPendiente {
 
 export interface AvisoCampana {
   id: string;
-  tipo: "invitacion" | "cierre" | "pago" | "solicitud";
+  tipo: "invitacion" | "cierre" | "pago" | "solicitud" | "recordatorio";
   asunto: string;
   url: string;
   leido: boolean;

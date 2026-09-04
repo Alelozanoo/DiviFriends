@@ -6,6 +6,7 @@ import {
   perfilDe,
   reservaAsiento,
   sonAmigos,
+  vinculaAsiento,
 } from "@/lib/amigosServer";
 import { correoInvitacion, mandaAviso, origenDe } from "@/lib/correo";
 import { addParticipant, getTicketState } from "@/lib/store";
@@ -27,6 +28,15 @@ type Ctx = { params: Promise<{ code: string }> };
  *
  * El correo puede no salir —tope, avisos apagados, ya mandado— y la mesa se
  * queda igual de bien: el amigo está dentro y lo verá al abrir el enlace.
+ *
+ * «Estar sentado» se demuestra de dos maneras. La primera es tener el asiento
+ * enlazado a la cuenta, que pasa solo al apuntarse con la cuenta ya abierta.
+ * La segunda es traer tu `participantId` —el que guarda el móvil— y que ese
+ * participante exista en la mesa: es el caso de quien creó la mesa o entró
+ * por código antes de entrar con Google, y de quien entró desde otro móvil.
+ * Sin esto, esa gente pedía meter a un amigo y recibía «siéntate primero» en
+ * una mesa donde llevaba una hora sentada. De paso se enlaza el asiento, que
+ * es lo que hace falta para avisarle cuando se cierre o le paguen.
  */
 export async function POST(request: Request, { params }: Ctx) {
   const quien = await usuarioDe(request);
@@ -38,10 +48,15 @@ export async function POST(request: Request, { params }: Ctx) {
 
   const { code: raw } = await params;
   const code = raw.toUpperCase();
-  const { uid } = (await cuerpo(request)) as { uid?: string };
+  const { uid, participantId } = (await cuerpo(request)) as {
+    uid?: string;
+    participantId?: string;
+  };
   if (typeof uid !== "string" || !uid || uid.length > 128) {
     return NextResponse.json({ error: "Falta a quién." }, { status: 400 });
   }
+  const miAsiento =
+    typeof participantId === "string" && participantId.length <= 64 ? participantId : null;
   const alto = await puerta(
     [{ key: `cuenta_invitar_${quien.uid}`, ...TOPES.cuenta.invitar }],
     "Has metido a demasiada gente hoy. Mañana más.",
@@ -55,14 +70,6 @@ export async function POST(request: Request, { params }: Ctx) {
         { status: 403 },
       );
     }
-    // Sólo desde dentro: quien mete a alguien tiene que estar sentado en esa
-    // mesa. Si no, con crear mesas vacías se le podría llenar el buzón a un amigo.
-    if (!(await asientoDe(code, quien.uid))) {
-      return NextResponse.json(
-        { error: "Primero siéntate en la mesa." },
-        { status: 403 },
-      );
-    }
     const [perfilAmigo, perfilMio, existe] = await Promise.all([
       perfilDe(uid),
       perfilDe(quien.uid),
@@ -73,6 +80,19 @@ export async function POST(request: Request, { params }: Ctx) {
         { error: "Esta comanda no existe o ha caducado." },
         { status: 404 },
       );
+    // Sólo desde dentro: quien mete a alguien tiene que estar sentado en esa
+    // mesa. Si no, con crear mesas vacías se le podría llenar el buzón a un amigo.
+    let sentado = Boolean(await asientoDe(code, quien.uid));
+    if (!sentado && miAsiento && existe.participants.some((p) => p.id === miAsiento)) {
+      await vinculaAsiento(code, quien.uid, miAsiento);
+      sentado = true;
+    }
+    if (!sentado) {
+      return NextResponse.json(
+        { error: "Primero siéntate en la mesa." },
+        { status: 403 },
+      );
+    }
     if (!perfilAmigo?.name)
       return NextResponse.json(
         { error: "Esa persona no tiene nombre todavía." },

@@ -16,10 +16,11 @@ import {
   olvidarPagoPendiente,
   usePagoPendiente,
 } from "@/lib/pagoPendiente";
-import type { Participant, TicketState, Via } from "@/lib/types";
+import type { Participant, ParticipantBalance, TicketState, Via } from "@/lib/types";
 import CuentasSheet from "./CuentasSheet";
 import { CobroSheet, PagadorSheet } from "./CobroSheet";
 import PagarSheet from "./PagarSheet";
+import RecordarSheet from "./RecordarSheet";
 import ItemRow from "./ItemRow";
 import ItemSheet from "./ItemSheet";
 import RemoveItemSheet from "./RemoveItemSheet";
@@ -76,6 +77,8 @@ export default function SplitApp({
   const [filtro, setFiltro] = useState<"todo" | "libre" | "mio">("todo");
   // A quién le voy a pagar y cuánto, mientras la hoja está abierta.
   const [pagandoA, setPagandoA] = useState<{ id: string; cents: number } | null>(null);
+  /** A quién le estoy recordando lo que me debe, con la hoja del tono abierta. */
+  const [recordandoA, setRecordandoA] = useState<ParticipantBalance | null>(null);
   const [cobrando, setCobrando] = useState(false);
   const [preguntandoPagador, setPreguntandoPagador] = useState(false);
   /*
@@ -160,6 +163,24 @@ export default function SplitApp({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [usuario, known, meId]);
   const showJoin = joinOverride ?? (known && !meId && (!usuario || asientoMirado));
+
+  /*
+    Y al revés: ya sentado, y con cuenta.
+
+    `join()` enlaza el asiento a la cuenta cuando te apuntas con ella abierta.
+    Pero mucha gente se sienta primero y entra con Google después —o entra en
+    otro móvil donde ya era alguien—, y ésa se quedaba sin asiento enlazado:
+    sin avisos de cierre ni de pago, y sin poder meter amigos. Una vez por
+    mesa y cuenta, sin esperar, y si falla no cambia nada de lo que ves.
+  */
+  const asientoEnlazado = useRef<string | null>(null);
+  useEffect(() => {
+    if (!usuario || !meId) return;
+    const clave = `${code}:${usuario.uid}:${meId}`;
+    if (asientoEnlazado.current === clave) return;
+    asientoEnlazado.current = clave;
+    void vinculaAsiento(code, meId).catch(() => {});
+  }, [usuario, meId, code]);
 
   // `color` va obligatorio, como en `Participant`: el toast siempre se rellena
   // desde uno de la mesa, así que nunca falta. Declararlo opcional no cubría
@@ -1090,12 +1111,39 @@ export default function SplitApp({
             setPagandoA({ id: toId, cents });
           }}
           onResolver={(fromId, ok) => void resolverPago(fromId, ok)}
+          onRecordar={
+            usuario
+              ? (person) => {
+                  // Igual que pagar: la hoja de cuentas se cierra y vuelve al cerrar ésta.
+                  setCuentasOpen(false);
+                  setRecordandoA(person);
+                }
+              : undefined
+          }
           ticketsSinPagador={ticketsSinPagador}
           onDecirPagador={(receiptId) => {
             setCuentasOpen(false);
             setPreguntandoTicket({ receiptId });
           }}
           onClose={() => setCuentasOpen(false)}
+        />
+      )}
+
+      {recordandoA && meId && (
+        <RecordarSheet
+          code={code}
+          persona={recordandoA}
+          cents={
+            settlement.transactions.find(
+              (tx) => tx.fromId === recordandoA.participantId && tx.toId === meId,
+            )?.cents ?? recordandoA.owesCents
+          }
+          currency={state.ticket.currency}
+          miAsiento={meId}
+          onClose={() => {
+            setRecordandoA(null);
+            setCuentasOpen(true);
+          }}
         />
       )}
 
@@ -1140,7 +1188,7 @@ export default function SplitApp({
           onInvitar={
             usuario
               ? async (uid) => {
-                  const data = await invitaAMesa(code, uid);
+                  const data = await invitaAMesa(code, uid, meId);
                   setServer(data as unknown as TicketState);
                 }
               : undefined

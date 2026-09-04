@@ -93,6 +93,8 @@ export const TOPES = {
     solicitud: { max: 30, windowMs: DIA },
     /** Meter a un amigo en una mesa: le apunta un asiento y le manda un correo. */
     invitar: { max: 60, windowMs: DIA },
+    /** Recordar una deuda por correo: una mesa grande son diez, y esto son cuatro. */
+    recordar: { max: 40, windowMs: DIA },
     /** Borrar la cuenta borra en cascada; por IP porque tras borrar no hay uid. */
     borrar: { max: 10, windowMs: HORA },
     /** La búsqueda pública de un código o @usuario: frena el rastreo de nombres. */

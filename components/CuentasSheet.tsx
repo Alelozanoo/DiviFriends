@@ -17,6 +17,8 @@ interface Props {
   /** Los tickets a los que nadie ha dicho todavía quién los pagó. */
   ticketsSinPagador: { id: string | null; label: string | null }[];
   onDecirPagador: (receiptId: string | null) => void;
+  /** Recordarle por correo lo que te debe. Sólo existe con cuenta y si pagaste. */
+  onRecordar?: (person: ParticipantBalance) => void;
   onClose: () => void;
 }
 
@@ -41,6 +43,7 @@ export default function CuentasSheet({
   onResolver,
   ticketsSinPagador,
   onDecirPagador,
+  onRecordar,
   onClose,
 }: Props) {
   const t = useT();
@@ -212,6 +215,11 @@ export default function CuentasSheet({
               puedoSaldarle={soyPagador && person.owesCents > 0 && person.participantId !== meId}
               onPagar={() => onPagar(person.participantId, debo.get(person.participantId) ?? 0)}
               onToggle={() => onSetSettled(person.participantId, !person.settled)}
+              onRecordar={
+                onRecordar && soyPagador && person.owesCents > 0 && !person.settled && person.participantId !== meId
+                  ? () => onRecordar(person)
+                  : undefined
+              }
             />
           ))}
 
@@ -257,6 +265,7 @@ function Fila({
   puedoSaldarle,
   onPagar,
   onToggle,
+  onRecordar,
 }: {
   person: ParticipantBalance;
   currency: string;
@@ -266,6 +275,7 @@ function Fila({
   puedoSaldarle: boolean;
   onPagar: () => void;
   onToggle: () => void;
+  onRecordar?: () => void;
 }) {
   const t = useT();
   const leDeben = person.owesCents < 0;
@@ -295,6 +305,18 @@ function Fila({
           {esYo && <span className="ml-1.5 text-[13px] font-semibold text-amber">{t.mesa.tu}</span>}
         </span>
     {pie && <span className="text-[12px] mt-1 block text-ink-faint">{pie}</span>}
+        {/* Recordárselo por correo: al lado de a quién, y sólo cuando debe.
+            Un texto y no otro botón: a la derecha ya está «Me ha pagado», y
+            dos botones por fila hacen que ninguno se lea. */}
+        {onRecordar && (
+          <button
+            type="button"
+            onClick={onRecordar}
+            className="mt-1 block text-[12.5px] font-semibold text-amber underline underline-offset-2 active:opacity-70"
+          >
+            {t.recordar.boton}
+          </button>
+        )}
       </span>
       <span
         className={`tnum shrink-0 text-[17px] font-bold ${

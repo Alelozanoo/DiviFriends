@@ -60,7 +60,7 @@ export interface Pendientes {
 }
 export interface AvisoCampana {
   id: string;
-  tipo: "invitacion" | "cierre" | "pago" | "solicitud";
+  tipo: "invitacion" | "cierre" | "pago" | "solicitud" | "recordatorio";
   asunto: string;
   url: string;
   leido: boolean;
@@ -202,9 +202,39 @@ export const asientoEn = (code: string) =>
 export const vinculaAsiento = (code: string, participantId: string) =>
   llama(`/api/cuenta/mesa/${code}`, "POST", { participantId });
 
-/** Meter a un amigo en la mesa. Devuelve el estado de la mesa ya con él. */
-export const invitaAMesa = (code: string, uid: string) =>
-  llama<Record<string, unknown>>(`/api/tickets/${code}/invitar`, "POST", { uid });
+/**
+ * Meter a un amigo en la mesa. Devuelve el estado de la mesa ya con él.
+ * Va con tu asiento, para que el servidor sepa que estás dentro aunque te
+ * apuntaras antes de entrar con la cuenta.
+ */
+export const invitaAMesa = (code: string, uid: string, participantId: string | null) =>
+  llama<Record<string, unknown>>(`/api/tickets/${code}/invitar`, "POST", { uid, participantId });
+
+/** Lo que contesta el servidor al recordar: lo mismo que `mandaAviso`, más «sin cuenta». */
+export type Recordado =
+  | "mandado"
+  | "repetido"
+  | "sin-cuenta"
+  | "sin-correo"
+  | "baja"
+  | "tope"
+  | "fallo";
+
+/**
+ * Recordarle a alguien de la mesa lo que te debe, por correo y en el tono que
+ * elijas. Sólo lo puede hacer quien pagó, y sólo llega si el otro tiene cuenta.
+ */
+export const recuerdaDeuda = (
+  code: string,
+  participantId: string,
+  tono: "neutro" | "serio" | "gracioso" | "agresivo",
+  miAsiento: string | null,
+) =>
+  llama<{ resultado: Recordado }>(`/api/tickets/${code}/recordar`, "POST", {
+    participantId,
+    tono,
+    miAsiento,
+  });
 
 /** Los correos de la mesa, encendidos o apagados. */
 export async function ponAvisos(avisos: boolean): Promise<void> {

@@ -52,6 +52,9 @@ export default function TableSheet({
   const [amigos, setAmigos] = useState<Amigo[] | null>(null);
   const [metidos, setMetidos] = useState<Set<string>>(new Set());
   const [metiendo, setMetiendo] = useState<string | null>(null);
+  // Lo que dijo el servidor si no pudo: antes se tragaba y el botón volvía a
+  // su sitio como si nada, que es la peor de las respuestas.
+  const [falloInvitar, setFalloInvitar] = useState<string | null>(null);
 
   // La lista sólo se pide con cuenta y cuando se abre la hoja: es una llamada
   // y no hay por qué hacerla a quien nunca la va a ver.
@@ -292,9 +295,14 @@ export default function TableSheet({
                       disabled={metiendo !== null}
                       onClick={async () => {
                         setMetiendo(a.uid);
+                        setFalloInvitar(null);
                         try {
                           await onInvitar(a.uid);
                           setMetidos((s) => new Set(s).add(a.uid));
+                        } catch (error) {
+                          setFalloInvitar(
+                            error instanceof Error ? error.message : t.mesa.invitarFallo,
+                          );
                         } finally {
                           setMetiendo(null);
                         }
@@ -306,6 +314,11 @@ export default function TableSheet({
                   </li>
                 ))}
               </ul>
+            )}
+            {falloInvitar && (
+              <p className="text-[13px] leading-relaxed text-clay" role="alert">
+                {falloInvitar}
+              </p>
             )}
           </div>
         )}
