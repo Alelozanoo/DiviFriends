@@ -9,6 +9,7 @@ import { useT } from "@/lib/i18n";
 import type { Metricas } from "@/lib/metricas";
 import type { MetricasCuentas } from "@/lib/metricasCuentas";
 import CuentaBoton from "./CuentaBoton";
+import { CerrarHoja, Sheet } from "./ui";
 
 /**
  * El panel de la casa: lo que ve hola@divifriends.es al entrar.
@@ -47,6 +48,37 @@ interface Resumen {
   }[];
 }
 
+/** La ficha de una mesa, tal y como la manda /api/admin/mesa/CÓDIGO. */
+interface FichaMesa {
+  code: string;
+  place: string | null;
+  creada: string;
+  actualizada: string;
+  cerrada: boolean;
+  moneda: string;
+  total: number;
+  asignado: number;
+  sinDueno: number;
+  pendiente: number;
+  completo: boolean;
+  tickets: number;
+  lineas: { total: number; repartidas: number };
+  pagador: string | null;
+  personas: { nombre: string; color: string; esPagador: boolean; suyo: number; debe: number; saldado: boolean }[];
+  pagos: { de: string | null; a: string | null; cents: number; via: string; estado: "dice" | "ok"; at: string }[];
+  cambios: { at: string; kind: string; by: string; what: string; cents: number }[];
+}
+
+const CAMBIOS: Record<string, string> = {
+  "item.remove": "quitó",
+  "item.add": "añadió",
+  "total.edit": "cambió el total a",
+  "payer.set": "puso de pagador a",
+  "pago.ok": "cobró",
+  "mesa.nombre": "renombró la mesa a",
+  "cobro.edit": "cambió cómo se le paga",
+};
+
 const CADA_MS = 30_000;
 const SISTEMA = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, "Segoe UI", Roboto, sans-serif';
 
@@ -55,6 +87,25 @@ export default function Admin({ onComoUsuario }: { onComoUsuario: () => void }) 
   const [datos, setDatos] = useState<Resumen | null>(null);
   const [fallo, setFallo] = useState<string | null>(null);
   const [hace, setHace] = useState(0);
+  /** La mesa abierta en la ficha, y su contenido cuando llega. */
+  const [abierta, setAbierta] = useState<string | null>(null);
+  const [ficha, setFicha] = useState<FichaMesa | null>(null);
+  const [fichaFallo, setFichaFallo] = useState<string | null>(null);
+
+  const abre = useCallback(async (code: string) => {
+    setAbierta(code);
+    setFicha(null);
+    setFichaFallo(null);
+    try {
+      setFicha(await llama<FichaMesa>(`/api/admin/mesa/${code}`));
+    } catch (error) {
+      setFichaFallo(error instanceof Error ? error.message : "No se ha podido abrir.");
+    }
+  }, []);
+  const cierra = () => {
+    setAbierta(null);
+    setFicha(null);
+  };
 
   const carga = useCallback(async () => {
     try {
@@ -164,7 +215,12 @@ export default function Admin({ onComoUsuario }: { onComoUsuario: () => void }) 
           {/* ── las últimas mesas */}
           <Grupo titulo="Últimas mesas" nota="Las treinta más recientes">
             {datos.mesas.map((mesa) => (
-              <Link key={mesa.code} href={`/t/${mesa.code}`} className="flex items-center gap-3 border-t border-line-soft px-4 py-2.5 first:border-t-0 active:bg-paper-3">
+              <button
+                key={mesa.code}
+                type="button"
+                onClick={() => void abre(mesa.code)}
+                className="flex w-full items-center gap-3 border-t border-line-soft px-4 py-2.5 text-left first:border-t-0 active:bg-paper-3"
+              >
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[15px] font-semibold">
                     {mesa.place ?? mesa.code}
@@ -176,7 +232,7 @@ export default function Admin({ onComoUsuario }: { onComoUsuario: () => void }) 
                   </span>
                 </span>
                 <span className="shrink-0 text-[15px] font-semibold [font-variant-numeric:tabular-nums]">{money(mesa.total, mesa.currency)}</span>
-              </Link>
+              </button>
             ))}
           </Grupo>
 
@@ -202,6 +258,89 @@ export default function Admin({ onComoUsuario }: { onComoUsuario: () => void }) 
             <Cifra etiqueta="Mesas sin nada" valor={datos.m.nonatas.hoy} nota={`${datos.m.nonatas.total} en total: fotos que no llegaron a mesa`} tono={datos.m.nonatas.hoy > 3 ? "text-clay" : undefined} />
           </div>
 
+          {abierta && (
+            <Sheet
+              onClose={cierra}
+              titulo={ficha?.place ?? abierta}
+              sub={ficha ? `${abierta} · ${cuando(ficha.creada, t)}${ficha.cerrada ? " · cerrada" : ""}` : "Cargando…"}
+            >
+              {fichaFallo && <p className="mt-4 text-[13px] text-clay">{fichaFallo}</p>}
+              {ficha && (
+                <div className="mt-4 grid gap-4">
+                  <div className="grid grid-cols-3 gap-2">
+                    <Mini etiqueta="Total" valor={money(ficha.total, ficha.moneda)} />
+                    <Mini etiqueta="Repartido" valor={money(ficha.asignado, ficha.moneda)} tono={ficha.sinDueno === 0 ? "text-mint" : undefined} />
+                    <Mini etiqueta="Falta devolver" valor={money(ficha.pendiente, ficha.moneda)} tono={ficha.pendiente === 0 ? "text-mint" : "text-amber"} />
+                  </div>
+                  <p className="text-[13px] text-ink-faint">
+                    {ficha.personas.length} {ficha.personas.length === 1 ? "persona" : "personas"} · {ficha.lineas.repartidas} de {ficha.lineas.total} líneas con dueño ·{" "}
+                    {ficha.tickets} {ficha.tickets === 1 ? "ticket" : "tickets"}
+                    {ficha.pagador ? ` · pagó ${ficha.pagador}` : " · nadie marcado como pagador"}
+                  </p>
+
+                  <div>
+                    <p className="mb-1.5 text-[13px] font-semibold text-ink-soft">Quién ha entrado</p>
+                    <div className="overflow-hidden rounded-pieza bg-paper">
+                      {ficha.personas.length === 0 && <p className="px-3.5 py-3 text-[13px] text-ink-faint">Nadie todavía.</p>}
+                      {ficha.personas.map((p) => (
+                        <div key={p.nombre + p.suyo} className="flex items-center gap-3 border-t border-line-soft px-3.5 py-2.5 first:border-t-0">
+                          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-[12px] font-bold text-paper" style={{ background: p.color }}>
+                            {p.nombre.slice(0, 1).toUpperCase()}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-[15px] font-semibold">
+                              {p.nombre}
+                              {p.esPagador && <span className="ml-1.5 text-[12px] font-normal text-amber">puso la tarjeta</span>}
+                            </span>
+                            <span className="block text-[12px] text-ink-faint">lo suyo: {money(p.suyo, ficha.moneda)}</span>
+                          </span>
+                          <span className={`shrink-0 text-[13px] font-semibold ${p.saldado || p.debe <= 0 ? "text-mint" : "text-amber"}`}>
+                            {p.esPagador ? (ficha.pendiente === 0 ? "cobrado" : `le deben ${money(ficha.pendiente, ficha.moneda)}`) : p.saldado ? "ha pagado" : p.debe > 0 ? `debe ${money(p.debe, ficha.moneda)}` : "en paz"}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {ficha.pagos.length > 0 && (
+                    <div>
+                      <p className="mb-1.5 text-[13px] font-semibold text-ink-soft">Pagos anunciados</p>
+                      <div className="overflow-hidden rounded-pieza bg-paper">
+                        {ficha.pagos.map((pg, i) => (
+                          <div key={i} className="flex items-center justify-between gap-3 border-t border-line-soft px-3.5 py-2.5 text-[13px] first:border-t-0">
+                            <span className="min-w-0 truncate">
+                              {pg.de ?? "?"} → {pg.a ?? "?"} <span className="text-ink-faint">por {pg.via} · {cuando(pg.at, t)}</span>
+                            </span>
+                            <span className={`shrink-0 font-semibold ${pg.estado === "ok" ? "text-mint" : "text-amber"}`}>
+                              {money(pg.cents, ficha.moneda)} {pg.estado === "ok" ? "✓" : "dice"}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {ficha.cambios.length > 0 && (
+                    <div>
+                      <p className="mb-1.5 text-[13px] font-semibold text-ink-soft">Lo último que se tocó</p>
+                      <div className="overflow-hidden rounded-pieza bg-paper">
+                        {ficha.cambios.map((c) => (
+                          <div key={c.at} className="border-t border-line-soft px-3.5 py-2 text-[13px] first:border-t-0">
+                            <span className="font-semibold">{c.by}</span> {CAMBIOS[c.kind] ?? c.kind} {c.what}
+                            {c.cents ? <span className="text-ink-faint"> · {money(c.cents, ficha.moneda)}</span> : null}
+                            <span className="block text-[11.5px] text-ink-faint">{cuando(c.at, t)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <CerrarHoja onClick={cierra}>Cerrar</CerrarHoja>
+                </div>
+              )}
+            </Sheet>
+          )}
+
           <div className="mt-8 flex flex-wrap justify-center gap-x-5 gap-y-1 text-[13px] text-ink-faint">
             <button type="button" onClick={onComoUsuario} className="py-2 font-semibold text-amber">
               Ver mis mesas
@@ -224,6 +363,15 @@ function Cifra({ etiqueta, valor, nota, tono }: { etiqueta: string; valor: numbe
         {typeof valor === "number" ? valor.toLocaleString("es-ES") : valor}
       </p>
       {nota && <p className="mt-1 text-[12px] leading-snug text-ink-faint">{nota}</p>}
+    </div>
+  );
+}
+
+function Mini({ etiqueta, valor, tono }: { etiqueta: string; valor: string; tono?: string }) {
+  return (
+    <div className="rounded-pieza bg-paper px-3 py-2.5">
+      <p className="text-[11.5px] text-ink-faint">{etiqueta}</p>
+      <p className={`mt-0.5 text-[15px] font-semibold [font-variant-numeric:tabular-nums] ${tono ?? ""}`}>{valor}</p>
     </div>
   );
 }
