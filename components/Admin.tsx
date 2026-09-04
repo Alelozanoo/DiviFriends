@@ -79,7 +79,9 @@ const CAMBIOS: Record<string, string> = {
   "cobro.edit": "cambió cómo se le paga",
 };
 
-const CADA_MS = 30_000;
+const CADA_MS = 60_000;
+/** Sin tocar el panel este rato, se deja de preguntar hasta que se vuelva a tocar. */
+const QUIETO_MS = 15 * 60_000;
 const SISTEMA = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, "Segoe UI", Roboto, sans-serif';
 
 export default function Admin({ onComoUsuario }: { onComoUsuario: () => void }) {
@@ -87,6 +89,9 @@ export default function Admin({ onComoUsuario }: { onComoUsuario: () => void }) 
   const [datos, setDatos] = useState<Resumen | null>(null);
   const [fallo, setFallo] = useState<string | null>(null);
   const [hace, setHace] = useState(0);
+  /** Cuándo se tocó el panel por última vez; pasado un rato se deja de preguntar. */
+  const [ultimoToque, setUltimoToque] = useState(() => Date.now());
+  const [enPausa, setEnPausa] = useState(false);
   /** La mesa abierta en la ficha, y su contenido cuando llega. */
   const [abierta, setAbierta] = useState<string | null>(null);
   const [ficha, setFicha] = useState<FichaMesa | null>(null);
@@ -122,22 +127,38 @@ export default function Admin({ onComoUsuario }: { onComoUsuario: () => void }) 
     // La primera carga nada más entrar; el estado llega por la red, no de aquí.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void carga();
-    // Sólo con la pestaña a la vista: un panel olvidado en segundo plano no
-    // tiene que estar leyendo Firestore toda la tarde.
+    // Sólo con la pestaña a la vista y con alguien delante: un panel olvidado
+    // en una tablet no tiene que estar leyendo Firestore toda la tarde.
     const cada = setInterval(() => {
-      if (document.visibilityState === "visible") void carga();
+      if (document.visibilityState !== "visible") return;
+      if (Date.now() - ultimoToque > QUIETO_MS) {
+        setEnPausa(true);
+        return;
+      }
+      void carga();
     }, CADA_MS);
     const reloj = setInterval(() => setHace((s) => s + 1), 1000);
     const alVolver = () => {
-      if (document.visibilityState === "visible") void carga();
+      if (document.visibilityState === "visible") despierta();
+    };
+    const despierta = () => {
+      setUltimoToque(Date.now());
+      setEnPausa((estaba) => {
+        if (estaba) void carga();
+        return false;
+      });
     };
     document.addEventListener("visibilitychange", alVolver);
+    window.addEventListener("pointerdown", despierta);
+    window.addEventListener("keydown", despierta);
     return () => {
       clearInterval(cada);
       clearInterval(reloj);
       document.removeEventListener("visibilitychange", alVolver);
+      window.removeEventListener("pointerdown", despierta);
+      window.removeEventListener("keydown", despierta);
     };
-  }, [carga]);
+  }, [carga, ultimoToque]);
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col pb-10" style={{ fontFamily: SISTEMA }}>
@@ -153,7 +174,13 @@ export default function Admin({ onComoUsuario }: { onComoUsuario: () => void }) 
 
       <div className="mt-2 flex items-center justify-between px-4 text-[13px] text-ink-faint">
         <span>
-          {datos ? `Actualizado hace ${hace} s · cada ${CADA_MS / 1000} s` : fallo ? fallo : "Cargando…"}
+          {enPausa
+            ? "En pausa: toca para seguir"
+            : datos
+              ? `Actualizado hace ${hace} s · cada minuto mientras lo miras`
+              : fallo
+                ? fallo
+                : "Cargando…"}
         </span>
         <button type="button" onClick={() => void carga()} className="-mr-2 min-h-[32px] px-2 font-semibold text-amber">
           Ahora
@@ -165,8 +192,8 @@ export default function Admin({ onComoUsuario }: { onComoUsuario: () => void }) 
           {/* ── lo de hoy, de un vistazo */}
           <div className="mt-4 grid grid-cols-2 gap-2.5">
             <Cifra etiqueta="Registros hoy" valor={datos.c.cuentas.hoy} nota={`${datos.c.cuentas.semana} en 7 días · ${datos.c.cuentas.total} en total`} tono="text-mint" />
-            <Cifra etiqueta="Divis hoy" valor={datos.m.hoy} nota={`${datos.m.semana} en 7 días · ${datos.m.total} en total`} tono="text-amber" />
-            <Cifra etiqueta="Gente apuntada hoy" valor={datos.m.personas.hoy} nota={`${datos.m.personas.media.toFixed(1)} por divi · ${datos.m.personas.dosOMas} % con dos o más`} />
+            <Cifra etiqueta="Divis hoy" valor={datos.m.hoy} nota={`${datos.m.semana} en 7 días · ${datos.m.total} desde el principio`} tono="text-amber" />
+            <Cifra etiqueta="Gente apuntada hoy" valor={datos.m.personas.hoy} nota={`${datos.m.personas.total} en 14 días · ${datos.m.personas.media.toFixed(1)} por divi`} />
             <Cifra
               etiqueta="Coste hoy"
               valor={`${datos.m.coste.hoy.toFixed(2)} $`}
@@ -213,7 +240,7 @@ export default function Admin({ onComoUsuario }: { onComoUsuario: () => void }) 
           </Grupo>
 
           {/* ── las últimas mesas */}
-          <Grupo titulo="Últimas mesas" nota="Las treinta más recientes">
+          <Grupo titulo="Últimas mesas" nota="Las treinta más recientes de los últimos catorce días">
             {datos.mesas.map((mesa) => (
               <button
                 key={mesa.code}
@@ -237,7 +264,7 @@ export default function Admin({ onComoUsuario }: { onComoUsuario: () => void }) 
           </Grupo>
 
           {/* ── lo demás, en cifras */}
-          <Grupo titulo="Hasta dónde llegan" nota="Cuántos divis alcanzan cada paso">
+          <Grupo titulo="Hasta dónde llegan" nota="De los divis de los últimos catorce días">
             <div className="px-4 py-3">
               {datos.m.embudo.map((p) => (
                 <div key={p.etiqueta} className="flex items-center gap-3 py-1.5 text-[14px]">
@@ -254,8 +281,8 @@ export default function Admin({ onComoUsuario }: { onComoUsuario: () => void }) 
           <div className="mt-4 grid grid-cols-2 gap-2.5">
             <Cifra etiqueta="Correos hoy" valor={datos.c.correos.hoy} nota={`${datos.c.correos.tope.hechos} de ${datos.c.correos.tope.max} del tope · ${datos.c.correos.total} en total`} />
             <Cifra etiqueta="Amistades" valor={datos.c.amigos.amistades} nota={`${datos.c.amigos.pendientes} solicitudes sin aceptar`} />
-            <Cifra etiqueta="Coste 7 días" valor={`${datos.m.coste.semana.toFixed(2)} $`} nota={`${datos.m.coste.total.toFixed(2)} $ desde el principio`} />
-            <Cifra etiqueta="Mesas sin nada" valor={datos.m.nonatas.hoy} nota={`${datos.m.nonatas.total} en total: fotos que no llegaron a mesa`} tono={datos.m.nonatas.hoy > 3 ? "text-clay" : undefined} />
+            <Cifra etiqueta="Coste 7 días" valor={`${datos.m.coste.semana.toFixed(2)} $`} nota={`${datos.m.coste.total.toFixed(2)} $ en 14 días · el total, en la página larga`} />
+            <Cifra etiqueta="Mesas sin nada" valor={datos.m.nonatas.hoy} nota={`${datos.m.nonatas.total} en 14 días: fotos que no llegaron a mesa`} tono={datos.m.nonatas.hoy > 3 ? "text-clay" : undefined} />
           </div>
 
           {abierta && (

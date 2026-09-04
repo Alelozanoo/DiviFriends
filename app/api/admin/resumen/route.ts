@@ -11,14 +11,23 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * La respuesta se guarda en memoria veinte segundos.
+ * Lo que cuesta mirar el panel, y por qué está montado así.
  *
- * Cada resumen lee todas las mesas y todas las cuentas: con el panel abierto
- * en dos pestañas, o con «Ahora» pulsado a lo loco, eso sería una factura de
- * Firestore. Con esto, por muchas veces que se pida, Firestore se lee una vez
- * por instancia y por veinte segundos, que para mirar el día es tiempo real.
+ * Firestore cobra por documento leído. La primera versión leía todas las
+ * mesas y todas las cuentas en cada refresco: con cien mesas son céntimos,
+ * con dos mil mesas y mil cuentas, un panel abierto todo el día serían uno o
+ * dos euros diarios. Tres cosas lo dejan en calderilla pase lo que pase:
+ *
+ * 1. Sólo se leen las mesas de los últimos catorce días, que es lo que el
+ *    panel enseña por día. Los totales «desde el principio» salen de un
+ *    recuento (`count()`), que cuesta un documento por cada mil.
+ * 2. La respuesta se guarda un minuto en memoria por instancia: pedirla diez
+ *    veces es leer Firestore una.
+ * 3. El panel pregunta cada minuto sólo con la pestaña a la vista, y se para
+ *    solo tras un cuarto de hora sin tocarlo.
  */
-const CACHE_MS = 20_000;
+const CACHE_MS = 60_000;
+const VENTANA_MS = 14 * 24 * 60 * 60 * 1000;
 let guardado: { cuando: number; cuerpo: unknown } | null = null;
 
 /**
@@ -39,14 +48,17 @@ export async function GET(request: Request) {
   }
   try {
     const db = firestore();
-    const [tickets, users, lecturas, c] = await Promise.all([
-      db.collection(TICKETS).orderBy("createdAt", "desc").limit(2000).get(),
+    const desde = new Date(Date.now() - VENTANA_MS).toISOString();
+    const [tickets, totalMesas, users, lecturas, c] = await Promise.all([
+      db.collection(TICKETS).where("createdAt", ">=", desde).orderBy("createdAt", "desc").limit(2000).get(),
+      db.collection(TICKETS).count().get(),
       db.collection("users").limit(5000).get(),
       lecturasDelDia(),
       metricasCuentas(),
     ]);
     const docs = tickets.docs.map((d) => d.data() as TicketDoc);
-    const m = resumen(docs);
+    // Todo lo de `m` es de los últimos catorce días; el total de verdad es el recuento.
+    const m = { ...resumen(docs), total: totalMesas.data().count };
 
     const usuarios = users.docs
       .map((d) => {
