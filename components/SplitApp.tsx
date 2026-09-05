@@ -183,6 +183,29 @@ export default function SplitApp({
   const showJoin = joinOverride === true && !meId;
 
   /*
+    Nada que cambie la mesa sin decir quién eres.
+
+    Mirar una comanda con el enlace está bien —es lo que hace quien llega y
+    quiere ver de qué va— pero tocarla no: cualquiera que abriera el enlace
+    podía entrar en «Dividir» y quitarle las croquetas a Bea sin haber dicho
+    siquiera su nombre, y en el historial no quedaba a quién echarle la culpa
+    porque no había nadie.
+
+    Así que cada acción pasa por aquí. Si no tienes sitio en la mesa, en vez
+    de hacerla se abre la puerta —Google o invitado—, que es lo que hacía
+    falta antes de tocar. No se recuerda lo que ibas a hacer: son dos toques
+    y adivinar la intención de alguien que aún no existe se equivoca más de
+    lo que acierta.
+  */
+  const siEstoyDentro = (accion: () => void) => () => {
+    if (!meId) {
+      setJoinOverride(true);
+      return;
+    }
+    accion();
+  };
+
+  /*
     Entrar con Google desde la puerta de la mesa.
 
     Cuando llega la sesión hay dos caminos. Si la cuenta es nueva —sin
@@ -552,6 +575,14 @@ export default function SplitApp({
     su pestaña va marcada y la pantalla de cuentas avisa. Sin eso los números
     salen mal y encima con toda la pinta de estar bien.
   */
+  /** El nombre de quien puso la tarjeta del papel que se está mirando. */
+  const pagadorNombre = (() => {
+    const id = pagadorDelTicket(currentReceiptId);
+    if (!id) return null;
+    const quien = state.participants.find((p) => p.id === id);
+    return quien ? (quien.id === meId ? t.mesa.tu.replace(/[()]/g, "") : quien.name) : null;
+  })();
+
   /** Cuántos papeles hay: con uno solo, la fila de pestañas no pinta nada. */
   const pestanas = (hasLegacyItems ? 1 : 0) + receipts.length;
 
@@ -696,7 +727,10 @@ export default function SplitApp({
             */}
             <button
               type="button"
-              onClick={() => setSharing(true)}
+              /* Compartir también pide estar dentro: quien reparte el enlace
+                 es alguien de la mesa, y así la puerta sale en el primer
+                 gesto, sea el que sea. */
+              onClick={siEstoyDentro(() => setSharing(true))}
               className="flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-line bg-paper-2 pl-1 pr-2.5 transition-transform active:scale-95"
             >
               {/*
@@ -707,21 +741,19 @@ export default function SplitApp({
                 estrechas —o sea, a quitar lo único que dice para qué sirve el
                 botón—. Cuántos sois se cuenta en la hoja, que es donde se mira.
               */}
-              <span className="flex items-center">
-                {state.participants.slice(0, 3).map((person, i) => (
-                  <span
-                    key={person.id}
-                    className="rounded-full"
-                    style={{ marginLeft: i === 0 ? 0 : -7, boxShadow: "0 0 0 2px var(--paper-2)" }}
-                  >
-                    <Avatar
-                      name={person.name}
-                      avatar={person.avatar}
-                      color={person.color}
-                      size={20}
-                    />
-                  </span>
-                ))}
+              {/*
+                Cuántos sois, en número.
+
+                Eran tres caras superpuestas y con cuatro personas ya no cabía
+                la cuarta, así que el botón enseñaba «tres» pasara lo que
+                pasara: la información que da un avatar de 20 px del que no se
+                distingue la cara es exactamente ninguna, y ocupaba el ancho
+                que ahora deja sitio a quién pagó. El número no miente ni con
+                dos ni con nueve, y es lo que se pregunta al mirar ahí:
+                ¿estamos todos?
+              */}
+              <span className="tnum text-[13px] font-bold text-amber">
+                {state.participants.length}
               </span>
               <span className="text-[13px] font-bold text-amber">{t.comanda.compartir}</span>
             </button>
@@ -739,7 +771,7 @@ export default function SplitApp({
               Con la mesa cerrada desaparece: ahí ya no se cambia nada.
             */}
             {!state.ticket.closed && (
-              <Redondo onClick={() => setCambiarPagadorOpen(true)} label={t.menu.cambiarPagador} escudo>
+              <Redondo onClick={siEstoyDentro(() => setCambiarPagadorOpen(true))} label={t.menu.cambiarPagador} escudo>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" strokeLinecap="round">
                   <rect x="2.6" y="6.2" width="18.8" height="11.6" rx="2" />
                   <circle cx="12" cy="12" r="2.6" />
@@ -817,16 +849,27 @@ export default function SplitApp({
                   >
                     {t.comanda.verTicket}
                   </button>
-                  <span className="tnum whitespace-nowrap text-[13px] text-ink-faint">
-                    {left > 0 ? (
+                  {/*
+                    Quién puso la tarjeta, aquí.
+
+                    Antes esta esquina decía «sin repartir 65,37 €», que es la
+                    otra mitad de la resta que ya está escrita justo encima
+                    —«repartido 31,03 € / 96,40 €»— y que además vuelve a salir
+                    en la barra de abajo. Tres sitios para un número.
+
+                    Quien pagó, en cambio, no estaba en ninguna parte: había
+                    que abrir Cuentas para saberlo, y es el dato que ordena
+                    toda la cena. Cuando no lo ha dicho nadie, lo pide en
+                    ámbar, que es la única tarea pendiente que hay de verdad.
+                  */}
+                  <span className="whitespace-nowrap text-[13px] text-ink-faint">
+                    {pagadorNombre ? (
                       <>
-                        {t.comanda.sinRepartir}{" "}
-                        <b className="font-bold text-ink">
-                          {money(left, state.ticket.currency)}
-                        </b>
+                        {t.comanda.pago}{" "}
+                        <b className="font-bold text-ink">{pagadorNombre}</b>
                       </>
                     ) : (
-                      <b className="font-bold text-ink">{t.comanda.todoRepartido}</b>
+                      <b className="font-bold text-amber">{t.comanda.sinPagador}</b>
                     )}
                   </span>
                 </div>
@@ -940,9 +983,9 @@ export default function SplitApp({
                 currency={state.ticket.currency}
                 open={abierta === item.id}
                 onOpen={() => setAbierta(abierta === item.id ? null : item.id)}
-                onSetShares={(shares) => claim(item.id, shares)}
-                onOpenOptions={() => setEditing(item.id)}
-                onRemove={() => setRemoving(item.id)}
+                onSetShares={(shares) => siEstoyDentro(() => claim(item.id, shares))()}
+                onOpenOptions={siEstoyDentro(() => setEditing(item.id))}
+                onRemove={siEstoyDentro(() => setRemoving(item.id))}
               />
             ))}
 
@@ -968,7 +1011,7 @@ export default function SplitApp({
               <li>
                 <button
                   type="button"
-                  onClick={() => setAdding(true)}
+                  onClick={siEstoyDentro(() => setAdding(true))}
                   className="flex min-h-16 w-full items-center justify-center gap-2 rounded-caja border-[1.5px] border-dashed border-line text-[15px] font-semibold text-ink-soft transition-colors active:bg-paper-2"
                 >
                   <span className="text-[21px] leading-none">+</span>
@@ -1375,7 +1418,7 @@ export default function SplitApp({
               setEditNameOpen(true);
             }
           }}
-          onOtroTicket={!state.ticket.closed ? () => setUploadingAnother(true) : null}
+          onOtroTicket={!state.ticket.closed ? siEstoyDentro(() => setUploadingAnother(true)) : null}
           soyElPagador={soyElPagador}
           onRemovePayer={
             (!state.ticket.closed && soyElPagador) ? async () => {
