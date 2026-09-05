@@ -110,7 +110,7 @@ export default function SplitApp({
   const { state, setServer, beginClaim, settleClaim } = useTicketSync(code, initial);
   const settlement = useMemo(() => computeSettlement(state), [state]);
 
-  const { known, participantId: storedId, store } = useStoredParticipant(code);
+  const { known, participantId: storedId, cuenta: asientoDeCuenta, store } = useStoredParticipant(code);
   /*
     El pago que se quedó a medias al salir a Revolut. Si hay uno guardado, la
     hoja se abre sola por la pregunta de «¿lo has enviado?»: se deriva del
@@ -119,8 +119,19 @@ export default function SplitApp({
   */
   const pagoPendiente = usePagoPendiente(code);
   const { profile: globalProfile, saveProfile } = useGlobalProfile();
-  const meId = storedId && state.participants.some((p) => p.id === storedId) ? storedId : null;
   const { usuario, entrar, ocupado: entrando, cargada, usuarioNombre } = useCuenta();
+  /*
+    El asiento guardado es de quien lo guardó.
+
+    Si se ocupó con una cuenta y ahora hay otra, no vale: se descarta, y el
+    efecto del asiento busca el de la cuenta nueva o la sienta con su perfil.
+    Un asiento de invitado sí vale para quien entre después con cuenta —es la
+    misma persona que se registra a mitad de cena— y al enlazarlo se apunta
+    la cuenta, para que la siguiente que entre no lo herede.
+  */
+  const asientoAjeno = Boolean(usuario && asientoDeCuenta && asientoDeCuenta !== usuario.uid);
+  const meId =
+    storedId && !asientoAjeno && state.participants.some((p) => p.id === storedId) ? storedId : null;
   const router = useRouter();
   // La huella de la última sesión: mientras Firebase decide, el botón de
   // «Unirme» espera en vez de ofrecerse a quien ya tiene cuenta.
@@ -142,7 +153,7 @@ export default function SplitApp({
       try {
         const { participantId } = await asientoEn(code);
         if (participantId) {
-          store(participantId);
+          store(participantId, usuario.uid);
           return;
         }
         /*
@@ -240,8 +251,10 @@ export default function SplitApp({
     const clave = `${code}:${usuario.uid}:${meId}`;
     if (asientoEnlazado.current === clave) return;
     asientoEnlazado.current = clave;
-    void vinculaAsiento(code, meId).catch(() => {});
-  }, [usuario, meId, code]);
+    void vinculaAsiento(code, meId)
+      .then(() => store(meId, usuario.uid))
+      .catch(() => {});
+  }, [usuario, meId, code, store]);
 
   // `color` va obligatorio, como en `Participant`: el toast siempre se rellena
   // desde uno de la mesa, así que nunca falta. Declararlo opcional no cubría
@@ -368,7 +381,7 @@ export default function SplitApp({
     const participantId = await addPerson(name, avatar, bizum, revolut);
     if (!participantId) return;
     track(EV.seApunta, { con_avatar: Boolean(avatar) });
-    store(participantId);
+    store(participantId, usuario?.uid ?? null);
     // Con cuenta, la mesa se queda con que este asiento es tuyo: así te puede
     // avisar cuando se cierre o cuando te paguen. Sin esperar: no es parte de
     // apuntarse, y si falla no cambia nada de lo que ves.
