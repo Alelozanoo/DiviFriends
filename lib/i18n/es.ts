@@ -156,8 +156,10 @@ export const es = {
     entradilla: "Cómo te ven tus amigos y cómo te devuelven el dinero. Se hace una vez.",
     terminosAntes: "He leído y acepto los ",
     terminosEnlace: "términos y condiciones",
-    novedades: "Avísame de las novedades de DiviFriends.",
-    novedadesNota: "Pocas, útiles y sin spam. Te das de baja cuando quieras.",
+    novedades: "Avísame cuando saquéis cosas nuevas",
+    novedadesNota: "Un correo al mes como mucho, y sólo de la app.",
+    alEntrar: "Al entrar aceptas los",
+    yaAceptados: "Al entrar aceptaste los",
     guardar: "Guardar y empezar",
     faltaNombre: "Ponte un nombre: es lo que verá la mesa.",
     faltaUsuario: "Elige un usuario: es con lo que te añaden tus amigos.",
@@ -690,6 +692,7 @@ export const es = {
 
   /* ------------------------------------------------------- avatar y varios */
   varios: {
+    y: "y la",
     eligeAvatar: "Elige tu foto de perfil",
     otraCana: "Otra caña",
     comanda: "Comanda",

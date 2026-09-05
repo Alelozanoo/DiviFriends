@@ -141,8 +141,10 @@ export const en: Dict = {
     entradilla: "How your friends see you and how they pay you back. You do this once.",
     terminosAntes: "I've read and accept the ",
     terminosEnlace: "terms and conditions",
-    novedades: "Let me know what's new in DiviFriends.",
-    novedadesNota: "Rarely, only when useful, no spam. Unsubscribe whenever you like.",
+    novedades: "Tell me when there's something new",
+    novedadesNota: "One email a month at most, and only about the app.",
+    alEntrar: "By signing in you accept the",
+    yaAceptados: "By signing in you accepted the",
     guardar: "Save and start",
     faltaNombre: "Add a name: it's what the table sees.",
     faltaUsuario: "Pick a username: it's how friends add you.",
@@ -640,6 +642,7 @@ export const en: Dict = {
   },
 
   varios: {
+    y: "and the",
     eligeAvatar: "Pick your picture",
     otraCana: "Another beer",
     comanda: "Bill",

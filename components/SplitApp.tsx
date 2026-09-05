@@ -31,7 +31,7 @@ import TicketSheet from "./TicketSheet";
 import TableSheet from "./TableSheet";
 import GuideSheet from "./GuideSheet";
 import TicketUploader from "./TicketUploader";
-import { Avatar, Progress, Sheet } from "./ui";
+import { Avatar, AvisoTerminos, Progress, Sheet } from "./ui";
 import { HeaderMenuSheet } from "./HeaderMenuSheet";
 import { CambiarPagadorSheet } from "./CambiarPagadorSheet";
 import { EditNameSheet } from "./EditNameSheet";
@@ -1658,6 +1658,7 @@ function JoinSheet({
         <p className="mt-1.5 px-1 text-center text-[12.5px] leading-relaxed text-ink-faint">
           {t.entrar.googleAyuda}
         </p>
+        <AvisoTerminos />
 
         <button
           type="button"

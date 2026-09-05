@@ -19,6 +19,7 @@ import Inicio from "@/components/Inicio";
 import Admin from "@/components/Admin";
 import { RESPONSABLE } from "@/lib/responsable";
 import { useCuenta } from "@/lib/cuenta";
+import { useSesionLocal } from "@/lib/sesionLocal";
 import { I18nProvider, useT, useLang, type Lang } from "@/lib/i18n";
 import { inicio } from "@/lib/i18n/config";
 
@@ -41,27 +42,49 @@ export default function Landing({ lang }: { lang: Lang }) {
 function Cuerpo() {
   const t = useT();
   const lang = useLang();
-  const { usuario, cargada, terminos } = useCuenta();
+  const { usuario, cargada, usuarioNombre } = useCuenta();
+  const sesion = useSesionLocal();
   const router = useRouter();
   // La cuenta de la casa ve el panel; «Ver mis mesas» la pasa a lo de todos.
   const admin = usuario?.email?.toLowerCase() === RESPONSABLE.correo;
   const [comoUsuario, setComoUsuario] = useState(false);
 
-  // Con cuenta pero sin haber pasado por el registro —foto, usuario, cómo te
-  // pagan y los términos— se va allí antes que a ninguna otra parte. La casa
-  // no se registra: no es una usuaria.
+  /*
+    Con cuenta pero sin haber pasado por el registro —foto, usuario, cómo te
+    pagan— se va allí antes que a ninguna otra parte. La casa no se registra:
+    no es una usuaria.
+
+    Lo que se mira es el usuario y no los términos, que es lo que se miraba
+    antes: desde el 6 de septiembre de 2026 los términos se aceptan al entrar
+    con Google, así que los tiene todo el mundo y esta puerta no se habría
+    abierto nunca más. El usuario es lo único de esa página que no se puede
+    rellenar solo.
+  */
   useEffect(() => {
-    if (usuario && cargada && !terminos && !admin) router.replace("/registro");
-  }, [usuario, cargada, terminos, admin, router]);
+    if (usuario && cargada && !usuarioNombre && !admin) router.replace("/registro");
+  }, [usuario, cargada, usuarioNombre, admin, router]);
 
   /*
     Con cuenta, la portada es otra: tus mesas, no la web de venta.
 
     El servidor pinta siempre la de venta —`/` es estática y no sabe quién
-    llega— y en cuanto Firebase dice que hay sesión, se cambia. A quien tiene
-    cuenta le parpadea la de venta un instante al entrar; es el precio de que
-    la portada de todos los demás cargue en 128 ms.
+    llega— y en cuanto Firebase dice que hay sesión, se cambia. Firebase tarda
+    entre uno y tres segundos en decirlo, y ese rato quien tiene cuenta veía
+    la web de venta y luego un salto: le parecía que la app no sabía quién
+    era. Por eso se mira antes la huella que dejó la última sesión en el
+    móvil (`lib/sesionLocal.ts`): si la hay, se enseñan sus mesas desde el
+    primer fotograma —están guardadas aquí mismo— y Firebase confirma por
+    detrás. Si al final dice que no hay nadie, la huella se borra y vuelve la
+    de venta. La casa espera en blanco: su portada es el panel, no las mesas.
   */
+  if (usuario === undefined && sesion) {
+    return (
+      <main id="contenido" className="flex flex-1 flex-col">
+        {sesion === "casa" ? null : <Inicio />}
+      </main>
+    );
+  }
+
   if (usuario) {
     return (
       <main id="contenido" className="flex flex-1 flex-col">
@@ -71,7 +94,8 @@ function Cuerpo() {
   }
 
   return (
-    <main id="contenido" className="flex flex-1 flex-col lg:block">
+    /* `data-portada`: el CSS la esconde antes de hidratar si hay huella de sesión. */
+    <main id="contenido" data-portada="venta" className="flex flex-1 flex-col lg:block">
       {/* ---------------------------------------------------------------- hero */}
       {/*
         En el móvil, una sola pantalla y sin scroll.

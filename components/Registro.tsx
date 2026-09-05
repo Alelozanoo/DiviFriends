@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { processImageToAvatarBase64 } from "@/lib/avatarUpload";
-import { aceptaTerminos, ponUsuario, useCuenta } from "@/lib/cuenta";
+import { ponNovedades, ponUsuario, useCuenta } from "@/lib/cuenta";
 import { useT } from "@/lib/i18n";
 import { useGlobalProfile } from "@/lib/useGlobalProfile";
 import { G } from "./CuentaBoton";
@@ -29,7 +29,7 @@ const SISTEMA = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Displ
 export default function Registro() {
   const t = useT();
   const router = useRouter();
-  const { usuario, cargada, terminos, usuarioNombre, entrar, ocupado } = useCuenta();
+  const { usuario, cargada, usuarioNombre, entrar, ocupado } = useCuenta();
   const { profile, saveProfile } = useGlobalProfile();
 
   const [name, setName] = useState("");
@@ -37,7 +37,6 @@ export default function Registro() {
   const [user, setUser] = useState("");
   const [bizum, setBizum] = useState("");
   const [revolut, setRevolut] = useState("");
-  const [acepta, setAcepta] = useState(false);
   const [novedades, setNovedades] = useState(false);
   const [busy, setBusy] = useState(false);
   const [fallo, setFallo] = useState<string | null>(null);
@@ -61,16 +60,24 @@ export default function Registro() {
     if (usuarioNombre) setUser((v) => v || usuarioNombre);
   }, [usuarioNombre]);
 
-  // Quien ya pasó por aquí no vuelve: a sus mesas.
+  /*
+    Quien ya pasó por aquí no vuelve: a sus mesas.
+
+    La llave era haber aceptado los términos, y dejó de servir el 6 de
+    septiembre de 2026: ahora se aceptan al entrar con Google, debajo del
+    botón, así que todo el mundo los tiene desde el primer segundo y esta
+    página no habría vuelto a salir. La llave es el usuario, que es lo único
+    de aquí que no se puede rellenar solo y lo que hace falta para que te
+    añadan.
+  */
   useEffect(() => {
-    if (usuario && cargada && terminos) router.replace("/");
-  }, [usuario, cargada, terminos, router]);
+    if (usuario && cargada && usuarioNombre) router.replace("/");
+  }, [usuario, cargada, usuarioNombre, router]);
 
   async function guardar() {
     setFallo(null);
     if (!name.trim()) return setFallo(t.cuentaNueva.faltaNombre);
     if (!user) return setFallo(t.cuentaNueva.faltaUsuario);
-    if (!acepta) return setFallo(t.cuentaNueva.faltaTerminos);
     setBusy(true);
     try {
       saveProfile({
@@ -79,10 +86,10 @@ export default function Registro() {
         bizum: bizum.trim() || undefined,
         revolut: revolut.trim() || undefined,
       });
-      // El usuario va antes que los términos: si está cogido, se corrige y
-      // se vuelve a guardar sin haber aceptado nada a medias.
+      // El usuario primero: si está cogido, se corrige y se vuelve a guardar
+      // sin haber dejado nada a medias por el camino.
       if (user !== usuarioNombre) await ponUsuario(user);
-      await aceptaTerminos(novedades);
+      await ponNovedades(novedades);
       router.replace("/");
     } catch (error) {
       setFallo(error instanceof Error ? error.message : t.comanda.errorGuardar);
@@ -208,23 +215,22 @@ export default function Registro() {
             </div>
           </div>
 
-          {/* ── las dos casillas: los términos, obligatoria; las novedades, tuya */}
-          <div className="mt-7 grid gap-3">
-            <label className="flex cursor-pointer items-start gap-3">
-              <input
-                type="checkbox"
-                checked={acepta}
-                onChange={(event) => setAcepta(event.target.checked)}
-                className="mt-0.5 h-5 w-5 shrink-0 accent-[#e8b04b]"
-              />
-              <span className="text-[15px] leading-[1.45]">
-                {t.cuentaNueva.terminosAntes}
-                <Link href="/terminos" target="_blank" rel="noopener" className="text-amber underline underline-offset-2">
-                  {t.cuentaNueva.terminosEnlace}
-                </Link>
-                .
-              </span>
-            </label>
+          {/*
+            Una sola casilla, y sin marcar.
+
+            La de los términos ya no está: se aceptan al entrar con Google,
+            debajo del botón, y volver a pedirlos aquí sería preguntar dos
+            veces lo mismo. Queda la de las novedades, que es un consentimiento
+            distinto —publicidad— y por eso tiene que ir aparte, a mano y en
+            blanco: una casilla de marketing premarcada no vale nada en la UE
+            desde la sentencia Planet49. Lo que sí se puede hacer es explicar
+            qué te va a llegar y cada cuánto, que es lo que de verdad decide
+            si alguien la marca.
+
+            Va al final a propósito: quien acaba de rellenar el usuario y cómo
+            le pagan está en modo «completar». Arriba sería un peaje.
+          */}
+          <div className="mt-7">
             <label className="flex cursor-pointer items-start gap-3">
               <input
                 type="checkbox"
@@ -248,11 +254,22 @@ export default function Registro() {
           <button
             type="button"
             onClick={() => void guardar()}
-            disabled={busy || !acepta}
+            disabled={busy || !name.trim() || !user}
             className="mt-6 min-h-[52px] w-full rounded-[14px] bg-amber text-[17px] font-semibold text-paper transition-transform active:scale-[0.98] disabled:opacity-40"
           >
             {t.cuentaNueva.guardar}
           </button>
+          <p className="mt-3 text-center text-[12.5px] leading-relaxed text-ink-faint">
+            {t.cuentaNueva.yaAceptados}{" "}
+            <Link href="/terminos" target="_blank" rel="noopener" className="underline underline-offset-2">
+              {t.cuentaNueva.terminosEnlace}
+            </Link>{" "}
+            {t.varios.y}{" "}
+            <Link href="/privacidad" target="_blank" rel="noopener" className="underline underline-offset-2">
+              {t.cookies.privacidad}
+            </Link>
+            .
+          </p>
         </>
       )}
     </main>

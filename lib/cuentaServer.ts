@@ -299,7 +299,26 @@ function aCuenta(
 }
 
 /** La cuenta, creándola si es la primera vez que esta persona entra. */
-export async function leeOCrea(quien: Quien): Promise<Cuenta> {
+/**
+ * La cuenta de quien llama, creándola si es la primera vez.
+ *
+ * Al crearla se dan por aceptados los términos, con la fecha. No es un atajo:
+ * debajo de cada botón de «Entrar con Google» pone que al entrar se aceptan,
+ * con sus dos enlaces, así que el consentimiento se recoge donde se pulsa.
+ * Antes vivía en una página aparte, `/registro`, y **sólo pasaba por ahí quien
+ * llegaba por la portada**: quien entraba desde la cabecera o desde dentro de
+ * una mesa acababa con cuenta y sin términos. El 5 de septiembre de 2026 eran
+ * 21 de 38, más de la mitad.
+ *
+ * Las novedades no van aquí y no pueden ir: el consentimiento publicitario
+ * tiene que ser un sí aparte y a mano. Se pide en la hoja de bienvenida, sin
+ * marcar.
+ *
+ * `nueva` dice si se acaba de crear, que es lo que mira la ruta para apuntarla
+ * en la hoja de registros y avisar del alta. Sin eso, las altas que no pasan
+ * por `/registro` no se enteraría nadie.
+ */
+export async function leeOCrea(quien: Quien): Promise<Cuenta & { nueva: boolean }> {
   const ref = doc(quien.uid);
   const snap = await ref.get();
   if (snap.exists) {
@@ -307,25 +326,28 @@ export async function leeOCrea(quien: Quien): Promise<Cuenta> {
     if (quien.email && snap.get("email") !== quien.email) {
       await ref.set({ email: quien.email }, { merge: true });
     }
-    return aCuenta(quien.uid, {
-      ...snap.data(),
-      email: quien.email ?? snap.get("email"),
-    });
+    return {
+      ...aCuenta(quien.uid, {
+        ...snap.data(),
+        email: quien.email ?? snap.get("email"),
+      }),
+      nueva: false,
+    };
   }
   const ahora = new Date().toISOString();
-  const nueva = {
+  const cuenta = {
     email: quien.email,
     perfil: null,
     divis: [],
     quitadas: {},
     avisos: true,
-    terminos: null,
+    terminos: ahora,
     novedades: false,
     creada: ahora,
     actualizada: ahora,
   };
-  await ref.set(nueva);
-  return aCuenta(quien.uid, nueva);
+  await ref.set(cuenta);
+  return { ...aCuenta(quien.uid, cuenta), nueva: true };
 }
 
 /**

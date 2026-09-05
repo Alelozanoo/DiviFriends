@@ -10,7 +10,7 @@ import {
   type Auth,
   type User,
 } from "firebase/auth";
-import { getFirestore, type Firestore } from "firebase/firestore";
+import { initializeFirestore, type Firestore } from "firebase/firestore";
 
 const config = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -41,9 +41,28 @@ function clientApp(): FirebaseApp | null {
  * Devuelve null si la configuración pública no está puesta: en ese caso la app
  * sigue funcionando con sondeo periódico, sólo que menos inmediata.
  */
+let db: Firestore | null = null;
+
 export function clientFirestore(): Firestore | null {
   const app = clientApp();
-  return app ? getFirestore(app) : null;
+  if (!app) return null;
+  /*
+    Long polling forzado, y no el transporte por defecto.
+
+    Medido el 6 de septiembre de 2026 contra la web publicada, en un iPhone
+    simulado: con el transporte por defecto —fetch streams— Safari enseñaba
+    un plato marcado desde otro móvil hasta 30 s tarde, y no siempre, según en
+    qué punto del ciclo del canal cayera la escritura. En Chrome, 15 ms. WebKit
+    retiene el canal de escucha y los mensajes sólo llegan cuando se recicla;
+    el sondeo de `useTicketSync` no salta porque el SDK nunca se cree
+    desconectado. Con long polling: 0,4 s en Safari, y en Chrome lo mismo que
+    antes, que es lo que tarda la propia petición a la API.
+
+    Se guarda la instancia: `initializeFirestore` sólo se puede llamar una vez
+    por app con estas opciones.
+  */
+  db ??= initializeFirestore(app, { experimentalForceLongPolling: true });
+  return db;
 }
 
 export const realtimeEnabled = configurado;

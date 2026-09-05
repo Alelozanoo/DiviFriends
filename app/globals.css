@@ -345,6 +345,18 @@ html:lang(en) .saltar [data-en] {
 }
 
 /*
+  La portada de venta no se pinta si este móvil entró con cuenta la última vez.
+
+  El script de app/layout.tsx marca <html data-sesion> antes del primer
+  pintado, y al hidratar Landing pone «Tus mesas» en su sitio. Si Firebase
+  dice luego que no hay nadie, la marca se quita y esto deja de aplicarse.
+  Ver lib/sesionLocal.ts.
+*/
+html[data-sesion] main[data-portada="venta"] {
+  display: none;
+}
+
+/*
   El grano del papel.
 
   La app se llama a sí misma un ticket térmico visto de noche y hasta ahora era

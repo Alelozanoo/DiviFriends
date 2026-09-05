@@ -1,5 +1,8 @@
 "use client";
 
+import Link from "next/link";
+import { useT } from "@/lib/i18n";
+
 import { useCallback, useEffect, useState } from "react";
 import { initials } from "@/lib/format";
 
@@ -233,5 +236,31 @@ export function Progress({ value }: { value: number }) {
         style={{ width: `${pct}%` }}
       />
     </div>
+  );
+}
+
+/**
+ * «Al entrar aceptas los términos», debajo del botón de Google.
+ *
+ * Va aquí, en la caja de piezas comunes, porque tiene que salir en los tres
+ * sitios donde se puede entrar —la portada, la cabecera y la puerta de una
+ * mesa— y porque el día que falte en uno, ése es justo el que recoge un
+ * consentimiento que no se ha pedido. Es lo que hace legítimo dar los
+ * términos por aceptados al crear la cuenta: se avisa donde se pulsa.
+ */
+export function AvisoTerminos() {
+  const t = useT();
+  return (
+    <p className="mt-2 px-1 text-center text-[12px] leading-relaxed text-ink-faint">
+      {t.cuentaNueva.alEntrar}{" "}
+      <Link href="/terminos" target="_blank" rel="noopener" className="underline underline-offset-2">
+        {t.cuentaNueva.terminosEnlace}
+      </Link>{" "}
+      {t.varios.y}{" "}
+      <Link href="/privacidad" target="_blank" rel="noopener" className="underline underline-offset-2">
+        {t.cookies.privacidad}
+      </Link>
+      .
+    </p>
   );
 }

@@ -29,7 +29,34 @@ export async function GET(request: Request) {
   const quien = await usuarioDe(request);
   if (!quien) return sinSesion();
   try {
-    return NextResponse.json(await leeOCrea(quien));
+    const { nueva, ...cuenta } = await leeOCrea(quien);
+    /*
+      Un alta se apunta aquí, que es por donde pasa **todo el mundo** al
+      entrar, y no en el PATCH de los términos, que era por donde pasaba sólo
+      quien llegaba por `/registro`. Antes de contestar y no después: en Cloud
+      Run lo que queda pendiente al devolver la respuesta se puede quedar sin
+      hacer.
+
+      Si la hoja falla no pasa nada —lo apunta en el log y sigue—, porque la
+      cuenta manda sobre la hoja y nunca al revés.
+    */
+    if (nueva && quien.email) {
+      await apuntaEnHoja({
+        correo: quien.email,
+        nombre: cuenta.perfil?.name,
+        terminos: cuenta.terminos,
+        novedades: cuenta.novedades,
+      });
+      await avisaAlta({
+        nombre: cuenta.perfil?.name ?? "",
+        correo: quien.email,
+        usuario: cuenta.usuario,
+        novedades: cuenta.novedades,
+        bizum: cuenta.perfil?.bizum,
+        revolut: cuenta.perfil?.revolut,
+      });
+    }
+    return NextResponse.json(cuenta);
   } catch (error) {
     return fail(error);
   }
@@ -63,8 +90,6 @@ export async function PATCH(request: Request) {
     }>(request, 600_000, { estricto: true });
     // El usuario tiene su propia reserva de unicidad; va aparte del resto.
     if (body.usuario !== undefined) await ponUsuario(quien.uid, body.usuario);
-    // Para saber si es la primera vez que acepta los términos: eso es un alta.
-    const antes = body.terminos === true ? await leeOCrea(quien) : null;
     const cuenta = await actualiza(quien, body);
     // Los términos y las novedades se apuntan también en la hoja de registros,
     // antes de contestar: en Cloud Run lo que queda pendiente al contestar se
@@ -75,16 +100,6 @@ export async function PATCH(request: Request) {
         nombre: cuenta.perfil?.name,
         terminos: cuenta.terminos,
         novedades: cuenta.novedades,
-      });
-    }
-    if (antes && !antes.terminos && cuenta.terminos && quien.email) {
-      await avisaAlta({
-        nombre: cuenta.perfil?.name ?? "",
-        correo: quien.email,
-        usuario: cuenta.usuario,
-        novedades: cuenta.novedades,
-        bizum: cuenta.perfil?.bizum,
-        revolut: cuenta.perfil?.revolut,
       });
     }
     return NextResponse.json(cuenta);

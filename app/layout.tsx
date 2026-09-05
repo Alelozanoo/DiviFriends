@@ -114,6 +114,21 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="es" className={`${display.variable} ${figure.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
         {/*
+          Antes de pintar nada: ¿entró este móvil con cuenta la última vez?
+
+          Va en línea y lo primero del cuerpo a propósito: el navegador lo
+          ejecuta antes de seguir leyendo el HTML, así que la portada de venta
+          ni llega a pintarse cuando hay huella. La clave es `CLAVE_SESION` de
+          `lib/sesionLocal.ts`, escrita aquí a mano porque ese módulo es de
+          cliente y esto es el layout del servidor.
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              'try{var s=localStorage.getItem("divi.sesion");if(s==="1"||s==="casa")document.documentElement.setAttribute("data-sesion",s)}catch(e){}',
+          }}
+        />
+        {/*
           Lo primero que encuentra el tabulador.
 
           Fuera de la portada, encima del contenido hay una cabecera con menú,

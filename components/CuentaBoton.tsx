@@ -9,7 +9,7 @@ import AmigosSheet from "./AmigosSheet";
 import { EnlaceBorrado } from "./BorrarCuenta";
 import { EditNameSheet } from "./EditNameSheet";
 import NotificacionesSheet from "./NotificacionesSheet";
-import { Avatar, CerrarHoja, Sheet } from "./ui";
+import { Avatar, AvisoTerminos, CerrarHoja, Sheet } from "./ui";
 
 /**
  * La esquina de la cuenta, en la cabecera de la portada.
@@ -27,7 +27,7 @@ export default function CuentaBoton() {
   const t = useT();
   const { usuario, usuarioNombre, usuarioCambiado, entrar, salir, fallo, falloCodigo, ocupado, avisos, novedades, pendientes } = useCuenta();
   const { profile, saveProfile } = useGlobalProfile();
-  const [hoja, setHoja] = useState<null | "cuenta" | "perfil" | "amigos" | "avisos" | "privacidad" | "fallo">(null);
+  const [hoja, setHoja] = useState<null | "cuenta" | "perfil" | "amigos" | "avisos" | "privacidad" | "entrar" | "fallo">(null);
   if (usuario === undefined) return null;
 
   if (usuario === null) {
@@ -35,9 +35,7 @@ export default function CuentaBoton() {
       <>
         <button
           type="button"
-          onClick={async () => {
-            await entrar();
-          }}
+          onClick={() => setHoja("entrar")}
           disabled={ocupado}
           className="flex min-h-[40px] items-center gap-2 rounded-full border border-line px-3.5 text-[13px] font-semibold text-ink-soft transition-colors hover:border-amber hover:text-ink disabled:opacity-60 lg:min-h-[44px] lg:px-4 lg:text-[14px]"
         >
@@ -45,6 +43,33 @@ export default function CuentaBoton() {
           <span className="lg:hidden">{t.cuenta.entrar}</span>
           <span className="hidden lg:inline">{t.cuenta.entrarLargo}</span>
         </button>
+
+        {/*
+          Entrar desde la cabecera abre una hoja en vez de llamar a Google de
+          golpe. No es ceremonia: es el único sitio de los tres donde se podía
+          entrar sin leer que al hacerlo se aceptan los términos, y un botón de
+          cuarenta píxeles en una esquina no tiene dónde ponerlo.
+        */}
+        {hoja === "entrar" && (
+          <Sheet onClose={() => setHoja(null)} titulo={t.cuenta.entrarLargo} sub={t.registro.entradilla}>
+            <button
+              type="button"
+              onClick={async () => {
+                setHoja(null);
+                await entrar();
+              }}
+              disabled={ocupado}
+              className="mt-5 flex min-h-[52px] w-full items-center justify-center gap-2.5 rounded-pieza bg-ink text-[15px] font-bold text-paper transition-transform active:scale-[0.98] disabled:opacity-60"
+            >
+              <G />
+              {t.registro.google}
+            </button>
+            <AvisoTerminos />
+            <div className="mt-4">
+              <CerrarHoja onClick={() => setHoja(null)}>{t.registro.luego}</CerrarHoja>
+            </div>
+          </Sheet>
+        )}
 
         {fallo && hoja !== "fallo" && <AbreFallo onAbrir={() => setHoja("fallo")} />}
         {hoja === "fallo" && fallo && (

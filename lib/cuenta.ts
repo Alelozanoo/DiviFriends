@@ -7,6 +7,8 @@ import { processImageToAvatarBase64 } from "./avatarUpload";
 import { confirmaQuitadas, EVENTO, fundir, quitadasPendientes, todos, type DiviGuardado } from "./misDivis";
 import type { Quitadas } from "./fundeDivis";
 import { EVENTO_PERFIL, escribirPerfil, leerPerfil, type GlobalProfile } from "./useGlobalProfile";
+import { apuntaSesion } from "./sesionLocal";
+import { RESPONSABLE } from "./responsable";
 
 /**
  * La cuenta, en el navegador.
@@ -388,6 +390,9 @@ function arranca() {
     desengancha?.();
     desengancha = null;
     pon({ usuario: user, fallo: null, pendientes: NADA, usuarioNombre: null, cargada: false });
+    // La huella para la próxima vez: la portada la lee antes de que Firebase
+    // conteste, y así no enseña la web de venta a quien ya tiene cuenta.
+    apuntaSesion(user ? (user.email?.toLowerCase() === RESPONSABLE.correo ? "casa" : "1") : null);
     if (user) void sincroniza(user);
   });
 }

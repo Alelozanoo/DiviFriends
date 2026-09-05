@@ -6,7 +6,7 @@ import { CLAVE_REGISTRO, useCuenta } from "@/lib/cuenta";
 import { useT } from "@/lib/i18n";
 import { PIXEL_ID } from "@/lib/track";
 import { G } from "./CuentaBoton";
-import { Sheet } from "./ui";
+import { AvisoTerminos, Sheet } from "./ui";
 
 /** Dónde se apunta en este móvil que ya se ofreció, y cuándo. Cerrar la sesión también lo apunta. */
 const CLAVE = CLAVE_REGISTRO;
@@ -82,6 +82,7 @@ export default function RegistroSheet() {
         <G />
         {t.registro.google}
       </button>
+      <AvisoTerminos />
       <button
         type="button"
         onClick={luego}
