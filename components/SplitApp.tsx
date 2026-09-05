@@ -22,7 +22,7 @@ import {
 } from "@/lib/pagoPendiente";
 import type { Participant, ParticipantBalance, TicketState, Via } from "@/lib/types";
 import CuentasSheet from "./CuentasSheet";
-import { CobroSheet, PagadorSheet } from "./CobroSheet";
+import { CobroSheet } from "./CobroSheet";
 import PagarSheet from "./PagarSheet";
 import RecordarSheet from "./RecordarSheet";
 import ItemRow from "./ItemRow";
@@ -84,13 +84,11 @@ export default function SplitApp({
   /** A quién le estoy recordando lo que me debe, con la hoja del tono abierta. */
   const [recordandoA, setRecordandoA] = useState<ParticipantBalance | null>(null);
   const [cobrando, setCobrando] = useState(false);
-  const [preguntandoPagador, setPreguntandoPagador] = useState(false);
   /*
     Quien crea la mesa desde una foto ya no pasa por la hoja de entrar, que es
     donde se preguntaba quién puso la tarjeta. Se le pregunta al cerrar el QR,
     y una sola vez: insistir cada vez que abre «Compartir» sería perseguirle.
   */
-  const pagadorPreguntado = useRef(false);
   // Qué ticket está esperando que alguien diga quién lo pagó. `receiptId` a
   // null es el ticket original, que no vive en `receipts` sino en el propio doc.
   const [preguntandoTicket, setPreguntandoTicket] = useState<{ receiptId: string | null } | null>(null);
@@ -377,18 +375,17 @@ export default function SplitApp({
     if (usuario) void vinculaAsiento(code, participantId).catch(() => {});
     setJoinOverride(null);
     /*
-      En una mesa recién creada, lo siguiente es el QR y no el pagador.
+      En una mesa recién creada, lo siguiente es el QR.
 
       Quien acaba de subir la foto tiene delante a la mesa esperando, y lo que
-      hace falta para que esto sea un divi es que los demás entren. Lo de quién
-      puso la tarjeta se pregunta después, al cerrar el QR, que además es cuando
-      ya se sabe.
+      hace falta para que esto sea un divi es que los demás entren. Lo de
+      quién puso la tarjeta ya no se pregunta solo —ni aquí ni al cerrar el
+      QR—: el pie lo dice mientras falte («¿Quién lo pagó?») y se contesta
+      cuando se quiera. Salía una hoja encima nada más sentarse, y era una
+      pregunta más antes de haber visto la mesa. Quitado el 6 de septiembre
+      de 2026.
     */
-    if (nuevo) {
-      setSharing(true);
-      return;
-    }
-    if (!hayPagador) setPreguntandoPagador(true);
+    if (nuevo) setSharing(true);
   }
 
   /* -------------------------------------------------------------- cobrar */
@@ -1336,13 +1333,7 @@ export default function SplitApp({
                 }
               : undefined
           }
-          onClose={() => {
-            setSharing(false);
-            if (nuevo && meId && !hayPagador && !pagadorPreguntado.current) {
-              pagadorPreguntado.current = true;
-              setPreguntandoPagador(true);
-            }
-          }}
+          onClose={() => setSharing(false)}
         />
       )}
 
@@ -1366,16 +1357,9 @@ export default function SplitApp({
             targetCode={code}
             onSuccess={(receiptId) => {
               setUploadingAnother(false);
-              /*
-                Se abre el ticket que se acaba de subir y se pregunta ahí mismo
-                quién lo pagó. Ahora y no luego: quien acaba de hacerle la foto
-                tiene el papel en la mano y sabe la respuesta; media hora
-                después, en la pantalla de cuentas, ya no se acuerda nadie.
-              */
-              if (receiptId) {
-                setActiveReceiptId(receiptId);
-                setPreguntandoTicket({ receiptId });
-              }
+              // Se abre el ticket que se acaba de subir. Quién lo pagó lo
+              // pregunta el pie de esa pestaña mientras falte, sin hoja encima.
+              if (receiptId) setActiveReceiptId(receiptId);
             }}
           />
         </Sheet>
@@ -1397,20 +1381,6 @@ export default function SplitApp({
         />
       )}
 
-      {preguntandoPagador && meId && (
-        <PagadorSheet
-          revolut={yo?.revolut || globalProfile?.revolut}
-          bizum={yo?.bizum || globalProfile?.bizum}
-          onPagueYo={() =>
-            send("/payers", {
-              method: "PATCH",
-              body: JSON.stringify({ participantId: meId, receiptId: null, by: meId }),
-            })
-          }
-          onSave={guardarCobro}
-          onClose={() => setPreguntandoPagador(false)}
-        />
-      )}
 
       {cobrando && yo && (
         <CobroSheet
