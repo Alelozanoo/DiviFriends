@@ -300,6 +300,7 @@ export const en: Dict = {
     faltan: "Left",
     todoRepartido: "All shared out",
     pago: "Paid by",
+    pagasteTu: "You paid",
     sinPagador: "Nobody said who paid",
     uneteParaMarcar: "Join to mark what's yours",
     teHanPagado: "Someone says they paid you",

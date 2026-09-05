@@ -613,9 +613,11 @@ export default function SplitApp({
   const pagadorNombre = (() => {
     const id = pagadorDelTicket(currentReceiptId);
     if (!id) return null;
-    const quien = state.participants.find((p) => p.id === id);
-    return quien ? (quien.id === meId ? t.mesa.tu.replace(/[()]/g, "") : quien.name) : null;
+    return state.participants.find((p) => p.id === id)?.name ?? null;
   })();
+
+  /* «Pagó tú» no es español: cuando el pagador eres tú, la frase es otra. */
+  const pagoYo = Boolean(meId && pagadorDelTicket(currentReceiptId) === meId);
 
   const esMio = (itemId: string) =>
     Boolean(settlement.byItem[itemId]?.shares.some((s) => s.participantId === meId));
@@ -862,7 +864,9 @@ export default function SplitApp({
                     ámbar, que es la única tarea pendiente que hay de verdad.
                   */}
                   <span className="whitespace-nowrap text-[13px] text-ink-faint">
-                    {pagadorNombre ? (
+                    {pagoYo ? (
+                      <b className="font-bold text-ink">{t.comanda.pagasteTu}</b>
+                    ) : pagadorNombre ? (
                       <>
                         {t.comanda.pago}{" "}
                         <b className="font-bold text-ink">{pagadorNombre}</b>

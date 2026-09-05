@@ -323,6 +323,7 @@ export const es = {
     faltan: "Faltan",
     todoRepartido: "Todo repartido",
     pago: "Pagó",
+    pagasteTu: "Pagaste tú",
     sinPagador: "Nadie ha dicho quién pagó",
     uneteParaMarcar: "Únete para marcar lo tuyo",
     teHanPagado: "Dicen que te han pagado",
