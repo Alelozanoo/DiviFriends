@@ -563,7 +563,6 @@ export default function SplitApp({
     settlement.grandTotalCents > 0 ? settlement.assignedCents / settlement.grandTotalCents : 0;
   const editingItem = state.items.find((i) => i.id === editing) ?? null;
   const removingItem = state.items.find((i) => i.id === removing) ?? null;
-  const left = settlement.unassignedCents;
 
   const receipts = state.receipts || [];
   const hasLegacyItems = state.items.some(i => !i.receiptId) || (state.ticket.totalCents - receipts.reduce((a, r) => a + r.totalCents, 0)) > 0;
@@ -575,14 +574,6 @@ export default function SplitApp({
     su pestaña va marcada y la pantalla de cuentas avisa. Sin eso los números
     salen mal y encima con toda la pinta de estar bien.
   */
-  /** El nombre de quien puso la tarjeta del papel que se está mirando. */
-  const pagadorNombre = (() => {
-    const id = pagadorDelTicket(currentReceiptId);
-    if (!id) return null;
-    const quien = state.participants.find((p) => p.id === id);
-    return quien ? (quien.id === meId ? t.mesa.tu.replace(/[()]/g, "") : quien.name) : null;
-  })();
-
   /** Cuántos papeles hay: con uno solo, la fila de pestañas no pinta nada. */
   const pestanas = (hasLegacyItems ? 1 : 0) + receipts.length;
 
@@ -617,6 +608,14 @@ export default function SplitApp({
   const currentItems = state.items.filter(
     (i) => (currentReceiptId === null && !i.receiptId) || i.receiptId === currentReceiptId,
   );
+
+  /** El nombre de quien puso la tarjeta del papel que se está mirando. */
+  const pagadorNombre = (() => {
+    const id = pagadorDelTicket(currentReceiptId);
+    if (!id) return null;
+    const quien = state.participants.find((p) => p.id === id);
+    return quien ? (quien.id === meId ? t.mesa.tu.replace(/[()]/g, "") : quien.name) : null;
+  })();
 
   const esMio = (itemId: string) =>
     Boolean(settlement.byItem[itemId]?.shares.some((s) => s.participantId === meId));
@@ -1047,8 +1046,21 @@ export default function SplitApp({
           className="pointer-events-none absolute inset-x-0 bottom-full h-10 bg-gradient-to-t from-paper to-transparent"
         />
         <div className="mx-auto flex max-w-3xl items-center gap-3.5 px-[var(--gutter)] py-3">
+          {/*
+            Sin sitio en la mesa, aquí no hay cifra que enseñar.
+
+            Salía «sin repartir 65,37 €» en grande, que es lo que le falta a la
+            mesa entera y no asunto de quien acaba de abrir el enlace —además
+            de estar ya escrito arriba—. Lo que necesita esa persona es una
+            frase y un botón: quién eres, y dentro.
+          */}
+          {!meId ? (
+            <p className="min-w-0 flex-1 text-[15px] font-semibold leading-snug">
+              {t.comanda.uneteParaMarcar}
+            </p>
+          ) : (
           <div className="min-w-0 flex-1">
-            <p className="stamp text-ink-faint">{meId ? t.comanda.loTuyo : t.comanda.sinRepartir}</p>
+            <p className="stamp text-ink-faint">{t.comanda.loTuyo}</p>
             <p className="tnum mt-0.5 text-2xl font-bold leading-tight">
               {/*
                 Lo que te has tomado tú, y nada más.
@@ -1063,13 +1075,12 @@ export default function SplitApp({
                 el saldo igual a lo suyo, así que la cifra es la de siempre.
               */}
               {money(
-                meId
-                  ? (myBalance ? myBalance.itemsCents + myBalance.extrasCents : 0)
-                  : settlement.unassignedCents,
+                myBalance ? myBalance.itemsCents + myBalance.extrasCents : 0,
                 state.ticket.currency,
               )}
             </p>
           </div>
+          )}
           {meId ? (() => {
             const misDeudas = settlement.transactions.filter((tx) => tx.fromId === meId);
             const soyAcreedor = settlement.transactions.some((tx) => tx.toId === meId);
@@ -1101,7 +1112,28 @@ export default function SplitApp({
               sacar el dinero. Ahora se mira primero, y el botón de pagar está
               al lado de a quien le pagas.
             */
+            /*
+              Que alguien dice que te ha pagado, aquí abajo.
+
+              Estaba sólo dentro de Cuentas, así que quien acababa de recibir
+              un «ya te lo he mandado» no se enteraba hasta que se le ocurría
+              abrir esa hoja. Es lo más urgente que puede pasarte en una mesa
+              —hay dinero esperando tu sí— así que manda sobre todo lo demás.
+            */
+            const porConfirmar = state.pagos.filter(
+              (pago) => pago.toId === meId && pago.estado === "dice",
+            ).length;
+
+            /* Y cuando ya no queda nada libre, el siguiente paso es uno solo:
+               mirar las cuentas. Decirlo con esas palabras evita el momento de
+               «vale, ¿y ahora qué?» que había al terminar de repartir. */
+            const todoRepartido = settlement.unassignedCents === 0 && !faltaPagadorAqui;
+
             const etiqueta = (() => {
+              if (porConfirmar > 0)
+                return porConfirmar === 1
+                  ? t.comanda.teHanPagado
+                  : rellena(t.comanda.teHanPagadoVarios, { n: porConfirmar });
               if (faltaPagadorAqui) return t.comanda.quienPagoEste;
               if (showTodoPagado) return t.comanda.todoPagadoBoton;
               if (misDeudas.length > 0) {
@@ -1110,6 +1142,7 @@ export default function SplitApp({
                 });
               }
               if (!soyElPagador && (myBalance?.owesCents ?? 0) === 0) return t.comanda.seleccionaAlgo;
+              if (todoRepartido) return t.comanda.verCuentas;
               return t.comanda.cuentas;
             })();
 
@@ -1117,7 +1150,9 @@ export default function SplitApp({
               <button
                 type="button"
                 onClick={() => {
-                  if (faltaPagadorAqui) {
+                  if (porConfirmar > 0) {
+                    setCuentasOpen(true);
+                  } else if (faltaPagadorAqui) {
                     setPreguntandoTicket({ receiptId: currentReceiptId });
                   } else if (showTodoPagado) {
                     setShowStatusPopup(true);
