@@ -534,6 +534,14 @@ export const en: Dict = {
   },
 
   entrar: {
+    conGoogle: "Continue with Google",
+    googleAyuda: "Your name, photo and divis follow you to any phone.",
+    comoInvitado: "Join as a guest",
+    invitadoAyuda: "Just for this table. It stays on this phone.",
+    invitadoTitulo: "Join as a guest",
+    invitadoEntradilla: "No account, just for this table.",
+    comoTePagan: "In case you put the card down",
+    comoTePaganAyuda: "If you end up paying, the table sees this and pays you back in one tap. You can leave it blank.",
     titulo: "Who are you?",
     entradilla: "So the table knows which dishes are yours.",
     tocaTuNombre: "Tap your name if you're already on the list",

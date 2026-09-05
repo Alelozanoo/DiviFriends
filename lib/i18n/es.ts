@@ -575,6 +575,14 @@ export const es = {
 
   /* --------------------------------------------------------- quién eres */
   entrar: {
+    conGoogle: "Entrar con Google",
+    googleAyuda: "Tu nombre, tu foto y tus divis te siguen a cualquier móvil.",
+    comoInvitado: "Entrar como invitado",
+    invitadoAyuda: "Sólo para esta mesa. Se queda en este móvil.",
+    invitadoTitulo: "Entrar como invitado",
+    invitadoEntradilla: "Sin cuenta y sólo para esta mesa.",
+    comoTePagan: "Por si pones tú la tarjeta",
+    comoTePaganAyuda: "Si acabas pagando tú, la mesa ve esto y te devuelve de un toque. Puedes dejarlo en blanco.",
     titulo: "¿Quién eres?",
     entradilla: "Para que la mesa sepa qué platos son tuyos.",
     tocaTuNombre: "Toca tu nombre si ya estás en la lista",

@@ -7,6 +7,7 @@ import { useStoredParticipant } from "@/lib/useStoredParticipant";
 import { useTicketSync } from "@/lib/useTicketSync";
 import { leerPerfil, useGlobalProfile } from "@/lib/useGlobalProfile";
 import { asientoEn, invitaAMesa, useCuenta, vinculaAsiento } from "@/lib/cuenta";
+import { G } from "./CuentaBoton";
 import { processImageToAvatarBase64 } from "@/lib/avatarUpload";
 import { money, parseMoney } from "@/lib/format";
 import { EV, track, trackOnce } from "@/lib/track";
@@ -119,7 +120,7 @@ export default function SplitApp({
   const pagoPendiente = usePagoPendiente(code);
   const { profile: globalProfile, saveProfile } = useGlobalProfile();
   const meId = storedId && state.participants.some((p) => p.id === storedId) ? storedId : null;
-  const { usuario } = useCuenta();
+  const { usuario, entrar, ocupado: entrando } = useCuenta();
   /*
     Con cuenta y sin saber quién eres: ¿te reservaron asiento?
 
@@ -1242,6 +1243,9 @@ export default function SplitApp({
         <JoinSheet
           people={state.participants}
           globalProfile={globalProfile}
+          conCuenta={Boolean(usuario)}
+          ocupado={entrando}
+          onGoogle={() => void entrar()}
           onJoin={join}
           onSaveProfile={saveProfile}
         />
@@ -1590,143 +1594,226 @@ function Sinpagador() {
  * gesto y hereda todo lo que te habían marcado mientras no mirabas. El teclado
  * sólo salta solo cuando la lista está vacía y escribir es la única salida.
  */
+/**
+ * Quién eres, al entrar en una mesa por el enlace o el código.
+ *
+ * Dos puertas y sólo dos: **con Google** o **como invitado**. Antes eran
+ * «Entrar como Ale» y «Entrar como otra persona», que es una pregunta que no
+ * se hace nadie —quien abre el enlace no está eligiendo identidad, está
+ * entrando a una cena— y que además escondía la cuenta detrás de un botón que
+ * ponía otra cosa. Ahora la decisión que se pide es la de verdad: si lo tuyo
+ * te sigue de un móvil a otro, o si es sólo para esta mesa.
+ *
+ * Invitado no significa empezar de cero: si en este móvil ya había un perfil,
+ * el formulario sale relleno. Quitar el atajo era lo pedido; hacer teclear el
+ * nombre otra vez, no.
+ *
+ * Con sesión ya abierta no hay puertas que enseñar —se entra solo, desde el
+ * efecto de arriba—; si aun así se llega aquí es porque falta el nombre, y
+ * entonces esto es directamente el formulario.
+ */
 function JoinSheet({
   people,
   globalProfile,
+  conCuenta,
+  ocupado,
+  onGoogle,
   onJoin,
   onSaveProfile,
 }: {
   people: Participant[];
   globalProfile: { name: string; avatar?: string; bizum?: string; revolut?: string } | null;
+  /** Si ya hay sesión: entonces no se ofrece entrar, sólo falta el nombre. */
+  conCuenta: boolean;
+  ocupado: boolean;
+  onGoogle: () => void;
   onJoin: (name: string, avatar?: string, bizum?: string, revolut?: string) => Promise<void>;
   onSaveProfile: (updates: {name: string, avatar?: string, bizum?: string, revolut?: string}) => void;
 }) {
   const t = useT();
-  const [name, setName] = useState("");
-  const [avatar, setAvatar] = useState("");
+  const [invitado, setInvitado] = useState(conCuenta);
+  const [name, setName] = useState(globalProfile?.name ?? "");
+  const [avatar, setAvatar] = useState(globalProfile?.avatar ?? "");
+  const [bizum, setBizum] = useState(globalProfile?.bizum ?? "");
+  const [revolut, setRevolut] = useState(globalProfile?.revolut ?? "");
   const [busy, setBusy] = useState(false);
-  const [showForm, setShowForm] = useState(!globalProfile);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  return (
-    <Sheet fijo onClose={() => {}} titulo={t.entrar.titulo} sub={t.entrar.entradilla}>
+  /* --------------------------------------------------- las dos puertas */
 
-      {globalProfile && !showForm && (
-        <div className="mt-5 mb-4 flex flex-col gap-3">
-          <button
-            type="button"
-            onClick={() => void onJoin(globalProfile.name, globalProfile.avatar, globalProfile.bizum, globalProfile.revolut)}
-            className="flex w-full items-center justify-center gap-2 rounded-pieza bg-amber px-4 py-3 font-bold text-paper transition-transform active:scale-[0.98]"
-          >
-            {globalProfile.avatar && (
-              <Avatar name={globalProfile.name} avatar={globalProfile.avatar} color="var(--color-amber)" size={24} />
-            )}
-            {rellena(t.perfil.entrarComo, { name: globalProfile.name })}
-          </button>
-          
-          <button
-            type="button"
-            onClick={() => setShowForm(true)}
-            className="flex w-full items-center justify-center gap-2 rounded-pieza border-2 border-line bg-paper px-4 py-3 font-bold text-ink-soft transition-colors hover:border-amber active:bg-paper-3"
-          >
-            {t.perfil.entrarNuevo}
-          </button>
-        </div>
-      )}
-
-      {showForm && (
-        <form
-          className="mt-5 flex flex-col gap-4"
-          onSubmit={async (event) => {
-            event.preventDefault();
-            if (!name.trim() || busy) return;
-            setBusy(true);
-            onSaveProfile({ name: name.trim(), avatar: avatar || undefined });
-            await onJoin(name.trim(), avatar || undefined);
-            setBusy(false);
-          }}
-        >
-          {/* La foto, al lado del nombre y sin rótulo: es el círculo que hay
-              junto a cómo te llamas, y se toca. */}
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              aria-label={avatar ? t.perfil.cambiarFoto : t.perfil.ponerFoto}
-              className="relative shrink-0 rounded-full transition-transform active:scale-95"
-            >
-              <Avatar name={name || "?"} avatar={avatar} color="#e8b04b" size={52} />
-              <span
-                aria-hidden
-                className="absolute -bottom-0.5 -right-0.5 grid h-[22px] w-[22px] place-items-center rounded-full border-2 border-paper-2 bg-amber text-paper"
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M4 8.5h3l1.5-2h7L17 8.5h3a1 1 0 0 1 1 1V18a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5a1 1 0 0 1 1-1Z" />
-                  <circle cx="12" cy="13" r="3.2" />
-                </svg>
-              </span>
-            </button>
-
-            <input
-              autoFocus={people.length === 0}
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder={t.entrar.tuNombre}
-              aria-label={t.perfil.tuNombre}
-              autoCapitalize="words"
-              maxLength={40}
-              className="min-h-[52px] w-full min-w-0 rounded-pieza border border-line bg-paper px-4 text-[16px] font-semibold focus:border-amber focus:outline-none"
-            />
-          </div>
-
-          <input
-            type="file"
-            accept="image/*"
-            ref={fileInputRef}
-            className="hidden"
-            onChange={async (e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              try {
-                setAvatar(await processImageToAvatarBase64(file));
-              } catch (error) {
-                console.error("Error processing image", error);
-              }
-            }}
-          />
-
-          {avatar && (
-            <button
-              type="button"
-              onClick={() => setAvatar("")}
-              className="-mt-2 self-start text-[13px] text-ink-faint underline decoration-line underline-offset-4 transition-colors hover:text-ink"
-            >
-              {t.perfil.quitarFoto}
-            </button>
-          )}
-
-          <button
-            type="submit"
-            disabled={busy || !name.trim()}
-            className="min-h-[52px] w-full rounded-pieza bg-amber text-[15px] font-bold text-paper transition-transform active:scale-[0.98] disabled:opacity-40"
-          >
-            {t.entrar.entrar}
-          </button>
-        </form>
-      )}
-
-      {/*
-        Deshacer el «entrar como otra persona».
-
-        Ese botón cambia la hoja entera por un formulario en blanco, y quien lo
-        toca por error se queda escribiendo su nombre a mano teniéndolo ya
-        guardado. Sólo sale cuando hay algo a lo que volver: sin perfil
-        guardado el formulario es la única pantalla que hay.
-      */}
-      {showForm && globalProfile && (
+  if (!invitado) {
+    return (
+      <Sheet fijo onClose={() => {}} titulo={t.entrar.titulo} sub={t.entrar.entradilla}>
+        {/* En crema, que es como pide Google que vaya su botón, y lo más claro
+            de la pantalla: es la puerta que queremos que se use. */}
         <button
           type="button"
-          onClick={() => setShowForm(false)}
+          onClick={onGoogle}
+          disabled={ocupado}
+          className="mt-5 flex min-h-[52px] w-full items-center justify-center gap-2.5 rounded-pieza bg-ink text-[15px] font-bold text-paper transition-transform active:scale-[0.98] disabled:opacity-60"
+        >
+          <G />
+          {t.entrar.conGoogle}
+        </button>
+        <p className="mt-1.5 px-1 text-center text-[12.5px] leading-relaxed text-ink-faint">
+          {t.entrar.googleAyuda}
+        </p>
+
+        <button
+          type="button"
+          onClick={() => setInvitado(true)}
+          className="mt-4 min-h-[52px] w-full rounded-pieza border border-line bg-paper text-[15px] font-semibold text-ink transition-colors active:bg-paper-3"
+        >
+          {t.entrar.comoInvitado}
+        </button>
+        <p className="mt-1.5 px-1 text-center text-[12.5px] leading-relaxed text-ink-faint">
+          {t.entrar.invitadoAyuda}
+        </p>
+
+        <Aviso />
+      </Sheet>
+    );
+  }
+
+  /* ----------------------------------------------------- el formulario */
+
+  return (
+    <Sheet
+      fijo
+      onClose={() => {}}
+      titulo={conCuenta ? t.entrar.titulo : t.entrar.invitadoTitulo}
+      sub={t.entrar.invitadoEntradilla}
+    >
+      <form
+        className="mt-5 flex flex-col gap-4"
+        onSubmit={async (event) => {
+          event.preventDefault();
+          if (!name.trim() || busy) return;
+          setBusy(true);
+          const datos = {
+            name: name.trim(),
+            avatar: avatar || undefined,
+            bizum: bizum.trim() || undefined,
+            revolut: revolut.trim() || undefined,
+          };
+          onSaveProfile(datos);
+          await onJoin(datos.name, datos.avatar, datos.bizum, datos.revolut);
+          setBusy(false);
+        }}
+      >
+        {/* La foto, al lado del nombre y sin rótulo: es el círculo que hay
+            junto a cómo te llamas, y se toca. */}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            aria-label={avatar ? t.perfil.cambiarFoto : t.perfil.ponerFoto}
+            className="relative shrink-0 rounded-full transition-transform active:scale-95"
+          >
+            <Avatar name={name || "?"} avatar={avatar} color="#e8b04b" size={52} />
+            <span
+              aria-hidden
+              className="absolute -bottom-0.5 -right-0.5 grid h-[22px] w-[22px] place-items-center rounded-full border-2 border-paper-2 bg-amber text-paper"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 8.5h3l1.5-2h7L17 8.5h3a1 1 0 0 1 1 1V18a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5a1 1 0 0 1 1-1Z" />
+                <circle cx="12" cy="13" r="3.2" />
+              </svg>
+            </span>
+          </button>
+
+          <input
+            autoFocus={people.length === 0 && !globalProfile}
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            placeholder={t.entrar.tuNombre}
+            aria-label={t.perfil.tuNombre}
+            autoCapitalize="words"
+            maxLength={40}
+            className="min-h-[52px] w-full min-w-0 rounded-pieza border border-line bg-paper px-4 text-[16px] font-semibold focus:border-amber focus:outline-none"
+          />
+        </div>
+
+        <input
+          type="file"
+          accept="image/*"
+          ref={fileInputRef}
+          className="hidden"
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            try {
+              setAvatar(await processImageToAvatarBase64(file));
+            } catch (error) {
+              console.error("Error processing image", error);
+            }
+          }}
+        />
+
+        {avatar && (
+          <button
+            type="button"
+            onClick={() => setAvatar("")}
+            className="-mt-2 self-start text-[13px] text-ink-faint underline decoration-line underline-offset-4 transition-colors hover:text-ink"
+          >
+            {t.perfil.quitarFoto}
+          </button>
+        )}
+
+        {/*
+          Cómo te pagan, aquí y no después.
+
+          Si esta noche pones tú la tarjeta, la mesa necesita esto para
+          devolverte de un toque, y preguntarlo entonces es una hoja más en
+          mitad de la cena. Opcional y dicho para qué sirve: sin explicar por
+          qué, pedirle el móvil a alguien que sólo quiere marcar dos cañas es
+          la mejor forma de que cierre la pestaña.
+        */}
+        <div className="grid gap-2">
+          <p className="px-1 text-[13px] font-semibold">{t.entrar.comoTePagan}</p>
+          <p className="-mt-1.5 px-1 text-[12px] leading-relaxed text-ink-faint">
+            {t.entrar.comoTePaganAyuda}
+          </p>
+          <input
+            value={bizum}
+            onChange={(event) => setBizum(event.target.value)}
+            placeholder={t.cobro.tuBizum}
+            aria-label={t.cobro.tuBizum}
+            inputMode="tel"
+            maxLength={20}
+            className="min-h-[52px] w-full rounded-pieza border border-line bg-paper px-4 text-[16px] focus:border-amber focus:outline-none"
+          />
+          <div className="flex items-center rounded-pieza border border-line bg-paper px-3.5">
+            <span className="shrink-0 text-[15px] text-ink-faint">revolut.me/</span>
+            <input
+              value={revolut}
+              onChange={(event) => setRevolut(event.target.value)}
+              placeholder={t.cobro.ejemploRevolut}
+              aria-label={t.cobro.tuRevolut}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              maxLength={32}
+              className="min-h-[52px] w-full min-w-0 bg-transparent px-1 text-[16px] focus:outline-none"
+            />
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          disabled={busy || !name.trim()}
+          className="min-h-[52px] w-full rounded-pieza bg-amber text-[15px] font-bold text-paper transition-transform active:scale-[0.98] disabled:opacity-40"
+        >
+          {t.entrar.entrar}
+        </button>
+      </form>
+
+      {/* Volver a las dos puertas. No cuando ya hay sesión: allí no hay dos
+          puertas a las que volver, sólo falta el nombre. */}
+      {!conCuenta && (
+        <button
+          type="button"
+          onClick={() => setInvitado(false)}
           className="mt-3 flex min-h-[46px] w-full items-center justify-center gap-2 rounded-pieza border border-line text-[15px] font-semibold text-ink-soft transition-colors active:bg-paper-3"
         >
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -1736,22 +1823,29 @@ function JoinSheet({
         </button>
       )}
 
-      {/*
-        Dónde acaba lo que se teclea aquí.
-
-        El aviso de privacidad estaba sólo en la portada, y quien abre un
-        enlace de WhatsApp no pasa por la portada: entra directo a escribir su
-        nombre y a subir su cara. Informar en el momento en que se recogen los
-        datos es lo que pide el artículo 13 del RGPD, y además es lo que uno
-        querría saber antes de teclear, no después.
-      */}
-      <p className="mt-4 text-center text-[12px] leading-relaxed text-ink-faint">
-        {t.entrar.aviso}{" "}
-        <Link href="/privacidad" className="underline decoration-line underline-offset-4">
-          {t.cookies.privacidad}
-        </Link>
-      </p>
+      <Aviso />
     </Sheet>
+  );
+}
+
+/**
+ * Dónde acaba lo que se teclea aquí.
+ *
+ * El aviso de privacidad estaba sólo en la portada, y quien abre un enlace de
+ * WhatsApp no pasa por la portada: entra directo a escribir su nombre y a
+ * subir su cara. Informar en el momento en que se recogen los datos es lo que
+ * pide el artículo 13 del RGPD, y además es lo que uno querría saber antes de
+ * teclear, no después.
+ */
+function Aviso() {
+  const t = useT();
+  return (
+    <p className="mt-4 text-center text-[12px] leading-relaxed text-ink-faint">
+      {t.entrar.aviso}{" "}
+      <Link href="/privacidad" className="underline decoration-line underline-offset-4">
+        {t.cookies.privacidad}
+      </Link>
+    </p>
   );
 }
 
