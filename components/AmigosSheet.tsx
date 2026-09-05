@@ -24,6 +24,8 @@ export default function AmigosSheet({ onClose }: { onClose: () => void }) {
   const [ocupado, setOcupado] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
   const [copiado, setCopiado] = useState(false);
+  // A quién se está a punto de quitar: la fila se convierte en la pregunta.
+  const [quitando, setQuitando] = useState<string | null>(null);
 
   useEffect(() => {
     let vivo = true;
@@ -175,19 +177,50 @@ export default function AmigosSheet({ onClose }: { onClose: () => void }) {
           ) : aceptados.length === 0 ? (
             <p className="px-1 py-2 text-[13px] leading-relaxed text-ink-faint">{t.amigos.ninguno}</p>
           ) : (
-            aceptados.map((a) => (
-              <Fila key={a.uid} amigo={a}>
-                <button
-                  type="button"
-                  disabled={ocupado}
-                  onClick={() => void haz(() => quitaAmigo(a.uid))}
-                  aria-label={rellena(t.amigos.quitarA, { name: a.nombre })}
-                  className="min-h-[38px] rounded-pieza px-2.5 text-[13px] text-ink-faint hover:text-clay"
-                >
-                  ✕
-                </button>
-              </Fila>
-            ))
+            aceptados.map((a) =>
+              quitando === a.uid ? (
+                /* La pregunta ocupa el sitio de la fila, como al cerrar una
+                   divi en «Tus mesas»: no hace falta otra hoja encima. */
+                <li key={a.uid} className="rounded-pieza bg-paper px-3 py-3">
+                  <p className="text-[15px] font-semibold">
+                    {rellena(t.amigos.quitarSeguro, { name: a.nombre })}
+                  </p>
+                  <p className="mt-1 text-[12.5px] leading-relaxed text-ink-soft">{t.amigos.quitarAviso}</p>
+                  <div className="mt-2.5 flex gap-2">
+                    <button
+                      type="button"
+                      disabled={ocupado}
+                      onClick={() => {
+                        setQuitando(null);
+                        void haz(() => quitaAmigo(a.uid));
+                      }}
+                      className="min-h-[38px] flex-1 rounded-pieza bg-clay text-[13px] font-bold text-paper disabled:opacity-60"
+                    >
+                      {t.amigos.quitarSi}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setQuitando(null)}
+                      className="min-h-[38px] flex-1 rounded-pieza border border-line text-[13px] font-semibold text-ink-soft"
+                    >
+                      {t.amigos.quitarNo}
+                    </button>
+                  </div>
+                </li>
+              ) : (
+                <Fila key={a.uid} amigo={a}>
+                  <button
+                    type="button"
+                    disabled={ocupado}
+                    onClick={() => setQuitando(a.uid)}
+                    aria-label={rellena(t.amigos.quitarA, { name: a.nombre })}
+                    className="min-h-[38px] rounded-pieza px-2.5 text-[13px] text-ink-faint hover:text-clay"
+                  >
+                    ✕
+                  </button>
+                </Fila>
+              ),
+            )
           )}
         </Bloque>
 

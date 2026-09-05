@@ -285,6 +285,12 @@ export const es = {
     tusAmigos: "Tus amigos",
     ninguno: "Todavía nadie. Manda tu enlace a quien coma contigo a menudo.",
     quitarA: "Quitar a {name}",
+    // Quitar a un amigo se pregunta antes: la X está al lado del nombre y se
+    // toca sin querer, y deshacerlo es volver a pedir la amistad entera.
+    quitarSeguro: "¿Seguro que quieres dejar de ser amigo de {name}?",
+    quitarAviso: "Desaparecéis de la lista del otro. Para volver, uno de los dos tendrá que pedirlo otra vez.",
+    quitarSi: "Sí, quitar",
+    quitarNo: "Dejarlo",
     esperando: "Esperando a que acepten",
     sinAceptar: "sin aceptar",
     queVen: "Tus amigos ven tu nombre y tu foto, nunca tu correo.",
