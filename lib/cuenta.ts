@@ -158,6 +158,26 @@ export interface Amigo {
 export const amigos = () =>
   llama<{ amigos: Amigo[]; codigo: string; usuario: string | null; yo: string }>("/api/cuenta/amigos");
 
+/** Lo que se enseña de alguien con cuenta a quien no es su amigo: nombre, cara y usuario. */
+export interface PerfilPublico {
+  uid: string;
+  nombre: string;
+  avatar?: string;
+  usuario: string | null;
+}
+
+/** Quién de la mesa tiene cuenta: asiento → su ficha pública. */
+export const cuentasDeMesa = (code: string) =>
+  llama<{ cuentas: Record<string, PerfilPublico> }>(`/api/tickets/${code}/cuentas`);
+
+/** Pedir amistad a alguien de la mesa, sabiendo ya su cuenta. */
+export const pideAmigoPorUid = (uid: string) =>
+  llama<{ amigos: Amigo[]; perfil: PerfilPublico; estado: "pendiente" | "aceptado" }>(
+    "/api/cuenta/amigos",
+    "POST",
+    { uid },
+  );
+
 /* ----------------------------------------------------------- la campana */
 
 export const avisos = () => llama<{ avisos: AvisoCampana[] }>("/api/cuenta/avisos");

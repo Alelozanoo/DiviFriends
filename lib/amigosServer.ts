@@ -285,10 +285,25 @@ export async function pideAmistad(
 ): Promise<{ perfil: PerfilPublico; estado: EstadoAmistad; nueva: boolean }> {
   const otro = await uidDeCodigoOUsuario(codigo);
   if (!otro) throw new StoreError("Ese código o usuario no es de nadie.", 404);
+  return pideAmistadA(uid, otro);
+}
+
+/**
+ * Lo mismo, sabiendo ya a quién.
+ *
+ * Es el camino desde la mesa: quien está sentado contigo se ve en «Quién
+ * está», y tocarle abre su ficha con «¿Añadir como amigo?». Ahí no hay código
+ * que escribir —la mesa ya sabe qué cuenta hay en cada asiento— y el otro
+ * sigue teniendo que aceptar, igual que por enlace.
+ */
+export async function pideAmistadA(
+  uid: string,
+  otro: string,
+): Promise<{ perfil: PerfilPublico; estado: EstadoAmistad; nueva: boolean }> {
   if (otro === uid) throw new StoreError("Ese eres tú.");
 
   const perfil = await perfilPublico(otro);
-  if (!perfil) throw new StoreError("Ese código no es de nadie.", 404);
+  if (!perfil) throw new StoreError("Esa persona ya no tiene cuenta.", 404);
 
   const ya = await lado(uid, otro).get();
   if (ya.exists && ya.get("estado") === "aceptado")
@@ -542,6 +557,23 @@ export async function asientoDe(
 ): Promise<string | null> {
   const snap = await asiento(code, uid).get();
   return snap.exists ? (snap.get("participantId") as string) : null;
+}
+
+/**
+ * Quién de la mesa tiene cuenta, con lo que se puede enseñar de cada uno:
+ * participante → nombre, cara y usuario. Es lo que pinta la ficha al tocar a
+ * alguien en «Quién está», y lo que hace falta para pedirle amistad desde ahí.
+ */
+export async function cuentasPublicasDeLaMesa(
+  code: string,
+): Promise<Record<string, PerfilPublico>> {
+  const mapa = await cuentasDeLaMesa(code);
+  const pares = await Promise.all(
+    [...mapa].map(async ([participantId, uid]) => [participantId, await perfilPublico(uid)] as const),
+  );
+  const cuentas: Record<string, PerfilPublico> = {};
+  for (const [participantId, perfil] of pares) if (perfil) cuentas[participantId] = perfil;
+  return cuentas;
 }
 
 /** Quién de la mesa tiene cuenta: participante → uid. */

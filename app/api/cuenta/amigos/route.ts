@@ -8,6 +8,7 @@ import {
   perfilDe,
   perfilPublico,
   pideAmistad,
+  pideAmistadA,
   quitaAmigo,
 } from "@/lib/amigosServer";
 import { correoSolicitud, mandaAviso, origenDe } from "@/lib/correo";
@@ -44,14 +45,19 @@ export async function GET(request: Request) {
   }
 }
 
-/** Pedir la amistad con un código. */
+/**
+ * Pedir la amistad: con un código o un @usuario, o —desde la ficha de alguien
+ * de la mesa— directamente con su cuenta.
+ */
 export async function POST(request: Request) {
   const quien = await usuarioDe(request);
   if (!quien) return sinSesion();
-  const { codigo } = (await cuerpo(request)) as {
+  const { codigo, uid } = (await cuerpo(request)) as {
     codigo?: string;
+    uid?: string;
   };
-  if (typeof codigo !== "string" || codigo.length > 40) {
+  const porCuenta = typeof uid === "string" && uid.length > 0 && uid.length <= 128;
+  if (!porCuenta && (typeof codigo !== "string" || codigo.length > 40)) {
     return NextResponse.json({ error: "Falta el código." }, { status: 400 });
   }
   const alto = await puerta(
@@ -60,7 +66,9 @@ export async function POST(request: Request) {
   );
   if (alto) return alto;
   try {
-    const { perfil, estado, nueva } = await pideAmistad(quien.uid, codigo);
+    const { perfil, estado, nueva } = porCuenta
+      ? await pideAmistadA(quien.uid, uid)
+      : await pideAmistad(quien.uid, codigo as string);
 
     // Sólo cuando la solicitud es nueva: repetirla no vuelve a avisar, y
     // aceptar tampoco (eso ya lo ve el otro en su lista).

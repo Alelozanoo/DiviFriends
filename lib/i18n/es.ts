@@ -596,8 +596,28 @@ export const es = {
   },
 
   /* -------------------------------------------------------------- mesa */
+  /* ------------------------------------------------ la ficha de alguien */
+  // Se abre tocando a quien sea en «Quién está»: su cara, su nombre, su usuario
+  // y, si tiene cuenta, pedirle amistad desde ahí mismo.
+  perfilMesa: {
+    eresTu: "Eres tú.",
+    conCuenta: "Con cuenta puedes añadirle como amigo. Entra desde el menú.",
+    sinCuenta: "No tiene cuenta en DiviFriends.",
+    sinUsuario: "Sin usuario todavía",
+    yaAmigos: "Ya sois amigos ✓",
+    pedido: "Pedido. En cuanto acepte, aparece en tus amigos.",
+    teLoPide: "Te ha pedido amistad.",
+    aceptar: "Aceptar",
+    anadirAmigo: "¿Añadir como amigo?",
+  },
+
   mesa: {
     titulo: "La mesa",
+    copiarEnlace: "Copiar el enlace",
+    anadirAmigos: "Meter a un amigo",
+    meteAmigoSub: "Se sienta con su nombre y su foto, y le llega el aviso.",
+    sinCuentaMete: "Con cuenta metes a tus amigos de un toque y les llega el aviso. Entra desde el menú.",
+    verPerfil: "Ver a {name}",
     invitarFallo: "No se ha podido meter. Inténtalo otra vez.",
     anadeAmigo: "Mete a un amigo",
     anadido: "Dentro ✓",
@@ -693,6 +713,7 @@ export const es = {
   /* ------------------------------------------------------- avatar y varios */
   varios: {
     y: "y la",
+    cerrar: "Cerrar",
     eligeAvatar: "Elige tu foto de perfil",
     otraCana: "Otra caña",
     comanda: "Comanda",

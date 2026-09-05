@@ -93,6 +93,7 @@ export function Sheet({
   onClose,
   titulo,
   sub,
+  cierre = false,
   fijo = false,
 }: {
   children: React.ReactNode;
@@ -101,6 +102,15 @@ export function Sheet({
   titulo?: string;
   sub?: React.ReactNode;
   /**
+   * Una X arriba a la derecha en vez del botón de «Cerrar» al final.
+   *
+   * El botón de abajo sólo se veía después de bajar por toda la hoja, y en
+   * la de la mesa —QR, compartir, la lista de gente— eso era no verlo. La X
+   * va fuera del panel que hace scroll, así que está siempre en el mismo
+   * sitio, y la hoja se ahorra los cincuenta píxeles del botón.
+   */
+  cierre?: boolean;
+  /**
    * Una hoja que no se puede esquivar: ni el toque fuera la cierra, ni lleva
    * tirador. Se reserva para lo que de verdad no tiene alternativa —decir
    * quién eres al sentarte— porque un modal sin salida es de las cosas que
@@ -108,6 +118,7 @@ export function Sheet({
    */
   fijo?: boolean;
 }) {
+  const t = useT();
   useEffect(() => {
     const originalStyle = window.getComputedStyle(document.body).overflow;
     document.body.style.overflow = "hidden";
@@ -152,6 +163,16 @@ export function Sheet({
       onClick={fijo ? undefined : onClose}
     >
       <div className="relative w-full max-w-md" onClick={(event) => event.stopPropagation()}>
+        {cierre && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t.varios.cerrar}
+            className="absolute right-3 top-3 z-10 grid h-9 w-9 place-items-center rounded-full bg-paper-3 text-[15px] text-ink-soft transition-colors active:bg-paper-4"
+          >
+            ✕
+          </button>
+        )}
         <div
           role="dialog"
           aria-modal="true"
@@ -198,7 +219,9 @@ export function Sheet({
           className="pop max-h-[86dvh] overflow-y-auto overscroll-contain rounded-hoja border border-line bg-paper-2 px-[var(--gutter)] pb-5 pt-4 shadow-[var(--sombra-hoja)] [&_.grid>*]:min-w-0"
         >
           {titulo && (
-            <h2 className="text-[21px] font-bold leading-tight tracking-[-0.025em]">{titulo}</h2>
+            <h2 className={`text-[21px] font-bold leading-tight tracking-[-0.025em] ${cierre ? "pr-10" : ""}`}>
+              {titulo}
+            </h2>
           )}
           {sub && <p className="mt-1.5 text-[13px] leading-relaxed text-ink-faint">{sub}</p>}
           {children}

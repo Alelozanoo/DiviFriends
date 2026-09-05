@@ -554,8 +554,25 @@ export const en: Dict = {
     volver: "Back",
   },
 
+  perfilMesa: {
+    eresTu: "That's you.",
+    conCuenta: "With an account you can add them as a friend. Sign in from the menu.",
+    sinCuenta: "No DiviFriends account.",
+    sinUsuario: "No username yet",
+    yaAmigos: "Already friends ✓",
+    pedido: "Requested. Once they accept, they show up in your friends.",
+    teLoPide: "They asked to be your friend.",
+    aceptar: "Accept",
+    anadirAmigo: "Add as a friend?",
+  },
+
   mesa: {
     titulo: "The table",
+    copiarEnlace: "Copy the link",
+    anadirAmigos: "Add a friend",
+    meteAmigoSub: "They get a seat with their name and photo, and a heads-up.",
+    sinCuentaMete: "With an account you add your friends in one tap and they get a heads-up. Sign in from the menu.",
+    verPerfil: "See {name}",
     invitarFallo: "Couldn't add them. Try again.",
     anadeAmigo: "Add a friend",
     anadido: "In ✓",
@@ -643,6 +660,7 @@ export const en: Dict = {
 
   varios: {
     y: "and the",
+    cerrar: "Close",
     eligeAvatar: "Pick your picture",
     otraCana: "Another beer",
     comanda: "Bill",

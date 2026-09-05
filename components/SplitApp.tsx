@@ -1180,9 +1180,6 @@ export default function SplitApp({
              dicho que pagó se deja abierto: la mesa se está montando y si no
              habría que marcar pagador antes de poder corregir un nombre. */
           puedeQuitar={Boolean(meId) && (soyElPagador || !hayPagador)}
-          onUpdateAvatar={(participantId, avatar) =>
-            void patchParticipant(participantId, { avatar })
-          }
           onRemove={(participantId) =>
             void removeParticipant(participantId)
           }
