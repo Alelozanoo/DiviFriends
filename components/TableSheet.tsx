@@ -175,7 +175,13 @@ export default function TableSheet({
               setBorrador(place ?? "");
               setEditandoNombre(true);
             }}
-            className="flex min-h-[54px] w-full items-center gap-3 rounded-bloque border border-line-soft bg-paper px-3.5 text-left transition-colors active:bg-paper-3"
+            /* `min-w-0` no es adorno: esto es hijo de un grid, y un hijo de
+               grid no encoge por debajo de su contenido a menos que se le
+               diga. Sin esto, un nombre de bar largo —que no parte porque
+               lleva `truncate`— estiraba el botón a 521 px y con él la hoja
+               entera: el QR, el botón de compartir y los nombres se iban
+               fuera de la pantalla. */
+            className="flex min-h-[54px] w-full min-w-0 items-center gap-3 rounded-bloque border border-line-soft bg-paper px-3.5 text-left transition-colors active:bg-paper-3"
           >
             <span className="min-w-0 flex-1">
               <span className="text-[12px] block text-ink-faint">

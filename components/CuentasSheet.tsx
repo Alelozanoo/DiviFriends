@@ -300,9 +300,13 @@ function Fila({
     >
       <Avatar name={person.name} avatar={person.avatar} color={person.color} size={32} />
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[15px] font-medium">
-          {person.name}
-          {esYo && <span className="ml-1.5 text-[13px] font-semibold text-amber">{t.mesa.tu}</span>}
+        {/* El «(tú)» fuera del recorte y sin encoger: estaba dentro del
+            `truncate`, así que a «María Fernanda de la Concepción» se le
+            comían los puntos suspensivos justo lo único que dice cuál eres
+            tú. Corta el nombre, nunca la marca. */}
+        <span className="flex min-w-0 items-baseline gap-1.5">
+          <span className="min-w-0 truncate text-[15px] font-medium">{person.name}</span>
+          {esYo && <span className="shrink-0 text-[13px] font-semibold text-amber">{t.mesa.tu}</span>}
         </span>
     {pie && <span className="text-[12px] mt-1 block text-ink-faint">{pie}</span>}
         {/* Recordárselo por correo: al lado de a quién, y sólo cuando debe.

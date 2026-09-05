@@ -173,7 +173,26 @@ export function Sheet({
             Redonda por los cuatro lados y algo más baja que antes: flotando, el
             borde de abajo se ve, y conviene que se vea aire.
           */
-          className="pop max-h-[86dvh] overflow-y-auto overscroll-contain rounded-hoja border border-line bg-paper-2 px-[var(--gutter)] pb-5 pt-4 shadow-[var(--sombra-hoja)]"
+          /*
+            `[&_.grid>*]:min-w-0` es lo que impide que un nombre largo rompa
+            la hoja entera, y cuesta explicarlo porque el fallo no está donde
+            se ve.
+
+            Un hijo de grid, por defecto, no encoge por debajo de su
+            contenido. Y `truncate` —que es lo que se usa para que un nombre
+            largo acabe en puntos suspensivos— lleva `white-space: nowrap`,
+            así que el ancho mínimo de ese texto es la frase entera. Juntas
+            las dos cosas, un bar llamado «Restaurante Casa Pepe el de la
+            Esquina de Siempre» estiraba la hoja de 358 a 521 px y echaba
+            fuera de la pantalla el QR, el botón de compartir y los nombres
+            de la mesa. Los puntos suspensivos no aparecían nunca, porque
+            nunca hacía falta cortar: la caja se agrandaba.
+
+            Aquí se dice, para todo lo que vive dentro de una hoja, que puede
+            encoger. A partir de ahí cada elemento degrada como sepa: el que
+            lleva `truncate` corta, el que no, parte en dos líneas.
+          */
+          className="pop max-h-[86dvh] overflow-y-auto overscroll-contain rounded-hoja border border-line bg-paper-2 px-[var(--gutter)] pb-5 pt-4 shadow-[var(--sombra-hoja)] [&_.grid>*]:min-w-0"
         >
           {titulo && (
             <h2 className="text-[21px] font-bold leading-tight tracking-[-0.025em]">{titulo}</h2>
