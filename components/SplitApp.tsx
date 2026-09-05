@@ -101,8 +101,6 @@ export default function SplitApp({
   // null = decide la app (abierto si no te has unido); true/false = lo has decidido tú.
   const [joinOverride, setJoinOverride] = useState<boolean | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  // La hoja del escudo: las opciones de quien puso el dinero.
-  const [escudoOpen, setEscudoOpen] = useState(false);
   const [cambiarPagadorOpen, setCambiarPagadorOpen] = useState(false);
   const [editNameOpen, setEditNameOpen] = useState(false);
   const [showStatusPopup, setShowStatusPopup] = useState(false);
@@ -508,6 +506,9 @@ export default function SplitApp({
     su pestaña va marcada y la pantalla de cuentas avisa. Sin eso los números
     salen mal y encima con toda la pinta de estar bien.
   */
+  /** Cuántos papeles hay: con uno solo, la fila de pestañas no pinta nada. */
+  const pestanas = (hasLegacyItems ? 1 : 0) + receipts.length;
+
   const ticketsSinPagador = [
     ...(hasLegacyItems ? [{ id: null as string | null, label: state.ticket.place }] : []),
     ...receipts.map((r) => ({ id: r.id as string | null, label: r.label })),
@@ -675,18 +676,23 @@ export default function SplitApp({
             </button>
 
             {/*
-              El escudo, sólo para quien puso el dinero.
+              El billete: quién puso la tarjeta, y lo ve toda la mesa.
 
-              Lo que puede hacer el pagador —cambiar quién pagó, cerrar la mesa,
-              configurar el cobro— estaba mezclado con «editar mi perfil» en los
-              tres puntos, donde el resto de la mesa se topaba con media lista de
-              botones que no le tocaban. Aquí va aparte, y de paso el escudo dice
-              sin palabras quién adelantó la cuenta.
+              Era un escudo y salía sólo para el que había pagado. La vida real
+              no funciona así: la foto del ticket la hace uno y la tarjeta la
+              pone otro, y el que no había pagado no tenía forma de arreglarlo
+              —tenía que pedírselo al primero—. Ahora lo abre cualquiera y sólo
+              hace una cosa, decir quién pagó. Lo demás del pagador se fue a los
+              tres puntos, que es donde vive lo que sólo te toca a ti.
+
+              Con la mesa cerrada desaparece: ahí ya no se cambia nada.
             */}
-            {soyElPagador && (
-              <Redondo onClick={() => setEscudoOpen(true)} label={t.menu.opcionesPagador} escudo>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinejoin="round" strokeLinecap="round">
-                  <path d="M12 2.8 4.8 5.6v5.7c0 4.4 3 8.5 7.2 9.6 4.2-1.1 7.2-5.2 7.2-9.6V5.6L12 2.8Z" />
+            {!state.ticket.closed && (
+              <Redondo onClick={() => setCambiarPagadorOpen(true)} label={t.menu.cambiarPagador} escudo>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" strokeLinecap="round">
+                  <rect x="2.6" y="6.2" width="18.8" height="11.6" rx="2" />
+                  <circle cx="12" cy="12" r="2.6" />
+                  <path d="M6.2 9.6v4.8M17.8 9.6v4.8" />
                 </svg>
               </Redondo>
             )}
@@ -704,6 +710,17 @@ export default function SplitApp({
               {/* Las pestañas sangran hasta el borde: una pastilla a medio salir
                   se corta contra el filo de la pantalla y no contra un padding,
                   que es lo que hacía parecer que la fila estaba mal medida. */}
+              {/*
+                Las pestañas, sólo cuando hay más de un papel.
+
+                Con un solo ticket —el 99% de las mesas— esta fila era una
+                pastilla con el nombre del bar y un «+ Añadir» al lado,
+                ocupando cuarenta píxeles de alto para no ofrecer ninguna
+                elección: no hay a qué cambiar. El nombre ya está arriba y
+                añadir otro ticket se fue a los tres puntos, que es donde se
+                busca lo que se hace una vez.
+              */}
+              {pestanas > 1 && (
               <div className="rail">
                 {hasLegacyItems && (
                   <Pestana
@@ -724,14 +741,8 @@ export default function SplitApp({
                     {r.label}
                   </Pestana>
                 ))}
-                <button
-                  type="button"
-                  onClick={() => setUploadingAnother(true)}
-                  className="flex h-10 shrink-0 items-center whitespace-nowrap rounded-menudo border border-dashed border-line px-[15px] text-[13px] font-semibold text-ink-faint transition-colors hover:border-amber hover:text-amber active:bg-paper-2"
-                >
-                  {t.comanda.anadir}
-                </button>
               </div>
+              )}
 
               <div className="rule" />
 
@@ -1294,14 +1305,10 @@ export default function SplitApp({
         />
       )}
 
-      {(menuOpen || escudoOpen) && (
+      {menuOpen && (
         <HeaderMenuSheet
-          modo={escudoOpen ? "pagador" : "general"}
           ticketClosed={state.ticket.closed ?? false}
-          onClose={() => {
-            setMenuOpen(false);
-            setEscudoOpen(false);
-          }}
+          onClose={() => setMenuOpen(false)}
           onComoFunciona={() => setGuiding(true)}
           onHistorial={() => setShowingLog(true)}
           eventos={state.events.length}
@@ -1312,24 +1319,8 @@ export default function SplitApp({
               setEditNameOpen(true);
             }
           }}
-          onLeave={async () => {
-            if (!yo) return;
-            await removeParticipant(yo.id);
-            store(null);
-            /*
-              Y fuera de «tus divis».
-
-              Sin esto la mesa seguía en la lista de la portada después de
-              salirse: el efecto que la mantiene al día se rinde en cuanto
-              dejas de estar apuntado, así que nunca llegaba a borrarla y te
-              quedaba ahí una cena de la que ya te habías ido.
-            */
-            olvidar(code);
-            window.location.href = inicio(lang);
-          }}
-          onChangePayer={
-            (!state.ticket.closed) ? () => setCambiarPagadorOpen(true) : null
-          }
+          onOtroTicket={!state.ticket.closed ? () => setUploadingAnother(true) : null}
+          soyElPagador={soyElPagador}
           onRemovePayer={
             (!state.ticket.closed && soyElPagador) ? async () => {
               /*

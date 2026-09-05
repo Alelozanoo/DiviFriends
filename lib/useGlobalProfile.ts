@@ -49,6 +49,17 @@ export function escribirPerfil(perfil: GlobalProfile, silencioso = false): void 
   if (!silencioso) window.dispatchEvent(new CustomEvent(EVENTO_PERFIL));
 }
 
+/** Tira el perfil de este móvil. Al cambiar de cuenta, lo de antes no vale. */
+export function olvidarPerfil(): void {
+  try {
+    window.localStorage.removeItem(KEY);
+  } catch {
+    return;
+  }
+  for (const listener of listeners) listener();
+  window.dispatchEvent(new CustomEvent(EVENTO_PERFIL));
+}
+
 export function useGlobalProfile() {
   const raw = useSyncExternalStore(
     subscribe,

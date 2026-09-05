@@ -14,11 +14,10 @@ import { CerrarHoja, Sheet } from "./ui";
  * de la pantalla justo cuando hay que leer con atención.
  */
 export function HeaderMenuSheet({
-  modo = "general",
   onClose,
   onChangeName,
-  onLeave,
-  onChangePayer,
+  onOtroTicket,
+  soyElPagador,
   onRemovePayer,
   onConfigPayment,
   onCloseTicket,
@@ -31,8 +30,10 @@ export function HeaderMenuSheet({
   modo?: "general" | "pagador";
   onClose: () => void;
   onChangeName: () => void;
-  onLeave: () => void;
-  onChangePayer: (() => void) | null;
+  /** Subir un segundo papel de la misma mesa. Null con la mesa cerrada. */
+  onOtroTicket: (() => void) | null;
+  /** Lo del pagador sólo se le enseña a quien puso el dinero. */
+  soyElPagador: boolean;
   onRemovePayer: (() => void) | null;
   onConfigPayment: (() => void) | null;
   onCloseTicket: (() => void) | null;
@@ -43,8 +44,8 @@ export function HeaderMenuSheet({
   ticketClosed: boolean;
 }) {
   const t = useT();
-  /** Cuál de las tres cosas serias está esperando un sí. */
-  const [confirmando, setConfirmando] = useState<null | "pagador" | "cerrar" | "salir">(null);
+  /** Cuál de las dos cosas serias está esperando un sí. */
+  const [confirmando, setConfirmando] = useState<null | "pagador" | "cerrar">(null);
 
   const confirmaciones = {
     pagador: {
@@ -58,12 +59,6 @@ export function HeaderMenuSheet({
       aviso: t.menu.bloquearAviso,
       hazlo: onCloseTicket,
       tono: "amber" as const,
-    },
-    salir: {
-      titulo: t.menu.salir,
-      aviso: t.menu.salirAviso,
-      hazlo: onLeave,
-      tono: "clay" as const,
     },
   };
 
@@ -85,73 +80,6 @@ export function HeaderMenuSheet({
             {t.menu.si}
           </button>
           <CerrarHoja onClick={() => setConfirmando(null)}>{t.menu.no}</CerrarHoja>
-        </div>
-      </Sheet>
-    );
-  }
-
-  /*
-    Lo que sólo puede hacer quien puso el dinero vive detrás del escudo, y no
-    mezclado con «editar mi perfil». Así el resto de la mesa no se encuentra
-    media lista de botones que no le corresponden, y quien pagó reconoce de un
-    vistazo que ese escudo es suyo.
-  */
-  if (modo === "pagador") {
-    return (
-      <Sheet onClose={onClose} titulo={t.menu.tituloPagador} sub={t.menu.entradillaPagador}>
-        <div className="mt-5 grid gap-2.5">
-          {onChangePayer && !ticketClosed && (
-            <Opcion
-              icono={<IconoCambiarPagador />}
-              onClick={() => {
-                onClose();
-                onChangePayer();
-              }}
-            >
-              {t.menu.cambiarPagador}
-            </Opcion>
-          )}
-
-          {onConfigPayment && !ticketClosed && (
-            <Opcion
-              icono={<IconoTarjeta />}
-              onClick={() => {
-                onClose();
-                onConfigPayment();
-              }}
-            >
-              {t.menu.configurarCobro}
-            </Opcion>
-          )}
-
-          {onCloseTicket && !ticketClosed && (
-            <Opcion icono={<IconoCandado />} tono="amber" onClick={() => setConfirmando("cerrar")}>
-              {t.menu.bloquear}
-            </Opcion>
-          )}
-
-          {onRemovePayer && !ticketClosed && (
-            <Opcion icono={<IconoAspa />} tono="clay" onClick={() => setConfirmando("pagador")}>
-              {t.menu.noPagueYo}
-            </Opcion>
-          )}
-
-          {/*
-            Con la mesa cerrada no queda ninguna: cambiar el pagador, tocar el
-            cobro o volver a cerrarla dejan de tener sentido en cuanto los
-            consumos están congelados. Pero callarse deja una hoja con el título
-            y nada debajo, que parece rota. Mejor decir por qué está vacía.
-          */}
-          {ticketClosed && (
-            <div className="rounded-xl border border-mint/40 bg-mint/[0.08] px-4 py-3.5">
-              <p className="text-[15px] font-bold text-mint">{t.cuentas.mesaCerrada}</p>
-              <p className="mt-1 text-[13px] leading-relaxed text-ink-soft">
-                {t.cuentas.mesaCerradaAviso}
-              </p>
-            </div>
-          )}
-
-          <CerrarHoja onClick={onClose}>{t.mesa.cerrar}</CerrarHoja>
         </div>
       </Sheet>
     );
@@ -181,6 +109,26 @@ export function HeaderMenuSheet({
           {t.comanda.historialTitulo}
         </Opcion>
 
+        {/*
+          Añadir otro ticket, aquí y no en una pestaña siempre visible.
+
+          Estaba en una fila con las pestañas de los papeles, que en el 99% de
+          las mesas tenía una sola pastilla y ningún sitio al que ir. Es algo
+          que se hace una vez y en un caso raro —la segunda ronda en otro
+          bar—, y eso es exactamente lo que se busca en un menú.
+        */}
+        {onOtroTicket && (
+          <Opcion
+            icono={<IconoMasTicket />}
+            onClick={() => {
+              onClose();
+              onOtroTicket();
+            }}
+          >
+            {t.subir.otroTicket}
+          </Opcion>
+        )}
+
         <Opcion
           icono={<IconoPregunta />}
           onClick={() => {
@@ -190,6 +138,38 @@ export function HeaderMenuSheet({
         >
           {t.comanda.comoFunciona}
         </Opcion>
+
+        {/*
+          Lo del que puso la tarjeta.
+
+          Vivía detrás de un escudo aparte. El escudo se ha convertido en el
+          billete que ve toda la mesa y que sólo sirve para decir quién pagó,
+          así que lo que de verdad es privativo del pagador —cómo le pagan,
+          cerrar la mesa, retirarse— baja aquí, y sólo si eres tú.
+        */}
+        {soyElPagador && onConfigPayment && !ticketClosed && (
+          <Opcion
+            icono={<IconoTarjeta />}
+            onClick={() => {
+              onClose();
+              onConfigPayment();
+            }}
+          >
+            {t.menu.configurarCobro}
+          </Opcion>
+        )}
+
+        {soyElPagador && onCloseTicket && !ticketClosed && (
+          <Opcion icono={<IconoCandado />} tono="amber" onClick={() => setConfirmando("cerrar")}>
+            {t.menu.bloquear}
+          </Opcion>
+        )}
+
+        {soyElPagador && onRemovePayer && !ticketClosed && (
+          <Opcion icono={<IconoAspa />} tono="clay" onClick={() => setConfirmando("pagador")}>
+            {t.menu.noPagueYo}
+          </Opcion>
+        )}
 
         {/*
           El idioma, aquí dentro y no sólo en el pie de la portada.
@@ -207,13 +187,19 @@ export function HeaderMenuSheet({
           <LangSwitch />
         </div>
 
-        <Opcion icono={<IconoSalir />} tono="clay" className="mt-2" onClick={() => setConfirmando("salir")}>
-          {t.menu.salir}
-        </Opcion>
-
         <CerrarHoja onClick={onClose}>{t.mesa.cerrar}</CerrarHoja>
       </div>
     </Sheet>
+  );
+}
+
+/** Un papel más: el ticket de siempre con un más al lado. */
+function IconoMasTicket() {
+  return (
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M4.5 3.5h9v17l-1.8-1.2-1.7 1.2-1.75-1.2-1.75 1.2-1.5-1.2z" />
+      <path d="M17.5 8.5v7M14 12h7" />
+    </svg>
   );
 }
 
@@ -301,22 +287,6 @@ const IconoGlobo = () => (
   <Svg>
     <circle cx="12" cy="12" r="9" />
     <path d="M3 12h18M12 3c2.5 2.6 2.5 15.4 0 18M12 3c-2.5 2.6-2.5 15.4 0 18" />
-  </Svg>
-);
-
-const IconoSalir = () => (
-  <Svg>
-    <path d="M14.5 4.5H18a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h-3.5" />
-    <path d="M10 8.5 6.5 12l3.5 3.5M6.5 12H15" />
-  </Svg>
-);
-
-const IconoCambiarPagador = () => (
-  <Svg>
-    <path d="M16 19a4 4 0 0 0-8 0" />
-    <circle cx="12" cy="9" r="3.2" />
-    <path d="m19 4 2 2-2 2" />
-    <path d="M21 6h-5" />
   </Svg>
 );
 

@@ -4,9 +4,9 @@ import { useCallback, useSyncExternalStore } from "react";
 import type { User } from "firebase/auth";
 import { EntradaError, entrarConGoogle, onUsuario, salirDeGoogle, type FalloEntrada } from "./firebaseClient";
 import { processImageToAvatarBase64 } from "./avatarUpload";
-import { confirmaQuitadas, EVENTO, fundir, quitadasPendientes, todos, type DiviGuardado } from "./misDivis";
+import { confirmaQuitadas, EVENTO, fundir, olvidarTodo, quitadasPendientes, todos, type DiviGuardado } from "./misDivis";
 import type { Quitadas } from "./fundeDivis";
-import { EVENTO_PERFIL, escribirPerfil, leerPerfil, type GlobalProfile } from "./useGlobalProfile";
+import { EVENTO_PERFIL, escribirPerfil, leerPerfil, olvidarPerfil, type GlobalProfile } from "./useGlobalProfile";
 import { apuntaSesion } from "./sesionLocal";
 import { RESPONSABLE } from "./responsable";
 
@@ -409,12 +409,63 @@ function arranca() {
   onUsuario((user) => {
     desengancha?.();
     desengancha = null;
+    /*
+      Un móvil, una persona a la vez.
+
+      Las mesas y el perfil se guardan en el navegador, y eso estaba pensado
+      para que la app fuera instantánea y funcionara sin cuenta. Pero al salir
+      no se borraba nada, así que quien entraba después —otra cuenta de Google
+      en el mismo móvil— se encontraba las mesas del anterior en su lista, y
+      además se las subía a su cuenta en la primera sincronización. Con el
+      perfil pasaba lo mismo y peor: heredaba el nombre y la foto.
+
+      Aquí se corta, en los dos momentos en que cambia de manos: al cerrar la
+      sesión —eso va en `salir`, que es un acto y no un estado— y al entrar
+      con una cuenta distinta de la última.
+
+      Lo que **no** se puede hacer es borrar cada vez que Firebase dice «no hay
+      nadie», que fue mi primer intento: eso pasa en toda visita de quien no
+      ha entrado, y se llevaría por delante las mesas del invitado —incluidas
+      las que se suben a la cuenta la primera vez que entra con Google, que es
+      justo lo que hace que merezca la pena entrar—.
+    */
+    const anterior = ultimaCuenta();
+    if (user && anterior && anterior !== user.uid) olvidaLoDeAntes();
+    if (user) recuerdaCuenta(user.uid);
+
     pon({ usuario: user, fallo: null, pendientes: NADA, usuarioNombre: null, cargada: false });
     // La huella para la próxima vez: la portada la lee antes de que Firebase
     // conteste, y así no enseña la web de venta a quien ya tiene cuenta.
     apuntaSesion(user ? (user.email?.toLowerCase() === RESPONSABLE.correo ? "casa" : "1") : null);
     if (user) void sincroniza(user);
   });
+}
+
+/** Quién fue la última cuenta en este móvil, para saber si ha cambiado. */
+const CLAVE_ULTIMA = "divi.ultima-cuenta";
+
+function ultimaCuenta(): string | null {
+  try {
+    return localStorage.getItem(CLAVE_ULTIMA);
+  } catch {
+    return null;
+  }
+}
+
+function recuerdaCuenta(uid: string | null): void {
+  try {
+    if (uid) localStorage.setItem(CLAVE_ULTIMA, uid);
+    else localStorage.removeItem(CLAVE_ULTIMA);
+  } catch {
+    /* sin sitio: como mucho, no se detecta el cambio de cuenta */
+  }
+}
+
+/** Todo lo que este móvil guarda de la persona que había antes. */
+function olvidaLoDeAntes(): void {
+  olvidarTodo();
+  olvidarPerfil();
+  recuerdaCuenta(null);
 }
 
 function subscribe(o: () => void) {
@@ -471,6 +522,16 @@ export function useCuenta() {
    */
   const salir = useCallback(async () => {
     await salirDeGoogle();
+    /*
+      Y el móvil se olvida de ti.
+
+      Antes no se borraba nada —«lo de este móvil se queda»—, y quien entraba
+      después con otra cuenta de Google se encontraba tus mesas en su lista y
+      tu nombre y tu foto en su perfil. Y peor: en la primera sincronización
+      se los subía a su cuenta. Lo tuyo no se pierde, está en tu cuenta y
+      vuelve entero cuando vuelvas a entrar.
+    */
+    olvidaLoDeAntes();
     // Quien acaba de cerrar la sesión no quiere que la portada le pida entrar
     // otra vez nada más llegar: la hoja de Google se calla como si hubiera
     // dicho «ahora no».
