@@ -374,6 +374,7 @@ export const es = {
       "Cada ticket lo puede haber puesto una persona distinta. Con eso, las cuentas de toda la mesa salen solas.",
     loPagueYo: "Lo pagué yo",
     fueOtro: "O fue otro de la mesa",
+    otroConCuenta: "Para decir que fue otro de la mesa hace falta cuenta. Entra desde el menú.",
     ahoraNo: "Ahora no",
   },
 
@@ -535,6 +536,10 @@ export const es = {
     quienHaPagado: "¿Quién ha pagado {que}?",
     laCuenta: "la cuenta",
     nadieEnLaMesa: "Todavía no hay nadie en la mesa.",
+    // Quién puede decir quién pagó: la regla está en `setPayer` (lib/store.ts).
+    unetePrimero: "Únete a la mesa para decir quién ha pagado.",
+    senalarConCuenta: "Para señalar a otra persona hace falta cuenta. Entra desde el menú.",
+    cambiarConCuenta: "Para cambiarlo hace falta cuenta, o haberlo pagado tú.",
     ojoSinDueno:
       "Ojo: quedan {dinero} sin dueño. Vuelve a la comanda y repártelos, o las cuentas de abajo se quedan cortas.",
     ojoDeMas: "Ojo: hay {dinero} repartidos de más. Revisa el total o las cantidades.",

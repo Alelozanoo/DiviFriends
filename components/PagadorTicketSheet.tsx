@@ -24,6 +24,7 @@ export function PagadorTicketSheet({
   etiqueta,
   participants,
   meId,
+  conCuenta,
   payerId,
   onElegir,
   onClose,
@@ -32,6 +33,8 @@ export function PagadorTicketSheet({
   etiqueta: string | null;
   participants: Participant[];
   meId: string | null;
+  /** Señalar a otro pide cuenta; «lo pagué yo», no. La regla vive en `setPayer`. */
+  conCuenta: boolean;
   payerId: string | null;
   onElegir: (participantId: string) => void;
   onClose: () => void;
@@ -66,7 +69,11 @@ export function PagadorTicketSheet({
         </button>
       )}
 
-      {otros.length > 0 && (
+      {otros.length > 0 && !conCuenta && (
+        <p className="mt-4 text-[12.5px] leading-relaxed text-ink-faint">{t.pagadorTicket.otroConCuenta}</p>
+      )}
+
+      {otros.length > 0 && conCuenta && (
         <>
      <p className="text-[12px] mt-5 text-ink-faint">{t.pagadorTicket.fueOtro}</p>
           <div className="mt-2 flex flex-wrap gap-2">

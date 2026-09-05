@@ -7,7 +7,7 @@ import { computeSettlement, totalAfterRemoving } from "@/lib/settle";
 import { useStoredParticipant } from "@/lib/useStoredParticipant";
 import { useTicketSync } from "@/lib/useTicketSync";
 import { leerPerfil, useGlobalProfile } from "@/lib/useGlobalProfile";
-import { asientoEn, invitaAMesa, useCuenta, vinculaAsiento } from "@/lib/cuenta";
+import { asientoEn, invitaAMesa, useCuenta, usuarioActual, vinculaAsiento } from "@/lib/cuenta";
 import { useSesionLocal } from "@/lib/sesionLocal";
 import { RESPONSABLE } from "@/lib/responsable";
 import { G } from "./CuentaBoton";
@@ -300,10 +300,15 @@ export default function SplitApp({
   async function send(path: string, init: RequestInit): Promise<TicketState | null> {
     setError(null);
     try {
-      const response = await fetch(`/api/tickets/${code}${path}`, {
-        ...init,
-        headers: { "content-type": "application/json", ...(init.headers ?? {}) },
-      });
+      // Con cuenta, el token va en todas: al servidor le da igual en casi
+      // todas las rutas, pero en «quién pagó» es lo que abre el segundo nivel.
+      const headers: Record<string, string> = {
+        "content-type": "application/json",
+        ...((init.headers as Record<string, string> | undefined) ?? {}),
+      };
+      const user = usuarioActual();
+      if (user) headers.authorization = `Bearer ${await user.getIdToken()}`;
+      const response = await fetch(`/api/tickets/${code}${path}`, { ...init, headers });
       const data = (await response.json()) as TicketState & { error?: string };
       if (!response.ok) {
         setError(data.error ?? t.comanda.errorGuardar);
@@ -1409,6 +1414,7 @@ export default function SplitApp({
           }
           participants={state.participants}
           meId={meId}
+          conCuenta={Boolean(usuario)}
           payerId={pagadorDelTicket(preguntandoTicket.receiptId)}
           onElegir={(participantId) => {
             void send("/payers", {
@@ -1430,6 +1436,9 @@ export default function SplitApp({
           receipts={state.receipts || []}
           people={settlement.byParticipant}
           meId={meId}
+          conCuenta={Boolean(usuario)}
+          payerOriginal={pagadorDelTicket(null)}
+          onUnirme={() => setJoinOverride(true)}
           onSetPayer={async (participantId, receiptId) => {
             let finalParticipantId: string | null = participantId;
             if (receiptId) {

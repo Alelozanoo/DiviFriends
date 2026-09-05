@@ -406,6 +406,8 @@ export function setPayer(
   participantId: string | null,
   receiptId: string | null,
   by?: string | null,
+  /** Si quien lo pide entró con cuenta. Sin esto no se comprueba nada (uso interno). */
+  permiso?: { conCuenta: boolean },
 ): Promise<TicketState> {
   return mutate(code, (doc) => {
     // Si payerId no es null, asegurarse de que el participante existe
@@ -414,9 +416,43 @@ export function setPayer(
       if (!exists) throw new StoreError("Ese comensal no está en la comanda.", 404);
     }
 
-    if (receiptId) {
-      const receipt = doc.receipts?.find((r) => r.id === receiptId);
-      if (!receipt) throw new StoreError("Ese ticket no existe.", 404);
+    const receipt = receiptId ? doc.receipts?.find((r) => r.id === receiptId) : undefined;
+    if (receiptId && !receipt) throw new StoreError("Ese ticket no existe.", 404);
+
+    /*
+      Quién puede decir quién pagó. Tres niveles, desde el 6 de septiembre
+      de 2026; hasta entonces esta ruta —la única que mueve dinero de sitio—
+      no comprobaba nada y cualquiera con el código podía tocarlo.
+
+        - «Pagué yo», sobre un ticket que aún no tiene pagador: cualquiera
+          sentado, con o sin cuenta. Es el caso de siempre: el que hizo la
+          foto tenía el ticket en la mano.
+        - Señalar a otra persona, o cambiar o quitar a un pagador que ya
+          existe: el propio pagador, o alguien con cuenta. Ahí el historial
+          deja un nombre de verdad detrás del cambio.
+
+      Sin asiento, nada. Pedir cuenta también para «pagué yo» dejaría sin
+      cerrar las mesas donde nadie la tiene, que son la mayoría.
+    */
+    if (permiso) {
+      if (!by || !doc.participants.some((p) => p.id === by))
+        throw new StoreError("Únete a la mesa para decir quién ha pagado.", 403);
+      const actual = receipt
+        ? (receipt.payerId ?? null)
+        : (doc.payerId ?? doc.participants.find((p) => p.isPayer)?.id ?? null);
+      const soyElPagador = actual !== null && actual === by;
+      const pagueYo = participantId === by && actual === null;
+      if (!pagueYo && !soyElPagador && !permiso.conCuenta) {
+        throw new StoreError(
+          actual === null
+            ? "Para señalar a otra persona hace falta cuenta."
+            : "Para cambiar quién pagó hace falta cuenta, o haberlo pagado tú.",
+          403,
+        );
+      }
+    }
+
+    if (receipt) {
       receipt.payerId = participantId;
     } else {
       doc.payerId = participantId;

@@ -347,6 +347,7 @@ export const en: Dict = {
       "Each receipt can have been paid by a different person. With that, the whole table adds up by itself.",
     loPagueYo: "I paid it",
     fueOtro: "Or somebody else at the table",
+    otroConCuenta: "Saying somebody else paid needs an account. Sign in from the menu.",
     ahoraNo: "Not now",
   },
 
@@ -494,6 +495,9 @@ export const en: Dict = {
     quienHaPagado: "Who paid {que}?",
     laCuenta: "the bill",
     nadieEnLaMesa: "Nobody at the table yet.",
+    unetePrimero: "Join the table to say who paid.",
+    senalarConCuenta: "Pointing at somebody else needs an account. Sign in from the menu.",
+    cambiarConCuenta: "Changing it needs an account, or having paid it yourself.",
     ojoSinDueno:
       "Careful: {dinero} has no owner. Go back to the bill and share it out, or the totals below fall short.",
     ojoDeMas: "Careful: {dinero} has been shared out twice over. Check the total or the amounts.",
