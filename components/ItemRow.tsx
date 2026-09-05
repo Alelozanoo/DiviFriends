@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { money } from "@/lib/format";
 import type { Item, ItemBreakdown, Participant } from "@/lib/types";
 import { useT, rellena } from "@/lib/i18n";
@@ -94,12 +95,19 @@ export default function ItemRow({
     tuya sí se queda, porque ahí es el dato que decide —dice que no queda nada
     que pedirse.
   */
+  /*
+    «Completo» también cuando la línea es tuya.
+
+    Se callaba en ese caso para que no se cortara el renglón, y con eso quien
+    acababa de coger la última unidad no tenía ni una palabra que le dijera
+    qué había pasado: pulsabas y la fila se iba al fondo de la lista. Ya no se
+    va —la lista no se reordena—, así que la palabra es lo único que queda por
+    decir, y hace falta justo en el momento en que eres tú quien la llena.
+  */
   const quedan =
     breakdown.freeShares > 0
       ? rellena(t.linea.quedanN, { n: breakdown.freeShares })
-      : isMine
-        ? ""
-        : t.linea.completo;
+      : t.linea.completo;
   const precio =
     item.splitInto > 1
       ? `${item.splitInto} × ${money(breakdown.perShareCents, currency)}`
@@ -136,8 +144,29 @@ export default function ItemRow({
     meta,
   ].join(", ");
 
+  /*
+    El destello: un segundo de verde cuando la línea acaba de llenarse.
+
+    Es lo que sustituye al viaje al fondo de la lista. No hay que pulsar nada
+    ni sale ningún cartel encima: la propia fila dice «ya está» y se apaga.
+    Sólo en la transición, nunca al abrir la mesa: si no, entrar en una
+    comanda a medias sería una fila de luces de discoteca.
+  */
+  const eraLlena = useRef(full);
+  const [destello, setDestello] = useState(false);
+  useEffect(() => {
+    if (full && !eraLlena.current) {
+      setDestello(true);
+      const reloj = setTimeout(() => setDestello(false), 1200);
+      eraLlena.current = full;
+      return () => clearTimeout(reloj);
+    }
+    eraLlena.current = full;
+  }, [full]);
+
   return (
     <li
+      data-destello={destello || undefined}
       style={{ ["--fila" as string]: fondo }}
       className={`overflow-hidden rounded-caja border-[1.5px] transition-colors duration-200 ${
         isMine

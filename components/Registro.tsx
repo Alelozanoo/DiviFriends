@@ -70,8 +70,19 @@ export default function Registro() {
     de aquí que no se puede rellenar solo y lo que hace falta para que te
     añadan.
   */
+  /*
+    A dónde se vuelve al acabar: a tus mesas, o a la mesa desde la que se
+    entró con Google (`?volver=/t/ABC123`). Sólo rutas de la casa: una
+    dirección completa no se acepta, que un enlace de registro no puede
+    llevar a nadie fuera.
+  */
+  const destino = () => {
+    const v = new URLSearchParams(window.location.search).get("volver");
+    return v && v.startsWith("/") && !v.startsWith("//") ? v : "/";
+  };
+
   useEffect(() => {
-    if (usuario && cargada && usuarioNombre) router.replace("/");
+    if (usuario && cargada && usuarioNombre) router.replace(destino());
   }, [usuario, cargada, usuarioNombre, router]);
 
   async function guardar() {
@@ -90,7 +101,7 @@ export default function Registro() {
       // sin haber dejado nada a medias por el camino.
       if (user !== usuarioNombre) await ponUsuario(user);
       await ponNovedades(novedades);
-      router.replace("/");
+      router.replace(destino());
     } catch (error) {
       setFallo(error instanceof Error ? error.message : t.comanda.errorGuardar);
     } finally {

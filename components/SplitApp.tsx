@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { computeSettlement, totalAfterRemoving } from "@/lib/settle";
 import { useStoredParticipant } from "@/lib/useStoredParticipant";
 import { useTicketSync } from "@/lib/useTicketSync";
 import { leerPerfil, useGlobalProfile } from "@/lib/useGlobalProfile";
 import { asientoEn, invitaAMesa, useCuenta, vinculaAsiento } from "@/lib/cuenta";
+import { useSesionLocal } from "@/lib/sesionLocal";
+import { RESPONSABLE } from "@/lib/responsable";
 import { G } from "./CuentaBoton";
 import { processImageToAvatarBase64 } from "@/lib/avatarUpload";
 import { money, parseMoney } from "@/lib/format";
@@ -98,7 +101,8 @@ export default function SplitApp({
     trackOnce("mesa", EV.abreMesa);
   }, []);
 
-  // null = decide la app (abierto si no te has unido); true/false = lo has decidido tú.
+  // true = la puerta de «¿quién eres?» está abierta porque alguien la pidió:
+  // tocar un plato, «Unirme», cambiar de nombre. null = cerrada.
   const [joinOverride, setJoinOverride] = useState<boolean | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [cambiarPagadorOpen, setCambiarPagadorOpen] = useState(false);
@@ -118,7 +122,12 @@ export default function SplitApp({
   const pagoPendiente = usePagoPendiente(code);
   const { profile: globalProfile, saveProfile } = useGlobalProfile();
   const meId = storedId && state.participants.some((p) => p.id === storedId) ? storedId : null;
-  const { usuario, entrar, ocupado: entrando } = useCuenta();
+  const { usuario, entrar, ocupado: entrando, cargada, usuarioNombre } = useCuenta();
+  const router = useRouter();
+  // La huella de la última sesión: mientras Firebase decide, el botón de
+  // «Unirme» espera en vez de ofrecerse a quien ya tiene cuenta.
+  const sesion = useSesionLocal();
+  const esperandoSesion = usuario === undefined && Boolean(sesion);
   /*
     Con cuenta y sin saber quién eres: ¿te reservaron asiento?
 
@@ -127,7 +136,6 @@ export default function SplitApp({
     quién eres. Se pregunta una vez por mesa; si no hay asiento, la hoja de
     «¿quién eres?» sale como siempre.
   */
-  const [asientoMirado, setAsientoMirado] = useState(false);
   const mirandoAsiento = useRef(false);
   useEffect(() => {
     if (!usuario || !known || meId || joinOverride || mirandoAsiento.current) return;
@@ -154,14 +162,47 @@ export default function SplitApp({
         }
         if (perfil?.name) await join(perfil.name, perfil.avatar, perfil.bizum, perfil.revolut);
       } catch {
-        // Sin red o sin perfil: la hoja de «¿quién eres?» sale como siempre.
-      } finally {
-        setAsientoMirado(true);
+        // Sin red o sin perfil: la puerta de «¿quién eres?» saldrá al tocar.
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [usuario, known, meId]);
-  const showJoin = joinOverride ?? (known && !meId && (!usuario || asientoMirado));
+  }, [usuario, known, meId, joinOverride]);
+
+  /*
+    La puerta sólo se abre cuando hace falta, y no al llegar.
+
+    Hasta el 6 de septiembre de 2026 quien abría el enlace se encontraba
+    «¿Quién eres?» encima de la mesa borrosa antes de haber visto nada. Ahora
+    ve la comanda, el total y quién está, y el nombre se le pide al tocar su
+    primer plato —que es cuando ya quiere marcarlo— o al pulsar «Unirme».
+
+    De paso se arregla otra cosa: quien tiene cuenta veía esa misma puerta
+    uno o dos segundos, hasta que Firebase confirmaba la sesión y el efecto
+    de arriba le sentaba solo. Como ya no sale sola, ese hueco no existe.
+  */
+  const showJoin = joinOverride === true && !meId;
+
+  /*
+    Entrar con Google desde la puerta de la mesa.
+
+    Cuando llega la sesión hay dos caminos. Si la cuenta es nueva —sin
+    usuario todavía— se va al registro, y el registro vuelve aquí al acabar.
+    Si no, la puerta se cierra y el efecto del asiento te sienta solo con tu
+    perfil, como a cualquiera que llega con la sesión ya abierta.
+  */
+  const entroDesdeAqui = useRef(false);
+  useEffect(() => {
+    if (!entroDesdeAqui.current || !usuario || !cargada) return;
+    entroDesdeAqui.current = false;
+    const casa = usuario.email?.toLowerCase() === RESPONSABLE.correo;
+    if (!usuarioNombre && !casa) {
+      router.replace(`/registro?volver=${encodeURIComponent(`/t/${code}`)}`);
+      return;
+    }
+    // Cerrar la puerta es reaccionar a que llegó la sesión, no derivar estado.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setJoinOverride(null);
+  }, [usuario, cargada, usuarioNombre, router, code]);
 
   /*
     Y al revés: ya sentado, y con cuenta.
@@ -523,18 +564,23 @@ export default function SplitApp({
     }
   }
 
-  const currentItems = state.items
-    .filter(i =>
-      (currentReceiptId === null && !i.receiptId) ||
-      i.receiptId === currentReceiptId
-    )
-    .sort((a, b) => {
-      const aFull = settlement.byItem[a.id]?.freeShares === 0;
-      const bFull = settlement.byItem[b.id]?.freeShares === 0;
-      if (aFull && !bFull) return 1;
-      if (!aFull && bFull) return -1;
-      return 0;
-    });
+  /*
+    En el orden del papel, y ahí se quedan.
+
+    Las líneas completas se iban al final de la lista. La idea era buena
+    —arriba lo que falta— y en pantalla era lo peor que puede hacer una
+    interfaz táctil: tocabas la tercera caña y la fila se marchaba de debajo
+    del dedo. Y con la mesa entera repartiendo a la vez era peor todavía,
+    porque el toque de otro te reordenaba la lista con el pulgar en el aire y
+    acababas marcando lo que no era.
+
+    Ahora no se mueve nada nunca: la comanda se lee en el orden en que está
+    impresa en el ticket, que es como se lee un ticket. Que una línea esté
+    completa se dice con el color y con la palabra, donde está.
+  */
+  const currentItems = state.items.filter(
+    (i) => (currentReceiptId === null && !i.receiptId) || i.receiptId === currentReceiptId,
+  );
 
   const esMio = (itemId: string) =>
     Boolean(settlement.byItem[itemId]?.shares.some((s) => s.participantId === meId));
@@ -1052,10 +1098,11 @@ export default function SplitApp({
             <button
               type="button"
               onClick={() => setJoinOverride(true)}
-              className="min-h-[46px] shrink-0 rounded-pieza bg-amber px-5 text-[15px] font-bold"
+              disabled={esperandoSesion}
+              className="min-h-[46px] shrink-0 rounded-pieza bg-amber px-5 text-[15px] font-bold disabled:opacity-60"
               style={{ color: "var(--paper-2)" }}
             >
-              {t.comanda.unirme}
+              {esperandoSesion ? "…" : t.comanda.unirme}
             </button>
           )}
         </div>
@@ -1253,9 +1300,13 @@ export default function SplitApp({
           globalProfile={globalProfile}
           conCuenta={Boolean(usuario)}
           ocupado={entrando}
-          onGoogle={() => void entrar()}
+          onGoogle={() => {
+            entroDesdeAqui.current = true;
+            void entrar();
+          }}
           onJoin={join}
           onSaveProfile={saveProfile}
+          onClose={() => setJoinOverride(null)}
         />
       )}
 
@@ -1599,6 +1650,10 @@ function Sinpagador() {
  * Con sesión ya abierta no hay puertas que enseñar —se entra solo, desde el
  * efecto de arriba—; si aun así se llega aquí es porque falta el nombre, y
  * entonces esto es directamente el formulario.
+ *
+ * Se cierra: sale al tocar un plato o «Unirme», y quien sólo estaba mirando
+ * tiene que poder volver a mirar. Antes era una hoja fija porque salía sola
+ * al llegar y no había mesa que ver detrás; ahora la mesa está a la vista.
  */
 function JoinSheet({
   people,
@@ -1608,6 +1663,7 @@ function JoinSheet({
   onGoogle,
   onJoin,
   onSaveProfile,
+  onClose,
 }: {
   people: Participant[];
   globalProfile: { name: string; avatar?: string; bizum?: string; revolut?: string } | null;
@@ -1617,6 +1673,7 @@ function JoinSheet({
   onGoogle: () => void;
   onJoin: (name: string, avatar?: string, bizum?: string, revolut?: string) => Promise<void>;
   onSaveProfile: (updates: {name: string, avatar?: string, bizum?: string, revolut?: string}) => void;
+  onClose: () => void;
 }) {
   const t = useT();
   const [invitado, setInvitado] = useState(conCuenta);
@@ -1631,7 +1688,7 @@ function JoinSheet({
 
   if (!invitado) {
     return (
-      <Sheet fijo onClose={() => {}} titulo={t.entrar.titulo} sub={t.entrar.entradilla}>
+      <Sheet onClose={onClose} cierre titulo={t.entrar.titulo} sub={t.entrar.entradilla}>
         {/* En crema, que es como pide Google que vaya su botón, y lo más claro
             de la pantalla: es la puerta que queremos que se use. */}
         <button
@@ -1668,8 +1725,8 @@ function JoinSheet({
 
   return (
     <Sheet
-      fijo
-      onClose={() => {}}
+      onClose={onClose}
+      cierre
       titulo={conCuenta ? t.entrar.titulo : t.entrar.invitadoTitulo}
       sub={t.entrar.invitadoEntradilla}
     >

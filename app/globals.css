@@ -477,3 +477,34 @@ input[type="number"]::-webkit-inner-spin-button {
     opacity: 0;
   }
 }
+
+/*
+  El destello de una línea que acaba de completarse.
+
+  Un verde que entra y se va en poco más de un segundo, sobre el fondo que
+  tenga la fila. Sustituye a lo que hacía antes, que era irse al final de la
+  lista: aquello movía la fila de debajo del dedo justo después de tocarla, y
+  con varios móviles repartiendo a la vez te reordenaba la lista mientras
+  apuntabas. Esto dice lo mismo —«esta ya está»— sin mover nada.
+
+  `box-shadow` por dentro y no un fondo: así no pelea con el ámbar de las
+  líneas que son tuyas ni con el color de las que no.
+*/
+@keyframes destello-lleno {
+  0% {
+    box-shadow: inset 0 0 0 100vmax color-mix(in oklab, var(--mint) 26%, transparent);
+  }
+  100% {
+    box-shadow: inset 0 0 0 100vmax transparent;
+  }
+}
+
+li[data-destello] {
+  animation: destello-lleno 1.2s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  li[data-destello] {
+    animation-duration: 0.01ms;
+  }
+}
