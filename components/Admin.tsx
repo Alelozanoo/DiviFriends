@@ -265,23 +265,139 @@ export default function Admin({ onComoUsuario }: { onComoUsuario: () => void }) 
 
           {/* ── lo demás, en cifras */}
           <Grupo titulo="Hasta dónde llegan" nota="De los divis de los últimos catorce días">
-            <div className="px-4 py-3">
-              {datos.m.embudo.map((p) => (
-                <div key={p.etiqueta} className="flex items-center gap-3 py-1.5 text-[14px]">
-                  <span className="w-[42%] text-ink-soft">{p.etiqueta}</span>
-                  <span className="h-2 flex-1 overflow-hidden rounded-full bg-paper-3">
-                    <span className="block h-full rounded-full bg-amber" style={{ width: `${p.pct}%` }} />
-                  </span>
-                  <span className="w-12 text-right font-semibold [font-variant-numeric:tabular-nums]">{p.n}</span>
-                </div>
-              ))}
+            <Escalera pasos={datos.m.embudo} />
+            <Nota>
+              El escalón que importa es el segundo. Un divi creado sólo dice que alguien le hizo
+              una foto a un ticket; uno donde alguien coge algo dice que hubo una mesa de verdad
+              repartiendo. Lo que se cae entre esos dos son los que se asomaron y se fueron.
+            </Nota>
+          </Grupo>
+
+          {/* ── lo que decide si esto crece solo */}
+          <Grupo titulo="Cuánta gente entra por divi" nota="El número que decide si esto crece solo">
+            <div className="grid grid-cols-2 gap-2.5 p-2.5">
+              <Mini etiqueta="De media" valor={datos.m.personas.media.toFixed(1)} tono="text-amber" />
+              <Mini etiqueta="Se queda en uno" valor={`${datos.m.personas.solo}%`} tono="text-clay" />
+              <Mini etiqueta="Dos o más" valor={`${datos.m.personas.dosOMas}%`} />
+              <Mini etiqueta="Tres o más" valor={`${datos.m.personas.tresOMas}%`} tono="text-mint" />
             </div>
+            <Nota>
+              Cada divi que se queda en una sola persona es alguien que lo abrió y no llegó a
+              pasárselo a nadie. Ese porcentaje bajando es la señal de que la app se entiende.
+            </Nota>
+          </Grupo>
+
+          <Grupo titulo="Los que sólo miran" nota="Lo que no llegó a ser una mesa">
+            <div className="grid grid-cols-3 gap-2.5 p-2.5">
+              <Mini etiqueta="Nadie cogió nada" valor={`${datos.m.curiosos.vacios}%`} tono="text-clay" />
+              <Mini etiqueta="No se volvió a tocar" valor={`${datos.m.curiosos.efimeros}%`} tono="text-clay" />
+              <Mini etiqueta="Minutos de vida" valor={String(datos.m.curiosos.medianaMinutos)} />
+            </div>
+            <Nota>
+              Los minutos son la <b className="text-ink">mediana</b> entre que se crea la comanda
+              y su último cambio: una mesa de verdad se toca durante un rato largo, la del
+              curioso muere en el mismo minuto en que nació.
+            </Nota>
+          </Grupo>
+
+          <Grupo titulo="Dos cosas que se pueden hacer" nota="Y cuánta gente las hace">
+            <div className="grid grid-cols-2 gap-2.5 p-2.5">
+              <Mini etiqueta="Divis con más de un ticket" valor={`${datos.m.recibos.conVarios}%`} />
+              <Mini etiqueta="Se ponen foto" valor={`${datos.m.avatares}%`} />
+            </div>
+            <Nota>
+              Cuentan cosas distintas. La primera es de <b className="text-ink">divis</b>: mesas
+              que juntan dos papeles, la cena y luego las copas. La segunda es de{" "}
+              <b className="text-ink">personas</b>: de toda la gente que se ha apuntado alguna
+              vez, cuántos se pusieron foto o emoji en vez de quedarse con sus iniciales.
+            </Nota>
+          </Grupo>
+
+          {datos.m.acciones.length > 0 && (
+            <Grupo titulo="Qué hacen dentro" nota="Los cambios que quedan grabados">
+              <Escalera pasos={datos.m.acciones} />
+            </Grupo>
+          )}
+
+          <Grupo titulo="Cuándo se usa" nota="La hora de la mesa, no la del servidor">
+            <Barras datos={datos.m.porDiaSemana} />
+            <div className="grid grid-cols-4 gap-2.5 p-2.5 pt-0">
+              <Mini etiqueta="Mañana" valor={String(datos.m.porFranja.mañana)} />
+              <Mini etiqueta="Tarde" valor={String(datos.m.porFranja.tarde)} />
+              <Mini etiqueta="Noche" valor={String(datos.m.porFranja.noche)} tono="text-amber" />
+              <Mini etiqueta="Madrugada" valor={String(datos.m.porFranja.madrugada)} />
+            </div>
+          </Grupo>
+
+          {/* ── las cuentas, por dentro */}
+          <Grupo titulo="Qué hacen con la cuenta" nota={`De las ${datos.c.cuentas.total}`}>
+            <Escalera
+              pasos={[
+                { etiqueta: "con foto", n: datos.c.cuentas.conFoto, pct: pct(datos.c.cuentas.conFoto, datos.c.cuentas.total) },
+                { etiqueta: "con Bizum o Revolut", n: datos.c.cuentas.conBizum, pct: pct(datos.c.cuentas.conBizum, datos.c.cuentas.total) },
+                { etiqueta: "con usuario elegido", n: datos.c.cuentas.conUsuario, pct: pct(datos.c.cuentas.conUsuario, datos.c.cuentas.total) },
+                { etiqueta: "con los correos apagados", n: datos.c.cuentas.correosApagados, pct: pct(datos.c.cuentas.correosApagados, datos.c.cuentas.total) },
+              ]}
+            />
+          </Grupo>
+
+          <Grupo titulo="Amigos y mesas" nota="Lo que sólo pasa con cuenta">
+            <div className="grid grid-cols-3 gap-2.5 p-2.5">
+              <Mini etiqueta="Amistades" valor={String(datos.c.amigos.amistades)} tono="text-amber" />
+              <Mini etiqueta="Sin aceptar" valor={String(datos.c.amigos.pendientes)} />
+              <Mini etiqueta="Metidos por un amigo" valor={String(datos.c.mesas.invitados)} />
+            </div>
+            <Nota>
+              De los {datos.c.mesas.invitados} metidos por un amigo,{" "}
+              <b className="text-ink">{datos.c.mesas.abiertos}</b> llegaron a abrir la mesa.
+              Además, {datos.c.mesas.propios} se sentaron ellos mismos con su cuenta.
+            </Nota>
+          </Grupo>
+
+          <Grupo titulo="Correos" nota={`${datos.c.correos.semana} en 7 días · ${datos.c.correos.total} en total`}>
+            <div className="grid gap-2.5 p-2.5">
+              <div>
+                <p className="mb-1 px-1 text-[11.5px] text-ink-faint">Qué pasó con cada uno</p>
+                <Escalera pasos={datos.c.correos.porEstado} />
+              </div>
+              <div>
+                <p className="mb-1 px-1 text-[11.5px] text-ink-faint">De qué eran</p>
+                <Escalera pasos={datos.c.correos.porTipo} />
+              </div>
+            </div>
+            <Nota>
+              El freno global de hoy va por{" "}
+              <b className={datos.c.correos.tope.hechos >= datos.c.correos.tope.max * 0.8 ? "text-clay" : "text-ink"}>
+                {datos.c.correos.tope.hechos} de {datos.c.correos.tope.max}
+              </b>
+              . Si se llena, los siguientes se quedan en la campana y no salen por correo hasta
+              el día siguiente.
+            </Nota>
+          </Grupo>
+
+          <Grupo titulo="Lo que cuesta" nota="Leer tickets es el único gasto que crece con la gente">
+            <div className="grid grid-cols-3 gap-2.5 p-2.5">
+              <Mini etiqueta="Hoy" valor={`${datos.m.coste.hoy.toFixed(2)} $`} tono="text-amber" />
+              <Mini etiqueta="7 días" valor={`${datos.m.coste.semana.toFixed(2)} $`} />
+              <Mini etiqueta="14 días" valor={`${datos.m.coste.total.toFixed(2)} $`} />
+            </div>
+            <Nota>
+              Cada papel que pasa por {datos.modelo} cuesta{" "}
+              <b className="text-ink">{(datos.m.coste.porLectura * 100).toFixed(2)} ¢</b>:{" "}
+              {datos.m.coste.lecturas.total.toLocaleString("es-ES")} papeles en 14 días,{" "}
+              {datos.m.coste.lecturas.hoy.toLocaleString("es-ES")} hoy.{" "}
+              <b className="text-ink">Es un techo, no una factura:</b> una comanda escrita a mano
+              no llama a nadie y aquí cuenta igual, y las fotos que el modelo no supo leer se
+              pagaron sin dejar divi. El número exacto es el contador del tope:{" "}
+              <b className="text-ink">{datos.lecturas.hechas.toLocaleString("es-ES")}</b> de{" "}
+              {datos.lecturas.tope.toLocaleString("es-ES")} que caben en un día.
+            </Nota>
           </Grupo>
 
           <div className="mt-4 grid grid-cols-2 gap-2.5">
             <Cifra etiqueta="Correos hoy" valor={datos.c.correos.hoy} nota={`${datos.c.correos.tope.hechos} de ${datos.c.correos.tope.max} del tope · ${datos.c.correos.total} en total`} />
             <Cifra etiqueta="Amistades" valor={datos.c.amigos.amistades} nota={`${datos.c.amigos.pendientes} solicitudes sin aceptar`} />
-            <Cifra etiqueta="Coste 7 días" valor={`${datos.m.coste.semana.toFixed(2)} $`} nota={`${datos.m.coste.total.toFixed(2)} $ en 14 días · el total, en la página larga`} />
+            <Cifra etiqueta="Coste 7 días" valor={`${datos.m.coste.semana.toFixed(2)} $`} nota={`${datos.m.coste.total.toFixed(2)} $ en 14 días`} />
             <Cifra etiqueta="Mesas sin nada" valor={datos.m.nonatas.hoy} nota={`${datos.m.nonatas.total} en 14 días: fotos que no llegaron a mesa`} tono={datos.m.nonatas.hoy > 3 ? "text-clay" : undefined} />
           </div>
 
@@ -400,6 +516,38 @@ function Mini({ etiqueta, valor, tono }: { etiqueta: string; valor: string; tono
       <p className="text-[11.5px] text-ink-faint">{etiqueta}</p>
       <p className={`mt-0.5 text-[15px] font-semibold [font-variant-numeric:tabular-nums] ${tono ?? ""}`}>{valor}</p>
     </div>
+  );
+}
+
+const pct = (parte: number, total: number) => (total === 0 ? 0 : Math.round((parte / total) * 100));
+
+/** Una lista con su barra: el embudo, los correos, lo que hace la gente. */
+function Escalera({ pasos }: { pasos: { etiqueta: string; n: number; pct?: number }[] }) {
+  const max = Math.max(1, ...pasos.map((p) => p.n));
+  return (
+    <div className="px-4 py-3">
+      {pasos.map((p) => (
+        <div key={p.etiqueta} className="flex items-center gap-3 py-1.5 text-[14px]">
+          <span className="w-[42%] truncate text-ink-soft">{p.etiqueta}</span>
+          <span className="h-2 flex-1 overflow-hidden rounded-full bg-paper-3">
+            <span
+              className="block h-full rounded-full bg-amber"
+              style={{ width: `${p.pct ?? Math.round((p.n / max) * 100)}%` }}
+            />
+          </span>
+          <span className="w-12 text-right font-semibold [font-variant-numeric:tabular-nums]">{p.n}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** El párrafo que explica una cifra. Sin él, un porcentaje no dice nada. */
+function Nota({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="border-t border-line-soft px-4 py-3 text-[12px] leading-relaxed text-ink-faint">
+      {children}
+    </p>
   );
 }
 

@@ -13,19 +13,9 @@ import { PIXEL_ID, vaciarCola } from "@/lib/track";
  * `afterInteractive`: la portada tiene que pintar y dejar subir la foto antes
  * que cualquier medición.
  */
-/**
- * Páginas donde el píxel no entra.
- *
- * `/metricas` lleva la llave pegada en la URL, y el píxel manda a Meta la
- * dirección entera de la página en la que se dispara: cargarlo ahí sería
- * regalarle la contraseña a Facebook.
- */
-const PROHIBIDO = ["/metricas"];
-
 export default function Pixel() {
   const pathname = usePathname();
   const primera = useRef(true);
-  const fuera = PROHIBIDO.some((ruta) => pathname.startsWith(ruta));
   // Empieza en `false` también en el navegador: hasta que no se lee la
   // respuesta guardada no se carga nada de Facebook.
   const [permiso, setPermiso] = useState(false);
@@ -46,7 +36,7 @@ export default function Pixel() {
     basta con mirar en cada fotograma hasta que aparezca.
   */
   useEffect(() => {
-    if (!PIXEL_ID || fuera || !permiso) return;
+    if (!PIXEL_ID || !permiso) return;
     let cancelado = false;
     const mirar = () => {
       if (cancelado) return;
@@ -57,10 +47,10 @@ export default function Pixel() {
     return () => {
       cancelado = true;
     };
-  }, [fuera, permiso]);
+  }, [permiso]);
 
   useEffect(() => {
-    if (!PIXEL_ID || fuera || !permiso) return;
+    if (!PIXEL_ID || !permiso) return;
     // El código base ya manda el primer PageView. Los siguientes son
     // navegaciones del router —de la portada a la comanda—, que no recargan
     // la página y por tanto no lo disparan solas.
@@ -69,9 +59,9 @@ export default function Pixel() {
       return;
     }
     window.fbq?.("track", "PageView");
-  }, [pathname, fuera, permiso]);
+  }, [pathname, permiso]);
 
-  if (!PIXEL_ID || fuera || !permiso) return null;
+  if (!PIXEL_ID || !permiso) return null;
 
   return (
     <Script id="meta-pixel" strategy="afterInteractive">

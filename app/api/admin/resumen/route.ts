@@ -33,11 +33,16 @@ let guardado: { cuando: number; cuerpo: unknown } | null = null;
 /**
  * Las cuentas de la casa, para el panel de admin.
  *
- * Es lo mismo que enseña /metricas con la llave en la URL, más lo que aquélla
- * no enseña a propósito —quién se ha registrado, con su correo, y las últimas
- * mesas—, porque esto sólo lo ve la cuenta de la casa: el token de Google
- * tiene que ser el de hola@divifriends.es. A cualquier otro le devuelve un
- * 404, como si la ruta no existiera.
+ * Todas las cuentas de la casa viven aquí desde el 11 de septiembre de 2026.
+ * Antes había además una página larga, `/metricas`, con una llave pegada en la
+ * URL: nació cuando no existían las cuentas y era la única puerta posible. Con
+ * cuenta de Google la puerta es mejor —no hay llave que recordar ni que se
+ * quede escrita en el historial del móvil— así que aquélla se borró y lo suyo
+ * está en el panel.
+ *
+ * Sólo lo ve la cuenta de la casa: el token de Google tiene que ser el de
+ * hola@divifriends.es. A cualquier otro le devuelve un 404, como si la ruta no
+ * existiera.
  */
 export async function GET(request: Request) {
   const quien = await usuarioDe(request);

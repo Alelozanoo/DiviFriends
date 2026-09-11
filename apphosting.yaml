@@ -61,14 +61,6 @@ env:
   #   value: "1054021497541259"
   #   availability: [BUILD, RUNTIME]
 
-  # La llave de /metricas. Va en Secret Manager y no aquí, así que este bloque
-  # está comentado a propósito: descoméntalo DESPUÉS de crear el secreto, o el
-  # despliegue falla por no encontrarlo.
-  #   firebase apphosting:secrets:set metricas-token --project divifriends-2964
-  # - variable: METRICAS_TOKEN
-  #   secret: metricas-token
-  #   availability: [RUNTIME]
-
   # --- Lectura de tickets ---------------------------------------------------
   # Qué modelo lee la foto del ticket: `gemini` o `anthropic`. Es la única
   # variable de coste que crece con los usuarios, así que se elige por

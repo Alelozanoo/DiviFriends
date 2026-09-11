@@ -21,8 +21,7 @@ const SEGURAS = [
   // Un fichero servido como texto se queda en texto, aunque el navegador crea
   // que ha olido otra cosa.
   { key: "X-Content-Type-Options", value: "nosniff" },
-  // Sólo el dominio, nunca la ruta. Importa de verdad en /metricas, donde la
-  // llave viaja en la propia URL.
+  // Sólo el dominio, nunca la ruta: la ruta de una comanda es su código.
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   // Un año de HTTPS obligatorio: el enlace de una comanda se pega en WhatsApp y
   // se abre en redes ajenas.
@@ -36,12 +35,6 @@ const nextConfig: NextConfig = {
   headers() {
     return Promise.resolve([
       { source: "/:path*", headers: SEGURAS },
-      {
-        // La llave de las métricas va en la URL, así que de esta página no sale
-        // ni el dominio.
-        source: "/metricas",
-        headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
-      },
       {
         // El manejador de Google mete un iframe suyo dentro de la propia
         // portada para cerrar la entrada. Con `frame-ancestors 'none'` de
