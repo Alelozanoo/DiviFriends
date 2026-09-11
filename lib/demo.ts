@@ -36,8 +36,22 @@ const CARTA: { name: string; qty: number; cents: number }[] = [
   { name: "Tarta de queso", qty: 2, cents: 1100 },
 ];
 
-/** Quiénes están ya sentados. Nombres de bar, no «Usuario 1». */
-const GENTE = ["Bea", "Nacho", "Sofía"];
+/**
+ * Quiénes están ya sentados, con su forma de cobrar inventada.
+ *
+ * Los datos de pago hacen falta para que la simulación de pagar tenga algo que
+ * enseñar: sin ellos, la hoja de pagar sólo ofrece «en mano» y el paso más
+ * importante del guiado —ver cómo se devuelve el dinero— no se puede probar.
+ *
+ * El móvil empieza por 600, que es un prefijo real de España, porque un número
+ * con pinta de falso —000, 123— hace dudar de si la app funciona. Nadie lo va
+ * a marcar: en la mesa de ejemplo el botón no sale del sitio.
+ */
+const GENTE = [
+  { name: "Bea", bizum: "600112233", revolut: "beademo" },
+  { name: "Nacho", bizum: "600445566", revolut: "nachodemo" },
+  { name: "Sofía", bizum: "600778899", revolut: "sofiademo" },
+];
 
 /**
  * Quién ha cogido qué, por posición: `[plato, persona, partes]`.
@@ -60,9 +74,11 @@ const COGIDO: [number, number, number][] = [
 export async function creaDemo(): Promise<string> {
   const ahora = new Date().toISOString();
 
-  const participants: ParticipantDoc[] = GENTE.map((name, i) => ({
+  const participants: ParticipantDoc[] = GENTE.map((quien, i) => ({
     id: id("prt"),
-    name,
+    name: quien.name,
+    bizum: quien.bizum,
+    revolut: quien.revolut,
     color: colorFor(i),
     // Bea puso la tarjeta: así las cuentas salen con números de verdad desde
     // el primer momento, en vez de con el aviso de que falta el pagador.

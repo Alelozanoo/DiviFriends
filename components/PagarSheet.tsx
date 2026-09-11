@@ -29,6 +29,7 @@ export default function PagarSheet({
   currency,
   place,
   volviendoDePagar = false,
+  demo = false,
   onEnviado,
   onAntesDeSalir,
   onClose,
@@ -39,13 +40,22 @@ export default function PagarSheet({
   place: string | null;
   /** true cuando se vuelve de la web de Revolut: la hoja arranca preguntando. */
   volviendoDePagar?: boolean;
+  /**
+   * Mesa de ejemplo: aquí no se sale a ninguna parte.
+   *
+   * El botón de la tarjeta manda a `revolut.me`, que es una web de verdad
+   * donde se cobra de verdad. En una cena inventada eso no puede pasar: sería
+   * sacar a alguien de la app, a pagarle a una persona que no existe, en mitad
+   * de un tutorial. Así que el mismo botón abre una pantalla simulada.
+   */
+  demo?: boolean;
   onEnviado: (via: Via) => Promise<unknown>;
   /** Se llama antes de salir del navegador, para poder volver donde estabas. */
   onAntesDeSalir?: () => void;
   onClose: () => void;
 }) {
   const t = useT();
-  const [paso, setPaso] = useState<"elegir" | "bizum" | "enviado">(() =>
+  const [paso, setPaso] = useState<"elegir" | "bizum" | "tarjeta" | "enviado">(() =>
     volviendoDePagar ? "enviado" : a.bizum && !a.revolut ? "bizum" : "elegir",
   );
   const [via, setVia] = useState<Via>(a.bizum && !a.revolut ? "bizum" : "revolut");
@@ -104,6 +114,12 @@ export default function PagarSheet({
               type="button"
               onClick={() => {
                 setVia("revolut");
+                // En la mesa de ejemplo no se sale del navegador: `revolut.me`
+                // es una web donde se cobra de verdad.
+                if (demo) {
+                  setPaso("tarjeta");
+                  return;
+                }
                 setPaso("enviado");
                 onAntesDeSalir?.();
                 window.location.href = enlaceRevolut(a.revolut!, cents, currency, nota);
@@ -139,7 +155,7 @@ export default function PagarSheet({
 
           {a.revolut && (
             <p className="text-center text-[13px] leading-relaxed text-ink-faint">
-              {t.cobro.seAbre}
+              {demo ? t.cobro.simulacionAviso : t.cobro.seAbre}
             </p>
           )}
 
@@ -155,7 +171,13 @@ export default function PagarSheet({
 
       {paso === "bizum" && (
         <div className="mt-5 grid gap-2.5">
-          <p className="text-[13px] leading-relaxed text-ink-soft">{t.cobro.pasosBizum}</p>
+          {/* En la mesa de ejemplo nadie va a abrir su banco: el móvil es
+              inventado y no hay a quién pagarle. Se enseña igual, porque ver
+              los tres datos que hay que copiar es justo lo que se viene a
+              aprender, pero con su aviso. */}
+          <p className="text-[13px] leading-relaxed text-ink-soft">
+            {demo ? t.cobro.bizumSimulado : t.cobro.pasosBizum}
+          </p>
           <Copiable etiqueta={t.cobro.movil} valor={telefonoBonito(a.bizum!)} copia={a.bizum!} />
           <Copiable etiqueta={t.cobro.concepto} valor={nota} copia={nota} />
           <Copiable
@@ -170,6 +192,59 @@ export default function PagarSheet({
             className="mt-1 min-h-[52px] rounded-xl bg-amber text-[15px] font-bold text-paper transition-transform active:scale-[0.98] disabled:opacity-50"
           >
             {t.cobro.siEnviado}
+          </button>
+          <CerrarHoja onClick={() => setPaso("elegir")}>{t.cobro.todaviaNo}</CerrarHoja>
+        </div>
+      )}
+
+      {/*
+        La tarjeta de mentira.
+
+        Enseña lo que enseñaría Revolut —a quién, cuánto y de qué— con una
+        tarjeta dibujada y un botón que no cobra nada. Lo importante es que se
+        vea que aquí acabaría el viaje: quien lo prueba entiende que sus amigos
+        pagan sin instalar nada, que es la pregunta que hace todo el mundo.
+
+        Con el aviso de simulación en grande y los números tachados de una
+        tarjeta que no existe: 4242 es el número que usa medio mundo para
+        probar pagos, justamente porque no es de nadie.
+      */}
+      {paso === "tarjeta" && (
+        <div className="mt-5 grid gap-3">
+          <div className="rounded-bloque border border-line bg-paper p-4">
+            <p className="stamp text-ink-faint">{t.cobro.simulacion}</p>
+            <div className="mt-2.5 rounded-caja bg-gradient-to-br from-[#2a2018] to-[#171210] p-4">
+              <p className="tnum text-[15px] tracking-[0.14em] text-ink">4242 4242 4242 4242</p>
+              <div className="mt-3 flex items-end justify-between gap-3">
+                <span className="text-[11px] uppercase tracking-wide text-ink-soft">
+                  {t.cobro.titular}
+                </span>
+                <span className="tnum text-[12px] text-ink-soft">12/30</span>
+              </div>
+            </div>
+            <dl className="mt-3 grid gap-1.5 text-[13px]">
+              <div className="flex justify-between gap-3">
+                <dt className="text-ink-faint">{t.cobro.paraQuien}</dt>
+                <dd className="font-semibold">{a.name}</dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-ink-faint">{t.cobro.concepto}</dt>
+                <dd className="min-w-0 truncate font-semibold">{nota}</dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-ink-faint">{t.cobro.importe}</dt>
+                <dd className="tnum font-bold text-amber">{money(cents, currency)}</dd>
+              </div>
+            </dl>
+          </div>
+
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void declarar("revolut")}
+            className="min-h-[52px] rounded-xl bg-amber text-[15px] font-bold text-paper transition-transform active:scale-[0.98] disabled:opacity-50"
+          >
+            {rellena(t.cobro.pagarSimulado, { dinero: money(cents, currency) })}
           </button>
           <CerrarHoja onClick={() => setPaso("elegir")}>{t.cobro.todaviaNo}</CerrarHoja>
         </div>

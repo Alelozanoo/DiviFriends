@@ -1496,6 +1496,7 @@ export default function SplitApp({
           currency={state.ticket.currency}
           place={state.ticket.place}
           volviendoDePagar={!pagandoA}
+          demo={state.ticket.demo}
           onEnviado={(via) => declararPago(pagoAbierto.id, pagoAbierto.cents, via)}
           onAntesDeSalir={() => guardarPagoPendiente(code, pagoAbierto)}
           onClose={() => {
