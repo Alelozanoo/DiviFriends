@@ -202,6 +202,25 @@ export async function aceptaTerminos(novedades: boolean): Promise<void> {
   pon({ terminos: datos.terminos ?? new Date().toISOString(), novedades: datos.novedades === true });
 }
 
+/**
+ * Cerrar el registro: el perfil, las novedades y la marca de que ya está.
+ *
+ * Las tres cosas en una sola llamada, y el perfil también aunque el móvil ya
+ * lo haya guardado por su cuenta. De esta marca cuelga el correo de alta que
+ * le llega a la casa, y lo que el móvil guarda sube con 800 ms de retraso:
+ * mandándolo aparte, el aviso salía antes que el nombre y llegaba en blanco,
+ * que es exactamente el problema que esto venía a arreglar.
+ */
+export async function terminaRegistro(
+  perfil: GlobalProfile,
+  novedades: boolean,
+): Promise<void> {
+  const user = estado.usuario;
+  if (!user) return;
+  const datos = await api(user, "PATCH", { perfil, novedades, registrado: true });
+  pon({ novedades: datos.novedades === true });
+}
+
 /** Cambiar de idea sobre las novedades, desde la cuenta. */
 export async function ponNovedades(novedades: boolean): Promise<void> {
   const user = estado.usuario;

@@ -31,14 +31,17 @@ export async function GET(request: Request) {
   try {
     const { nueva, ...cuenta } = await leeOCrea(quien);
     /*
-      Un alta se apunta aquí, que es por donde pasa **todo el mundo** al
-      entrar, y no en el PATCH de los términos, que era por donde pasaba sólo
-      quien llegaba por `/registro`. Antes de contestar y no después: en Cloud
-      Run lo que queda pendiente al devolver la respuesta se puede quedar sin
-      hacer.
+      La fila de la hoja se abre aquí, al entrar, que es por donde pasa todo
+      el mundo: así no falta nadie en la lista aunque deje el registro a
+      medias. El **aviso a la casa** no sale aquí, sale al terminar el
+      registro (el PATCH de abajo): hasta entonces de esa persona sólo se
+      sabe el correo, y un correo que dice «alta nueva: (sin nombre)» no
+      sirve para nada.
 
-      Si la hoja falla no pasa nada —lo apunta en el log y sigue—, porque la
-      cuenta manda sobre la hoja y nunca al revés.
+      Antes de contestar y no después: en Cloud Run lo que queda pendiente al
+      devolver la respuesta se puede quedar sin hacer. Si la hoja falla no
+      pasa nada —lo apunta en el log y sigue—, porque la cuenta manda sobre
+      la hoja y nunca al revés.
     */
     if (nueva && quien.email) {
       await apuntaEnHoja({
@@ -46,14 +49,6 @@ export async function GET(request: Request) {
         nombre: cuenta.perfil?.name,
         terminos: cuenta.terminos,
         novedades: cuenta.novedades,
-      });
-      await avisaAlta({
-        nombre: cuenta.perfil?.name ?? "",
-        correo: quien.email,
-        usuario: cuenta.usuario,
-        novedades: cuenta.novedades,
-        bizum: cuenta.perfil?.bizum,
-        revolut: cuenta.perfil?.revolut,
       });
     }
     return NextResponse.json(cuenta);
@@ -87,10 +82,12 @@ export async function PATCH(request: Request) {
       terminos?: unknown;
       /** Si quiere las novedades por correo. */
       novedades?: unknown;
+      /** `true` al terminar la página de registro. */
+      registrado?: unknown;
     }>(request, 600_000, { estricto: true });
     // El usuario tiene su propia reserva de unicidad; va aparte del resto.
     if (body.usuario !== undefined) await ponUsuario(quien.uid, body.usuario);
-    const cuenta = await actualiza(quien, body);
+    const { recienRegistrado, ...cuenta } = await actualiza(quien, body);
     // Los términos y las novedades se apuntan también en la hoja de registros,
     // antes de contestar: en Cloud Run lo que queda pendiente al contestar se
     // puede quedar sin hacer.
@@ -100,6 +97,25 @@ export async function PATCH(request: Request) {
         nombre: cuenta.perfil?.name,
         terminos: cuenta.terminos,
         novedades: cuenta.novedades,
+      });
+    }
+
+    /*
+      El aviso de alta, al terminar el registro y no al entrar.
+
+      Estaba en el GET, o sea en el primer segundo de la sesión de Google, y
+      llegaba vacío: sin nombre, sin usuario y sin saber si quería novedades,
+      porque nada de eso se ha preguntado todavía. Aquí ya está todo puesto.
+      `recienRegistrado` es la marca que hace que salga una vez y sólo una.
+    */
+    if (recienRegistrado && quien.email) {
+      await avisaAlta({
+        nombre: cuenta.perfil?.name ?? "",
+        correo: quien.email,
+        usuario: cuenta.usuario,
+        novedades: cuenta.novedades,
+        bizum: cuenta.perfil?.bizum,
+        revolut: cuenta.perfil?.revolut,
       });
     }
     return NextResponse.json(cuenta);

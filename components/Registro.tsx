@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { processImageToAvatarBase64 } from "@/lib/avatarUpload";
-import { ponNovedades, ponUsuario, useCuenta } from "@/lib/cuenta";
+import { ponUsuario, terminaRegistro, useCuenta } from "@/lib/cuenta";
 import { useT } from "@/lib/i18n";
 import { useGlobalProfile } from "@/lib/useGlobalProfile";
 import { G } from "./CuentaBoton";
@@ -81,9 +81,20 @@ export default function Registro() {
     return v && v.startsWith("/") && !v.startsWith("//") ? v : "/";
   };
 
+  /*
+    `!busy` no es un detalle: es lo que evita que esta página se cierre sola a
+    mitad de guardar.
+
+    Elegir el usuario es lo primero que se manda, y en cuanto el servidor lo
+    acepta, `usuarioNombre` cambia y este efecto se dispara — con el perfil,
+    las novedades y la marca de «registro terminado» todavía en el aire. La
+    marca es la que hace salir el aviso de alta a la casa, así que perderla
+    significa un alta de la que no se entera nadie. Mientras se guarda, aquí
+    no se va nadie; al terminar, `guardar` navega por su cuenta.
+  */
   useEffect(() => {
-    if (usuario && cargada && usuarioNombre) router.replace(destino());
-  }, [usuario, cargada, usuarioNombre, router]);
+    if (usuario && cargada && usuarioNombre && !busy) router.replace(destino());
+  }, [usuario, cargada, usuarioNombre, busy, router]);
 
   async function guardar() {
     setFallo(null);
@@ -91,16 +102,17 @@ export default function Registro() {
     if (!user) return setFallo(t.cuentaNueva.faltaUsuario);
     setBusy(true);
     try {
-      saveProfile({
+      const perfil = {
         name: name.trim(),
         avatar: avatar || undefined,
         bizum: bizum.trim() || undefined,
         revolut: revolut.trim() || undefined,
-      });
+      };
+      saveProfile(perfil);
       // El usuario primero: si está cogido, se corrige y se vuelve a guardar
       // sin haber dejado nada a medias por el camino.
       if (user !== usuarioNombre) await ponUsuario(user);
-      await ponNovedades(novedades);
+      await terminaRegistro(perfil, novedades);
       router.replace(destino());
     } catch (error) {
       setFallo(error instanceof Error ? error.message : t.comanda.errorGuardar);

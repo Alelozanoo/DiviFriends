@@ -51,6 +51,15 @@ export interface Cuenta {
   usuarioCambiado: string | null;
   /** Cuándo aceptó los términos, o null si todavía no ha pasado por el registro. */
   terminos: string | null;
+  /**
+   * Cuándo terminó el registro: nombre, usuario y lo de cómo le pagan.
+   *
+   * Distinto de `creada`, que es el segundo en que pulsó el botón de Google.
+   * Entre las dos cosas hay una página entera que mucha gente deja a medias,
+   * y hasta que se termina no hay nada que contar de esa persona: ni cómo se
+   * llama ni con qué usuario. Por eso el aviso del alta cuelga de aquí.
+   */
+  registrado: string | null;
   /** Si quiere enterarse de las novedades por correo. Apagado salvo que lo marque. */
   novedades: boolean;
   creada: string;
@@ -286,6 +295,7 @@ function aCuenta(
     usuario: typeof datos?.usuario === "string" ? datos.usuario : null,
     usuarioCambiado: typeof datos?.usuarioCambiado === "string" ? datos.usuarioCambiado : null,
     terminos: typeof datos?.terminos === "string" ? datos.terminos : null,
+    registrado: typeof datos?.registrado === "string" ? datos.registrado : null,
     novedades: datos?.novedades === true,
     creada:
       typeof datos?.creada === "string"
@@ -342,6 +352,7 @@ export async function leeOCrea(quien: Quien): Promise<Cuenta & { nueva: boolean 
     quitadas: {},
     avisos: true,
     terminos: ahora,
+    registrado: null,
     novedades: false,
     creada: ahora,
     actualizada: ahora,
@@ -363,8 +374,10 @@ export async function actualiza(
     quitar?: unknown;
     terminos?: unknown;
     novedades?: unknown;
+    /** `true` al darle al botón que cierra la página de registro. */
+    registrado?: unknown;
   },
-): Promise<Cuenta> {
+): Promise<Cuenta & { recienRegistrado: boolean }> {
   const actual = await leeOCrea(quien);
   const parche: Record<string, unknown> = {
     actualizada: new Date().toISOString(),
@@ -376,6 +389,14 @@ export async function actualiza(
   // prueba. No se desaceptan desde aquí; para eso está borrar la cuenta.
   if (cambios.terminos === true && !actual.terminos) parche.terminos = new Date().toISOString();
   if (typeof cambios.novedades === "boolean") parche.novedades = cambios.novedades;
+
+  /*
+    Terminar el registro se apunta una vez y con la hora. Una vez, porque de
+    esa marca cuelga el aviso de alta que le llega a la casa: si se pudiera
+    volver a poner, volver a guardar el perfil sería otro correo.
+  */
+  const recienRegistrado = cambios.registrado === true && !actual.registrado;
+  if (recienRegistrado) parche.registrado = new Date().toISOString();
 
   if (cambios.perfil !== undefined) {
     const perfil = limpiaPerfil(cambios.perfil);
@@ -403,7 +424,7 @@ export async function actualiza(
   }
 
   await doc(quien.uid).set(parche, { merge: true });
-  return { ...actual, ...(parche as Partial<Cuenta>) };
+  return { ...actual, ...(parche as Partial<Cuenta>), recienRegistrado };
 }
 
 /**
