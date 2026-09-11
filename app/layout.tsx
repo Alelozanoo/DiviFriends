@@ -111,7 +111,27 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="es" className={`${display.variable} ${figure.variable} h-full antialiased`}>
+    /*
+      `suppressHydrationWarning` en `<html>`, y no es taparle la boca a React.
+
+      El script de aquí abajo le pone `data-sesion` a esta misma etiqueta
+      antes de que React hidrate —ésa es la gracia: pasa antes del primer
+      pintado—. React compara entonces lo que mandó el servidor con lo que
+      hay en el DOM, ve un atributo que él no puso y avisa de que el árbol no
+      cuadra.
+
+      Es exactamente el caso que documenta Next en
+      `01-app/02-guides/preventing-flash-before-hydration`: cuando un script
+      en línea toca un elemento a propósito, ese elemento lleva
+      `suppressHydrationWarning`. Sólo calla el aviso de este nodo, no el de
+      sus hijos, así que cualquier otro desajuste de la página se sigue
+      viendo.
+    */
+    <html
+      lang="es"
+      suppressHydrationWarning
+      className={`${display.variable} ${figure.variable} h-full antialiased`}
+    >
       <body className="flex min-h-full flex-col">
         {/*
           Antes de pintar nada: ¿entró este móvil con cuenta la última vez?
