@@ -1,6 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { nuevaDemo } from "@/lib/demoCliente";
 import { useT } from "@/lib/i18n";
 
 /**
@@ -30,6 +33,8 @@ export default function TutorialDemo({
   inicio: string;
 }) {
   const t = useT();
+  const router = useRouter();
+  const [repitiendo, setRepitiendo] = useState(false);
   const pasos = [t.demo.paso0, t.demo.paso1, t.demo.paso2, t.demo.paso3, t.demo.paso4];
   const actual = pasos[Math.min(paso, pasos.length - 1)];
   const hecho = paso >= 4;
@@ -68,11 +73,34 @@ export default function TutorialDemo({
         )}
       </div>
 
-      {/* Que esto no es real se dice siempre, no sólo al final: alguien puede
-          llegar a las cuentas y ver que le debe 7,40 € a una tal Bea. */}
-      <p className="mt-2 border-t border-amber/20 pt-2 text-[11.5px] leading-snug text-ink-faint">
-        {t.demo.aviso}
-      </p>
+      {/*
+        Que esto no es real se dice siempre, no sólo al final: alguien puede
+        llegar a las cuentas y ver que le debe 7,40 € a una tal Bea. Y al lado,
+        volver a empezar.
+
+        Repetir es una mesa nueva, no ésta reiniciada: aquí ya tienes tu nombre
+        puesto y platos cogidos, así que el primer paso —«siéntate»— no tendría
+        sentido. Con una nueva el guiado arranca de verdad desde el principio.
+        No se pregunta si estás seguro: no hay nada que perder, es de mentira.
+      */}
+      <div className="mt-2 flex items-baseline justify-between gap-3 border-t border-amber/20 pt-2">
+        <p className="min-w-0 flex-1 text-[11.5px] leading-snug text-ink-faint">{t.demo.aviso}</p>
+        {paso > 0 && (
+          <button
+            type="button"
+            disabled={repitiendo}
+            onClick={async () => {
+              setRepitiendo(true);
+              const code = await nuevaDemo();
+              if (code) router.replace(`/t/${code}`);
+              else setRepitiendo(false);
+            }}
+            className="shrink-0 text-[11.5px] font-semibold text-amber underline underline-offset-2 transition-opacity active:opacity-70 disabled:opacity-50"
+          >
+            {repitiendo ? t.subir.preparando : t.demo.repetir}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

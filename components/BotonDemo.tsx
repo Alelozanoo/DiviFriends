@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { nuevaDemo } from "@/lib/demoCliente";
 import { useT } from "@/lib/i18n";
 
 /**
@@ -31,15 +32,10 @@ export default function BotonDemo({ tono = "enlace" }: { tono?: "enlace" | "boto
   async function abrir() {
     if (yendo) return;
     setYendo(true);
-    try {
-      const r = await fetch("/api/demo", { method: "POST" });
-      const { code } = (await r.json()) as { code?: string };
-      if (code) router.push(`/t/${code}`);
-      else setYendo(false);
-    } catch {
-      // Sin red no se puede crear nada: el botón vuelve a su sitio y ya está.
-      setYendo(false);
-    }
+    const code = await nuevaDemo();
+    if (code) router.push(`/t/${code}`);
+    // Sin red o con el tope lleno: el botón vuelve a su sitio y ya está.
+    else setYendo(false);
   }
 
   if (tono === "boton") {

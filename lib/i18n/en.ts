@@ -187,6 +187,7 @@ export const en: Dict = {
     paso2: { titulo: "Shared things get split", texto: "Tap “÷ Split” on something and share it between however many." },
     paso3: { titulo: "See how the bill stands", texto: "Your share is at the bottom. Open it and you'll see who owes who." },
     paso4: { titulo: "That's how it works", texto: "At a real dinner, everyone else joins with the QR and marks their own at the same time." },
+    repetir: "Start over",
     probar: "Try an example table",
     probarAyuda: "A made-up dinner, with people in it, to play around safely.",
   },

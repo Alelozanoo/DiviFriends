@@ -203,6 +203,7 @@ export const es = {
     paso2: { titulo: "Lo de todos, se divide", texto: "Toca «÷ Dividir» en algo y repártelo entre los que sean." },
     paso3: { titulo: "Mira cómo va la cuenta", texto: "Abajo tienes lo tuyo. Ábrelo y verás quién le debe a quién." },
     paso4: { titulo: "Ya sabes cómo va", texto: "En una cena de verdad, los demás entran con el QR y marcan lo suyo a la vez." },
+    repetir: "Repetir",
     probar: "Probar con una mesa de ejemplo",
     probarAyuda: "Una cena inventada, con gente dentro, para trastear sin líos.",
   },
