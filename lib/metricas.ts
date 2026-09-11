@@ -22,6 +22,22 @@ export interface Metricas {
   semana: number;
   /** Últimos 14 días, del más viejo al más nuevo. */
   porDia: { etiqueta: string; n: number }[];
+  /**
+   * De esos mismos días, cuántas mesas llegaron a juntar a dos personas.
+   *
+   * Va aparte y no dentro de `porDia` para poder pintar una encima de otra:
+   * la altura entera son las mesas que se abrieron, y la parte llena las que
+   * fueron una cena de verdad. La distancia entre las dos es lo que hay que
+   * mirar cada mañana.
+   */
+  porDiaGente: { etiqueta: string; n: number }[];
+  /**
+   * Cuántas mesas hubo de una persona, de dos, de tres… hasta «seis o más».
+   *
+   * La media miente aquí: 1,6 personas por mesa suena a «casi dos» y lo que
+   * hay de verdad son muchas de una y unas pocas de ocho. El reparto lo dice.
+   */
+  reparto: { etiqueta: string; n: number }[];
   personas: {
     media: number;
     solo: number;
@@ -182,6 +198,10 @@ export function resumen(docs: TicketDoc[], ahora = new Date()): Metricas {
   const total = nacidas.length;
 
   const cuenta = new Map<string, number>();
+  /** Las de cada día que juntaron a dos o más, para pintarlas dentro. */
+  const conGenteDia = new Map<string, number>();
+  /** Cuántas mesas por número de personas: el índice 6 son «seis o más». */
+  const reparto = [0, 0, 0, 0, 0, 0, 0];
   const porFranja: Record<Franja, number> = { madrugada: 0, mañana: 0, tarde: 0, noche: 0 };
   const semanaCuenta = [0, 0, 0, 0, 0, 0, 0];
   let hoy = 0;
@@ -215,6 +235,10 @@ export function resumen(docs: TicketDoc[], ahora = new Date()): Metricas {
   for (const doc of nacidas) {
     const { hora, diaSemana, clave } = enMadrid(doc.createdAt);
     cuenta.set(clave, (cuenta.get(clave) ?? 0) + 1);
+    if ((doc.participants?.length ?? 0) >= 2) {
+      conGenteDia.set(clave, (conGenteDia.get(clave) ?? 0) + 1);
+    }
+    reparto[Math.min(6, doc.participants?.length ?? 0)] += 1;
     porFranja[franja(hora)] += 1;
     semanaCuenta[diaSemana] += 1;
     const esDeHoy = clave === hoyClave;
@@ -304,6 +328,7 @@ export function resumen(docs: TicketDoc[], ahora = new Date()): Metricas {
 
   // ── los últimos catorce días, con sus huecos ──────────────────────
   const porDia: { etiqueta: string; n: number }[] = [];
+  const porDiaGente: { etiqueta: string; n: number }[] = [];
   for (let i = 13; i >= 0; i--) {
     const dia = new Date(ahora.getTime() - i * DIA);
     const { clave } = enMadrid(dia.toISOString());
@@ -313,6 +338,7 @@ export function resumen(docs: TicketDoc[], ahora = new Date()): Metricas {
       month: "numeric",
     }).format(dia);
     porDia.push({ etiqueta, n: cuenta.get(clave) ?? 0 });
+    porDiaGente.push({ etiqueta, n: conGenteDia.get(clave) ?? 0 });
   }
 
   const nombresDia = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
@@ -326,6 +352,16 @@ export function resumen(docs: TicketDoc[], ahora = new Date()): Metricas {
     hoy,
     semana,
     porDia,
+    porDiaGente,
+    reparto: [
+      { etiqueta: "nadie se apuntó", n: reparto[0] },
+      { etiqueta: "1 persona", n: reparto[1] },
+      { etiqueta: "2 personas", n: reparto[2] },
+      { etiqueta: "3 personas", n: reparto[3] },
+      { etiqueta: "4 personas", n: reparto[4] },
+      { etiqueta: "5 personas", n: reparto[5] },
+      { etiqueta: "6 o más", n: reparto[6] },
+    ],
     personas: {
       media: media(personasTotal, total),
       solo: pct(solo, total),

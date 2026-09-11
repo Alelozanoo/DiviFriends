@@ -202,12 +202,52 @@ export default function Admin({ onComoUsuario }: { onComoUsuario: () => void }) 
             />
           </div>
 
-          <Grupo titulo="Divis por día" nota="Últimos catorce días">
-            <Barras datos={datos.m.porDia} />
+          {/*
+            La gráfica que de verdad dice cómo va esto.
+
+            «Divis por día» sola engaña: sube y parece que todo va bien, pero
+            una mesa que abre una persona y en la que no entra nadie no es un
+            divi, es alguien mirando. Aquí la barra entera son las mesas que se
+            abrieron y la parte llena las que juntaron a dos o más. La
+            distancia entre las dos es el trabajo que queda por hacer.
+          */}
+          <Grupo titulo="Divis por día" nota="Lleno: los que juntaron a dos o más">
+            <BarrasDobles total={datos.m.porDia} dentro={datos.m.porDiaGente} />
+            <Nota>
+              De los {sumaN(datos.m.porDia)} de estos catorce días,{" "}
+              <b className="text-ink">{sumaN(datos.m.porDiaGente)}</b> llegaron a ser una mesa de
+              verdad ({pct(sumaN(datos.m.porDiaGente), sumaN(datos.m.porDia))}%). El resto son
+              fotos de ticket que no acabaron en cena compartida.
+            </Nota>
+          </Grupo>
+
+          <Grupo titulo="Cuánta gente por mesa" nota="De todas las de catorce días">
+            <Escalera pasos={datos.m.reparto} />
+            <Nota>
+              La media —{datos.m.personas.media.toFixed(1)}— no sirve aquí: suena a «casi dos» y
+              lo que hay de verdad son muchas mesas de una y unas pocas de ocho. Esta es la
+              forma real.
+            </Nota>
           </Grupo>
 
           <Grupo titulo="Registros por día" nota="Últimos catorce días">
             <Barras datos={datos.c.cuentas.porDia} />
+            {/*
+              ¿Va una cosa con la otra? Es la pregunta de si esto crece o sólo
+              se mueve. Dos números: cuántas mesas sale a cada cuenta nueva, y
+              cuánta gente se sienta por cada cuenta. Si las cuentas suben y
+              las mesas no, lo que hay es curiosidad; si suben juntas, uso.
+            */}
+            <div className="grid grid-cols-2 gap-2.5 p-2.5">
+              <Mini
+                etiqueta="Divis por registro (7 días)"
+                valor={datos.c.cuentas.semana ? (datos.m.semana / datos.c.cuentas.semana).toFixed(1) : "—"}
+              />
+              <Mini
+                etiqueta="Gente sentada por registro"
+                valor={datos.c.cuentas.semana ? (datos.m.personas.semana / datos.c.cuentas.semana).toFixed(1) : "—"}
+              />
+            </div>
           </Grupo>
 
           {/* ── quién se ha registrado */}
@@ -563,15 +603,64 @@ function Grupo({ titulo, nota, children }: { titulo: string; nota?: string; chil
   );
 }
 
+const sumaN = (xs: { n: number }[]) => xs.reduce((a, x) => a + x.n, 0);
+
+/**
+ * Dos series en la misma barra: el total en flojo y lo bueno dentro, lleno.
+ *
+ * Apiladas y no una al lado de la otra porque la pregunta no es «cuántas de
+ * cada» sino «qué parte del total»: con dos barras juntas el ojo compara
+ * alturas, y con una dentro de otra ve la proporción sin hacer cuentas.
+ */
+function BarrasDobles({
+  total,
+  dentro,
+}: {
+  total: { etiqueta: string; n: number }[];
+  dentro: { etiqueta: string; n: number }[];
+}) {
+  const max = Math.max(1, ...total.map((d) => d.n));
+  const porEtiqueta = new Map(dentro.map((d) => [d.etiqueta, d.n]));
+  return (
+    <div className="flex h-32 items-end gap-1 px-4 pb-3 pt-4">
+      {total.map((d) => {
+        const bueno = porEtiqueta.get(d.etiqueta) ?? 0;
+        const alto = Math.max(2, (d.n / max) * 68);
+        return (
+          <div
+            key={d.etiqueta}
+            className="flex flex-1 flex-col items-center gap-1"
+            title={`${d.etiqueta}: ${bueno} de ${d.n}`}
+          >
+            <span className="text-[10px] font-semibold text-ink-soft [font-variant-numeric:tabular-nums]">
+              {d.n || ""}
+            </span>
+            <span
+              className="flex w-full flex-col justify-end overflow-hidden rounded-t-[3px] bg-amber/25"
+              style={{ height: `${alto}px`, opacity: d.n ? 1 : 0.3 }}
+            >
+              <span
+                className="w-full bg-amber"
+                style={{ height: `${d.n ? (bueno / d.n) * 100 : 0}%` }}
+              />
+            </span>
+            <span className="text-[9px] text-ink-faint">{d.etiqueta}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 /** Barras sencillas: la más alta llena la altura, las demás a escala. */
 function Barras({ datos }: { datos: { etiqueta: string; n: number }[] }) {
   const max = Math.max(1, ...datos.map((d) => d.n));
   return (
-    <div className="flex h-28 items-end gap-1 px-4 pb-3 pt-4">
+    <div className="flex h-32 items-end gap-1 px-4 pb-3 pt-4">
       {datos.map((d) => (
         <div key={d.etiqueta} className="flex flex-1 flex-col items-center gap-1" title={`${d.etiqueta}: ${d.n}`}>
           <span className="text-[10px] font-semibold text-ink-soft [font-variant-numeric:tabular-nums]">{d.n || ""}</span>
-          <span className="w-full rounded-t-[3px] bg-amber" style={{ height: `${Math.max(2, (d.n / max) * 72)}px`, opacity: d.n ? 1 : 0.25 }} />
+          <span className="w-full rounded-t-[3px] bg-amber" style={{ height: `${Math.max(2, (d.n / max) * 68)}px`, opacity: d.n ? 1 : 0.25 }} />
           <span className="text-[9px] text-ink-faint">{d.etiqueta}</span>
         </div>
       ))}
