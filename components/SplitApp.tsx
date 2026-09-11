@@ -32,6 +32,7 @@ import HistorySheet from "./HistorySheet";
 import Logo from "./Logo";
 import TicketSheet from "./TicketSheet";
 import TableSheet from "./TableSheet";
+import TutorialDemo from "./TutorialDemo";
 import GuideSheet from "./GuideSheet";
 import TicketUploader from "./TicketUploader";
 import { Avatar, AvisoTerminos, Progress, Sheet } from "./ui";
@@ -64,7 +65,19 @@ export default function SplitApp({
   const code = initial.ticket.id;
   const t = useT();
   const lang = useLang();
-  const [cuentasOpen, setCuentasOpen] = useState(false);
+  const [cuentasOpen, setCuentasOpenCrudo] = useState(false);
+  const setCuentasOpen = (abierto: boolean) => {
+    if (abierto) setTutCuentas(true);
+    setCuentasOpenCrudo(abierto);
+  };
+  /*
+    Dos de los cuatro pasos del guiado no dejan rastro en la mesa: abrir el
+    reparto y abrir las cuentas son gestos, no estado. Lo demás —si te has
+    sentado, si has cogido algo— se lee de la comanda, así que el guiado no
+    guarda progreso en ninguna parte y dice siempre la verdad de lo que hay.
+  */
+  const [tutDividido, setTutDividido] = useState(false);
+  const [tutCuentas, setTutCuentas] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [removing, setRemoving] = useState<string | null>(null);
@@ -584,6 +597,22 @@ export default function SplitApp({
     su pestaña va marcada y la pantalla de cuentas avisa. Sin eso los números
     salen mal y encima con toda la pinta de estar bien.
   */
+  /*
+    En qué paso va el guiado de la mesa de ejemplo.
+
+    Se calcula, no se guarda: si te quitas el plato que habías cogido, el
+    guiado vuelve al paso de marcar, que es donde estás de verdad.
+  */
+  const pasoDemo = !meId
+    ? 0
+    : !settlement.byParticipant.find((p) => p.participantId === meId)?.itemsCents
+      ? 1
+      : !tutDividido
+        ? 2
+        : !tutCuentas
+          ? 3
+          : 4;
+
   /** Cuántos papeles hay: con uno solo, la fila de pestañas no pinta nada. */
   const pestanas = (hasLegacyItems ? 1 : 0) + receipts.length;
 
@@ -814,22 +843,7 @@ export default function SplitApp({
                 porque el momento en que esto funciona es justo cuando acabas
                 de entender cómo va.
               */}
-              {state.ticket.demo && (
-                <div className="mb-3 flex items-center gap-3 rounded-bloque border border-amber/35 bg-amber/[0.07] px-3.5 py-2.5">
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[13px] font-bold text-amber">{t.demo.titulo}</span>
-                    <span className="mt-0.5 block text-[12px] leading-snug text-ink-soft">
-                      {t.demo.aviso}
-                    </span>
-                  </span>
-                  <Link
-                    href={inicio(lang)}
-                    className="shrink-0 rounded-pieza bg-amber px-3 py-2 text-[13px] font-bold text-paper transition-transform active:scale-[0.97]"
-                  >
-                    {t.demo.deVerdad}
-                  </Link>
-                </div>
-              )}
+              {state.ticket.demo && <TutorialDemo paso={pasoDemo} inicio={inicio(lang)} />}
 
               {/*
                 Las pestañas, sólo cuando hay más de un papel.
@@ -1024,7 +1038,10 @@ export default function SplitApp({
                 open={abierta === item.id}
                 onOpen={() => setAbierta(abierta === item.id ? null : item.id)}
                 onSetShares={(shares) => siEstoyDentro(() => claim(item.id, shares))()}
-                onOpenOptions={siEstoyDentro(() => setEditing(item.id))}
+                onOpenOptions={siEstoyDentro(() => {
+                  setTutDividido(true);
+                  setEditing(item.id);
+                })}
                 onRemove={siEstoyDentro(() => setRemoving(item.id))}
               />
             ))}
