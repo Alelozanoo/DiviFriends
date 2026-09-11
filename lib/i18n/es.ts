@@ -194,6 +194,14 @@ export const es = {
     fallo: "No se ha podido mandar. Inténtalo más tarde.",
   },
 
+  demo: {
+    titulo: "Mesa de ejemplo",
+    aviso: "Nada de esto es real: toca lo que quieras, no se le cobra a nadie.",
+    deVerdad: "Hacer una de verdad",
+    probar: "Probar con una mesa de ejemplo",
+    probarAyuda: "Una cena inventada, con gente dentro, para trastear sin líos.",
+  },
+
   misDivis: {
     titulo: "Tus divis",
     donde: "en este móvil",

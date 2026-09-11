@@ -805,6 +805,33 @@ export default function SplitApp({
                   se corta contra el filo de la pantalla y no contra un padding,
                   que es lo que hacía parecer que la fila estaba mal medida. */}
               {/*
+                El aviso de que esto es de mentira, y la puerta de salida.
+
+                Va arriba del todo y no en un rincón: alguien que llega aquí
+                desde «probar» tiene que saber en todo momento que la cena no
+                existe, sobre todo cuando llegue a las cuentas y vea que debe
+                7,40 € a una tal Bea. Y lleva el botón de hacer una de verdad,
+                porque el momento en que esto funciona es justo cuando acabas
+                de entender cómo va.
+              */}
+              {state.ticket.demo && (
+                <div className="mb-3 flex items-center gap-3 rounded-bloque border border-amber/35 bg-amber/[0.07] px-3.5 py-2.5">
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[13px] font-bold text-amber">{t.demo.titulo}</span>
+                    <span className="mt-0.5 block text-[12px] leading-snug text-ink-soft">
+                      {t.demo.aviso}
+                    </span>
+                  </span>
+                  <Link
+                    href={inicio(lang)}
+                    className="shrink-0 rounded-pieza bg-amber px-3 py-2 text-[13px] font-bold text-paper transition-transform active:scale-[0.97]"
+                  >
+                    {t.demo.deVerdad}
+                  </Link>
+                </div>
+              )}
+
+              {/*
                 Las pestañas, sólo cuando hay más de un papel.
 
                 Con un solo ticket —el 99% de las mesas— esta fila era una

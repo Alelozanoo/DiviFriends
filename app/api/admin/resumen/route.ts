@@ -54,16 +54,26 @@ export async function GET(request: Request) {
   try {
     const db = firestore();
     const desde = new Date(Date.now() - VENTANA_MS).toISOString();
-    const [tickets, totalMesas, users, lecturas, c] = await Promise.all([
+    const [tickets, totalMesas, totalDemos, users, lecturas, c] = await Promise.all([
       db.collection(TICKETS).where("createdAt", ">=", desde).orderBy("createdAt", "desc").limit(2000).get(),
       db.collection(TICKETS).count().get(),
+      db.collection(TICKETS).where("demo", "==", true).count().get(),
       db.collection("users").limit(5000).get(),
       lecturasDelDia(),
       metricasCuentas(),
     ]);
     const docs = tickets.docs.map((d) => d.data() as TicketDoc);
-    // Todo lo de `m` es de los últimos catorce días; el total de verdad es el recuento.
-    const m = { ...resumen(docs), total: totalMesas.data().count };
+    /*
+      Todo lo de `m` es de los últimos catorce días; el total de verdad es el
+      recuento — menos las mesas de ejemplo, que son cenas inventadas y no
+      cuentan en ningún otro sitio. Se restan con un segundo recuento en vez
+      de filtrar la consulta porque un `where` sobre un campo opcional deja
+      fuera a todas las mesas que no lo traen, que son casi todas.
+    */
+    const m = {
+      ...resumen(docs),
+      total: totalMesas.data().count - totalDemos.data().count,
+    };
 
     const usuarios = users.docs
       .map((d) => {
@@ -82,7 +92,10 @@ export async function GET(request: Request) {
       .sort((a, b) => (b.creada ?? "").localeCompare(a.creada ?? ""))
       .slice(0, 200);
 
-    const mesas = tickets.docs.slice(0, 30).map((d) => {
+    const mesas = tickets.docs
+      .filter((d) => d.get("demo") !== true)
+      .slice(0, 30)
+      .map((d) => {
       const x = d.data() as TicketDoc;
       return {
         code: d.id,

@@ -8,6 +8,8 @@ export interface Ticket {
   payerId: string | null;
   createdAt: string;
   closed?: boolean;
+  /** Una mesa de ejemplo: la pantalla lo dice y las métricas la saltan. */
+  demo?: boolean;
 }
 
 export interface Item {

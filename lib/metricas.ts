@@ -185,7 +185,16 @@ export function resumen(docs: TicketDoc[], ahora = new Date()): Metricas {
   */
   const nonatas = { hoy: 0, semana: 0, total: 0 };
   const nacidas: TicketDoc[] = [];
+  /*
+    Las mesas de ejemplo no cuentan, ni siquiera como nonatas.
+
+    Son cenas inventadas que se crean solas cuando alguien le da a «probar»:
+    contarlas estropearía justo el número que sirve para algo —cuántas mesas
+    juntan a dos personas— porque llegan ya con tres sentadas y nadie va a
+    cenar en ellas. Tampoco cuestan dinero: no pasan por el lector.
+  */
   for (const doc of docs) {
+    if (doc.demo === true) continue;
     if ((doc.items?.length ?? 0) > 0) {
       nacidas.push(doc);
       continue;

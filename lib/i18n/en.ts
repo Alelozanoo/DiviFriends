@@ -178,6 +178,14 @@ export const en: Dict = {
     fallo: "Couldn't send it. Try again later.",
   },
 
+  demo: {
+    titulo: "Example table",
+    aviso: "None of this is real: tap anything, nobody gets charged.",
+    deVerdad: "Do a real one",
+    probar: "Try an example table",
+    probarAyuda: "A made-up dinner, with people in it, to play around safely.",
+  },
+
   misDivis: {
     titulo: "Your divis",
     donde: "on this phone",

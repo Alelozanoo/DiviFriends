@@ -65,6 +65,16 @@ export interface TicketDoc {
    * en algún móvil no traen el campo.
    */
   pagos?: PagoDoc[];
+  /**
+   * La mesa de ejemplo de `lib/demo.ts`: una cena inventada para probar.
+   *
+   * Marca dos cosas. En la pantalla, el aviso de que nada de esto es real. Y
+   * en las métricas, que no se cuente: si cada curioso que se asoma dejara su
+   * mesa en el recuento, el número que mide si la app se entiende —cuántas
+   * llegan a juntar a dos personas— lo estropearía justo la gente que nunca
+   * quiso cenar con nadie.
+   */
+  demo?: boolean;
 }
 
 export interface PagoDoc {
@@ -193,6 +203,7 @@ export function docToState(code: string, doc: TicketDoc): TicketState {
       // Sin esta línea el candado se guardaba y no se leía nunca: la pantalla
       // veía la mesa siempre abierta y cerrarla no hacía nada visible.
       closed: doc.closed === true,
+      demo: doc.demo === true,
     },
     receipts: (doc.receipts ?? []).map(r => ({
       ...r,
