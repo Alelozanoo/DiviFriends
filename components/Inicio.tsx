@@ -9,6 +9,7 @@ import { cuando, useMisDivis, type DiviGuardado } from "@/lib/misDivis";
 import { useGlobalProfile } from "@/lib/useGlobalProfile";
 import CuentaBoton from "./CuentaBoton";
 import TicketUploader, { type TicketUploaderHandle } from "./TicketUploader";
+import BotonDemo from "./BotonDemo";
 
 /**
  * La portada de quien entra con cuenta.
@@ -103,6 +104,16 @@ export default function Inicio() {
               </svg>
               {t.subir.boton}
             </button>
+            {/*
+              Y para quien no tiene un ticket delante.
+
+              Una cuenta recién hecha con la pantalla vacía y un único botón
+              que pide una foto de algo que no tienes a mano es una cuenta que
+              se cierra y no vuelve. Aquí la mesa de ejemplo es la otra mitad
+              de la respuesta: se puede ver cómo va esto un martes por la
+              tarde, sin bar y sin ticket.
+            */}
+            <BotonDemo tono="boton" />
           </section>
         ) : (
           <>

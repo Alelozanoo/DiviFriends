@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import iphone from "@/assets/portada-iphone.webp";
 import Logo, { Wordmark } from "@/components/Logo";
 import TicketUploader from "@/components/TicketUploader";
+import BotonDemo from "@/components/BotonDemo";
 import { CambiarCookies } from "@/components/Consent";
 import { PASOS } from "@/components/ComoVa";
 import Preguntas from "@/components/Preguntas";
@@ -337,46 +338,3 @@ function Cuerpo() {
   );
 }
 
-/**
- * «Probar con una mesa de ejemplo».
- *
- * Debajo de lo que de verdad hay que hacer —la foto del ticket— y en gris,
- * porque no es la puerta principal: es la salida para quien ha llegado
- * curioseando y no tiene un ticket a mano. Sin esto, la única forma de ver la
- * app por dentro era fotografiar una cuenta de verdad, así que quien sólo
- * quería mirar abría una mesa vacía y la abandonaba. Una de cada tres mesas
- * de la base es eso.
- *
- * El botón crea una mesa suya y entra. No se comparte una sola para todos: dos
- * curiosos a la vez se quitarían las croquetas el uno al otro.
- */
-function BotonDemo() {
-  const t = useT();
-  const router = useRouter();
-  const [yendo, setYendo] = useState(false);
-
-  return (
-    <div className="mt-3 text-center">
-      <button
-        type="button"
-        disabled={yendo}
-        onClick={async () => {
-          setYendo(true);
-          try {
-            const r = await fetch("/api/demo", { method: "POST" });
-            const { code } = (await r.json()) as { code?: string };
-            if (code) router.push(`/t/${code}`);
-            else setYendo(false);
-          } catch {
-            // Sin red no se puede crear nada: el botón vuelve y ya está.
-            setYendo(false);
-          }
-        }}
-        className="min-h-[44px] text-[14px] font-semibold text-ink-soft underline decoration-line underline-offset-4 transition-colors active:text-ink disabled:opacity-50"
-      >
-        {yendo ? t.subir.preparando : t.demo.probar}
-      </button>
-      <p className="mt-0.5 text-[12px] leading-relaxed text-ink-faint">{t.demo.probarAyuda}</p>
-    </div>
-  );
-}
