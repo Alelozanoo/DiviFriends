@@ -62,6 +62,14 @@ export interface DiviGuardado {
   /** Quién te debe de esta mesa, y si ya te lo ha devuelto. */
   deudas?: { name: string; cents: number; pagado: boolean }[];
   /**
+   * Si es la mesa de ejemplo.
+   *
+   * La lista la marca y le cambia el gesto de quitar: una mesa de verdad se
+   * «cierra» —con su aviso de que sigue viva para los demás— y ésta se
+   * «oculta», que es lo que de verdad pasa, porque no hay nadie más dentro.
+   */
+  demo?: boolean;
+  /**
    * Cuándo fue la mesa.
    *
    * No vale `at` para esto: `at` es la última vez que entraste, y abrir en

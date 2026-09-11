@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ponAvisos, ponNovedades, ponUsuario, recargaPendientes, useCuenta } from "@/lib/cuenta";
+import { demoParaVolver } from "@/lib/demoCliente";
 import { useT, rellena } from "@/lib/i18n";
 import { useGlobalProfile } from "@/lib/useGlobalProfile";
 import AmigosSheet from "./AmigosSheet";
@@ -27,6 +29,7 @@ export default function CuentaBoton() {
   const t = useT();
   const { usuario, usuarioNombre, usuarioCambiado, entrar, salir, fallo, falloCodigo, ocupado, avisos, novedades, pendientes } = useCuenta();
   const { profile, saveProfile } = useGlobalProfile();
+  const router = useRouter();
   const [hoja, setHoja] = useState<null | "cuenta" | "perfil" | "amigos" | "avisos" | "privacidad" | "entrar" | "fallo">(null);
   if (usuario === undefined) return null;
 
@@ -160,6 +163,23 @@ export default function CuentaBoton() {
             </button>
 
             <Opcion onClick={() => setHoja("perfil")}>{t.cuenta.editarPerfil}</Opcion>
+            {/*
+              La mesa de ejemplo, siempre aquí.
+
+              Se puede ocultar de la lista de divis —no es la cena de nadie y
+              ahí estorba— y sin esto habría que saber que se pide otra desde
+              la portada. Desde aquí se vuelve a la tuya, la que tiene tu
+              nombre y lo que marcaste; sólo si ha caducado se hace una nueva.
+            */}
+            <Opcion
+              onClick={async () => {
+                setHoja(null);
+                const code = await demoParaVolver();
+                if (code) router.push(`/t/${code}`);
+              }}
+            >
+              {t.demo.enCuenta}
+            </Opcion>
             <Opcion
               onClick={() => setHoja("amigos")}
               extra={pendientes.solicitudes > 0 ? rellena(t.cuenta.solicitudes, { n: pendientes.solicitudes }) : undefined}

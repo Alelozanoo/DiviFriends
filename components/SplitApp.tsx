@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { computeSettlement, totalAfterRemoving } from "@/lib/settle";
 import { useStoredParticipant } from "@/lib/useStoredParticipant";
+import { useGuiado } from "@/lib/tutorial";
+import { recuerdaDemo } from "@/lib/demoCliente";
 import { useTicketSync } from "@/lib/useTicketSync";
 import { leerPerfil, useGlobalProfile } from "@/lib/useGlobalProfile";
 import { asientoEn, invitaAMesa, useCuenta, usuarioActual, vinculaAsiento } from "@/lib/cuenta";
@@ -67,17 +69,21 @@ export default function SplitApp({
   const lang = useLang();
   const [cuentasOpen, setCuentasOpenCrudo] = useState(false);
   const setCuentasOpen = (abierto: boolean) => {
-    if (abierto) setTutCuentas(true);
+    if (abierto) tutApunta("cuentas");
     setCuentasOpenCrudo(abierto);
   };
   /*
     Dos de los cuatro pasos del guiado no dejan rastro en la mesa: abrir el
     reparto y abrir las cuentas son gestos, no estado. Lo demás —si te has
-    sentado, si has cogido algo— se lee de la comanda, así que el guiado no
-    guarda progreso en ninguna parte y dice siempre la verdad de lo que hay.
+    sentado, si has cogido algo— se lee de la comanda.
+
+    Esos dos se guardan en el móvil, por código de mesa. Estaban en memoria de
+    la pantalla y se perdían al recargar o al volver un rato después, así que
+    quien ya había terminado el guiado se lo encontraba a medias, con un paso
+    que le pedía dividir algo que ya había dividido.
   */
-  const [tutDividido, setTutDividido] = useState(false);
-  const [tutCuentas, setTutCuentas] = useState(false);
+  const { hechos: tutHechos, apunta: tutApunta } = useGuiado(code);
+
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [removing, setRemoving] = useState<string | null>(null);
@@ -546,6 +552,7 @@ export default function SplitApp({
     myBalance?.owesCents ?? 0,
     myBalance?.settled ?? false,
     state.ticket.place ?? "",
+    state.ticket.demo ? "demo" : "",
     state.participants.map((p) => p.id).join(","),
     aQuien ?? "",
     esMia,
@@ -572,6 +579,7 @@ export default function SplitApp({
         color: p.color,
         avatar: p.avatar,
       })),
+      demo: state.ticket.demo,
       puestoCents: myBalance.paidCents,
       mioCents: myBalance.itemsCents + myBalance.extrasCents,
       deudas: meDeben,
@@ -603,13 +611,19 @@ export default function SplitApp({
     Se calcula, no se guarda: si te quitas el plato que habías cogido, el
     guiado vuelve al paso de marcar, que es donde estás de verdad.
   */
+  /* Cuál es tu mesa de ejemplo, para que el menú de la cuenta pueda volver a
+     ella aunque la hayas ocultado de la lista. */
+  useEffect(() => {
+    if (state.ticket.demo) recuerdaDemo(code);
+  }, [state.ticket.demo, code]);
+
   const pasoDemo = !meId
     ? 0
     : !settlement.byParticipant.find((p) => p.participantId === meId)?.itemsCents
       ? 1
-      : !tutDividido
+      : !tutHechos.dividido
         ? 2
-        : !tutCuentas
+        : !tutHechos.cuentas
           ? 3
           : 4;
 
@@ -1039,7 +1053,7 @@ export default function SplitApp({
                 onOpen={() => setAbierta(abierta === item.id ? null : item.id)}
                 onSetShares={(shares) => siEstoyDentro(() => claim(item.id, shares))()}
                 onOpenOptions={siEstoyDentro(() => {
-                  setTutDividido(true);
+                  tutApunta("dividido");
                   setEditing(item.id);
                 })}
                 onRemove={siEstoyDentro(() => setRemoving(item.id))}

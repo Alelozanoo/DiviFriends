@@ -235,6 +235,7 @@ function limpiaDivi(raw: unknown): DiviGuardado | null {
     cents: Number.isFinite(Number(r.cents)) ? Math.round(Number(r.cents)) : 0,
     aQuien: limpiaTexto(r.aQuien, 20) || null,
     saldado: r.saldado === true,
+    demo: r.demo === true ? true : undefined,
     gente,
     puestoCents: enteroPositivo(r.puestoCents),
     mioCents: enteroPositivo(r.mioCents),

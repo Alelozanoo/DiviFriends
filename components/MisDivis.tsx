@@ -110,7 +110,14 @@ function Fila({ divi, onQuitar, t }: { divi: DiviGuardado; onQuitar: () => void;
     el enlace o el código. Sin esa frase, quien lo pulse puede creer que acaba
     de cargarse la cuenta de la cena de todos.
   */
-  if (confirmando) {
+  /*
+    La de ejemplo se oculta y ya está, sin preguntar.
+
+    «¿Cerrar la mesa?» con su aviso de que sigue viva para los demás no dice la
+    verdad aquí: dentro no hay nadie a quien dejar tirado, son tres nombres
+    inventados. Y sigue a mano en «Tu cuenta», así que ocultarla no pierde nada.
+  */
+  if (confirmando && !divi.demo) {
     return (
       <li className="rounded-caja border border-clay/40 bg-clay/[0.07] px-3.5 py-3">
         <p className="text-sm font-semibold">{t.misDivis.cerrarTitulo} {divi.place || divi.code}?</p>
@@ -144,10 +151,19 @@ function Fila({ divi, onQuitar, t }: { divi: DiviGuardado; onQuitar: () => void;
         className="flex items-center gap-3 rounded-caja border border-line bg-paper-2 py-2.5 pl-3.5 pr-11 transition-colors active:bg-paper-3"
       >
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-semibold">
-            {/* Sin nombre de sitio queda el código, que al menos identifica.
-                «Comanda» a secas no distingue una de otra en una lista. */}
-            {divi.place || divi.code}
+          <span className="flex min-w-0 items-baseline gap-1.5">
+            <span className="min-w-0 truncate text-sm font-semibold">
+              {/* Sin nombre de sitio queda el código, que al menos identifica.
+                  «Comanda» a secas no distingue una de otra en una lista. */}
+              {divi.place || divi.code}
+            </span>
+            {/* Para no buscarla entre las de verdad: es la única de la lista
+                donde los números no son de nadie. */}
+            {divi.demo && (
+              <span className="shrink-0 rounded-menudo border border-amber/40 px-1.5 py-px text-[10px] font-bold uppercase tracking-wide text-amber">
+                {t.demo.etiqueta}
+              </span>
+            )}
           </span>
 
           <span className="mt-1 flex items-center gap-2">
@@ -197,7 +213,7 @@ function Fila({ divi, onQuitar, t }: { divi: DiviGuardado; onQuitar: () => void;
       <button
         type="button"
         onClick={() => setConfirmando(true)}
-        aria-label={`Cerrar ${divi.place || divi.code}`}
+        aria-label={`${divi.demo ? t.demo.ocultar : t.misDivis.cerrarSi} ${divi.place || divi.code}`}
         /* A tono pleno: estaba a `/60`, o sea 2,77:1, y es la única cosa de la
            lista que borra algo. Lo que tiene que ser discreto es su peso, no su
            legibilidad. */
