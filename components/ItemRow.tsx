@@ -18,6 +18,13 @@ interface Props {
   onSetShares: (shares: number) => void;
   onOpenOptions: () => void;
   onRemove: () => void;
+  /**
+   * Qué señalar de esta fila mientras dura el guiado de la mesa de ejemplo.
+   *
+   * Lo decide la comanda, que es la única que sabe en qué paso va y cuál es la
+   * línea buena. Aquí sólo se pinta el aro donde toque.
+   */
+  guia?: "fila" | "esMio" | "dividir";
 }
 
 /**
@@ -43,6 +50,7 @@ export default function ItemRow({
   onSetShares,
   onOpenOptions,
   onRemove,
+  guia,
 }: Props) {
   const t = useT();
   const mine = breakdown.shares.find((s) => s.participantId === meId);
@@ -164,11 +172,29 @@ export default function ItemRow({
     eraLlena.current = full;
   }, [full]);
 
+  /*
+    Y si lo señalado está fuera de pantalla, se trae.
+
+    Un aro que late debajo del pliegue no guía a nadie: la comanda tiene siete
+    líneas y en un móvil caben cuatro. Sólo cuando cambia el objetivo y sólo si
+    no se ve ya —si está delante no se mueve nada, que robarle el scroll a
+    alguien que está mirando es peor que no ayudarle—. Y con `center`, no con
+    `start`, para que se vea con lo de alrededor y no pegado al borde.
+  */
+  const caja = useRef<HTMLLIElement>(null);
+  useEffect(() => {
+    if (!guia || !caja.current) return;
+    const r = caja.current.getBoundingClientRect();
+    const dentro = r.top >= 64 && r.bottom <= window.innerHeight - 96;
+    if (!dentro) caja.current.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, [guia]);
+
   return (
     <li
+      ref={caja}
       data-destello={destello || undefined}
       style={{ ["--fila" as string]: fondo }}
-      className={`overflow-hidden rounded-caja border-[1.5px] transition-colors duration-200 ${
+      className={`${guia === "fila" ? "guiame " : ""}overflow-hidden rounded-caja border-[1.5px] transition-colors duration-200 ${
         isMine
           ? open
             ? "border-amber bg-amber/[0.13]"
@@ -299,7 +325,7 @@ export default function ItemRow({
                 type="button"
                 disabled={full}
                 onClick={() => onSetShares(1)}
-                className="flex min-h-[46px] flex-1 items-center justify-center rounded-pieza bg-amber px-4 text-[15px] font-bold text-paper transition-transform active:scale-[0.98] disabled:opacity-40"
+                className={`${guia === "esMio" ? "guiame " : ""}flex min-h-[46px] flex-1 items-center justify-center rounded-pieza bg-amber px-4 text-[15px] font-bold text-paper transition-transform active:scale-[0.98] disabled:opacity-40`}
               >
                 {t.linea.esMio}
               </button>
@@ -309,7 +335,7 @@ export default function ItemRow({
               type="button"
               onClick={onOpenOptions}
               aria-label={rellena(t.linea.repartirEntreVarios, { name: item.name })}
-              className="flex min-h-[46px] flex-1 items-center justify-center gap-1.5 rounded-pieza border border-line px-4 text-[15px] font-semibold text-ink transition-colors active:bg-paper-2"
+              className={`${guia === "dividir" ? "guiame " : ""}flex min-h-[46px] flex-1 items-center justify-center gap-1.5 rounded-pieza border border-line px-4 text-[15px] font-semibold text-ink transition-colors active:bg-paper-2`}
             >
               ÷ {t.linea.dividir}
             </button>

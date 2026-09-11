@@ -672,6 +672,26 @@ export default function SplitApp({
   /* «Pagó tú» no es español: cuando el pagador eres tú, la frase es otra. */
   const pagoYo = Boolean(meId && pagadorDelTicket(currentReceiptId) === meId);
 
+  /*
+    Dónde late el aro del guiado.
+
+    El cartel dice qué hacer; esto dice dónde. En una comanda de siete líneas
+    con tres botones cada una, «toca dividir» sigue siendo una búsqueda.
+
+    La línea elegida es la primera que queda libre, que es la que de verdad se
+    puede coger. Y lo que se señala depende de si la fila está abierta: cerrada
+    se señala la fila —hay que abrirla—, y abierta, el botón que toca. Así el
+    aro va por delante del dedo en vez de quedarse donde ya has estado.
+  */
+  const guiaDemo = (() => {
+    if (!state.ticket.demo || pasoDemo < 1 || pasoDemo > 2) return null;
+    const libre = currentItems.find((i) => (settlement.byItem[i.id]?.freeShares ?? 0) > 0);
+    if (!libre) return null;
+    const objetivo = pasoDemo === 1 ? "esMio" : "dividir";
+    const que: "fila" | "esMio" | "dividir" = abierta === libre.id ? objetivo : "fila";
+    return { itemId: libre.id, que };
+  })();
+
   const esMio = (itemId: string) =>
     Boolean(settlement.byItem[itemId]?.shares.some((s) => s.participantId === meId));
   const quedaLibre = (itemId: string) => (settlement.byItem[itemId]?.freeShares ?? 0) > 0;
@@ -1057,6 +1077,7 @@ export default function SplitApp({
                   setEditing(item.id);
                 })}
                 onRemove={siEstoyDentro(() => setRemoving(item.id))}
+                guia={guiaDemo?.itemId === item.id ? guiaDemo.que : undefined}
               />
             ))}
 
@@ -1239,7 +1260,7 @@ export default function SplitApp({
                    que te toque, y la más larga se comía la cifra de la
                    izquierda hasta taparla. Lo que no puede perderse nunca es
                    cuánto llevas. */
-                className={`max-w-[58%] min-h-[46px] shrink-0 truncate rounded-pieza px-5 text-[15px] font-bold active:scale-95 transition-transform ${
+                className={`${state.ticket.demo && pasoDemo === 3 ? "guiame " : ""}max-w-[58%] min-h-[46px] shrink-0 truncate rounded-pieza px-5 text-[15px] font-bold active:scale-95 transition-transform ${
                   showTodoPagado
                     ? "bg-[#3b82f6]/10 text-[#3b82f6] border border-[#3b82f6]/20"
                     : "bg-amber"
@@ -1254,7 +1275,7 @@ export default function SplitApp({
               type="button"
               onClick={() => setJoinOverride(true)}
               disabled={esperandoSesion}
-              className="min-h-[46px] shrink-0 rounded-pieza bg-amber px-5 text-[15px] font-bold disabled:opacity-60"
+              className={`${state.ticket.demo ? "guiame " : ""}min-h-[46px] shrink-0 rounded-pieza bg-amber px-5 text-[15px] font-bold disabled:opacity-60`}
               style={{ color: "var(--paper-2)" }}
             >
               {esperandoSesion ? "…" : t.comanda.unirme}

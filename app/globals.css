@@ -508,3 +508,38 @@ li[data-destello] {
     animation-duration: 0.01ms;
   }
 }
+
+/*
+  El aro del guiado: lo que hay que tocar ahora.
+
+  El cartel de arriba dice qué hacer, pero en una comanda con siete líneas y
+  tres botones por línea, «toca dividir» sigue siendo una búsqueda. Esto lo
+  señala: un aro ámbar que late despacio sobre el sitio exacto.
+
+  `box-shadow` y no un borde, porque un borde cambia el tamaño de la caja y
+  empujaría la fila entera al aparecer. Y late en vez de quedarse fijo porque
+  el ámbar ya significa «esto es tuyo» en toda la app: lo que lo distingue es
+  el movimiento, no el color.
+*/
+@keyframes guiame-late {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--amber) 55%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 5px color-mix(in oklab, var(--amber) 0%, transparent);
+  }
+}
+
+.guiame {
+  position: relative;
+  border-radius: inherit;
+  animation: guiame-late 1.8s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .guiame {
+    animation: none;
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--amber) 55%, transparent);
+  }
+}
