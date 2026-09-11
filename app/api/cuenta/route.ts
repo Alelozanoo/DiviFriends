@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import {
   actualiza,
   borraCuenta,
@@ -38,18 +38,27 @@ export async function GET(request: Request) {
       sabe el correo, y un correo que dice «alta nueva: (sin nombre)» no
       sirve para nada.
 
-      Antes de contestar y no después: en Cloud Run lo que queda pendiente al
-      devolver la respuesta se puede quedar sin hacer. Si la hoja falla no
-      pasa nada —lo apunta en el log y sigue—, porque la cuenta manda sobre
-      la hoja y nunca al revés.
+      Con `after` y no esperándola, que es lo que se hacía antes. El Apps
+      Script de la hoja tarda entre dos segundos y medio y tres y medio
+      —medido—, y esto es la **primera** llamada de alguien que acaba de
+      entrar con Google: esos tres segundos eran pantalla en blanco entre el
+      botón de Google y la página de registro. `after` deja el trabajo para
+      después de contestar y la plataforma lo termina igual, que era justo lo
+      que se temía al ponerle el `await`.
+
+      Si la hoja falla no pasa nada —lo apunta en el log y sigue—, porque la
+      cuenta manda sobre la hoja y nunca al revés.
     */
     if (nueva && quien.email) {
-      await apuntaEnHoja({
-        correo: quien.email,
-        nombre: cuenta.perfil?.name,
-        terminos: cuenta.terminos,
-        novedades: cuenta.novedades,
-      });
+      const correo = quien.email;
+      after(() =>
+        apuntaEnHoja({
+          correo,
+          nombre: cuenta.perfil?.name,
+          terminos: cuenta.terminos,
+          novedades: cuenta.novedades,
+        }),
+      );
     }
     return NextResponse.json(cuenta);
   } catch (error) {
@@ -91,13 +100,24 @@ export async function PATCH(request: Request) {
     // Los términos y las novedades se apuntan también en la hoja de registros,
     // antes de contestar: en Cloud Run lo que queda pendiente al contestar se
     // puede quedar sin hacer.
-    if ((body.terminos === true || typeof body.novedades === "boolean") && quien.email) {
-      await apuntaEnHoja({
-        correo: quien.email,
-        nombre: cuenta.perfil?.name,
-        terminos: cuenta.terminos,
-        novedades: cuenta.novedades,
-      });
+    /*
+      Y lo mismo al guardar: la hoja y el correo van detrás de la respuesta.
+
+      Aquí el que espera es alguien que acaba de pulsar el botón que cierra su
+      registro, y entre la hoja —tres segundos— y el correo por SMTP se le
+      quedaba el botón girando sin motivo: ninguna de las dos cosas cambia lo
+      que va a ver a continuación.
+    */
+    const correo = quien.email;
+    if ((body.terminos === true || typeof body.novedades === "boolean") && correo) {
+      after(() =>
+        apuntaEnHoja({
+          correo,
+          nombre: cuenta.perfil?.name,
+          terminos: cuenta.terminos,
+          novedades: cuenta.novedades,
+        }),
+      );
     }
 
     /*
@@ -108,15 +128,17 @@ export async function PATCH(request: Request) {
       porque nada de eso se ha preguntado todavía. Aquí ya está todo puesto.
       `recienRegistrado` es la marca que hace que salga una vez y sólo una.
     */
-    if (recienRegistrado && quien.email) {
-      await avisaAlta({
-        nombre: cuenta.perfil?.name ?? "",
-        correo: quien.email,
-        usuario: cuenta.usuario,
-        novedades: cuenta.novedades,
-        bizum: cuenta.perfil?.bizum,
-        revolut: cuenta.perfil?.revolut,
-      });
+    if (recienRegistrado && correo) {
+      after(() =>
+        avisaAlta({
+          nombre: cuenta.perfil?.name ?? "",
+          correo,
+          usuario: cuenta.usuario,
+          novedades: cuenta.novedades,
+          bizum: cuenta.perfil?.bizum,
+          revolut: cuenta.perfil?.revolut,
+        }),
+      );
     }
     return NextResponse.json(cuenta);
   } catch (error) {
