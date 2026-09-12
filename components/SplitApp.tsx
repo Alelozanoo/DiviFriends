@@ -767,7 +767,11 @@ export default function SplitApp({
             <Link
               href={inicio(lang)}
               aria-label="DiviFriends"
-              className="flex min-w-0 shrink items-center gap-2"
+              /* Seis píxeles entre el símbolo y el nombre y no ocho: es una
+                 marca, no dos cosas, y los dos que se ahorran son justo el
+                 margen que le faltaba a la palabra para entrar entera en un
+                 Android de 360. */
+              className="flex min-w-0 shrink items-center gap-1.5"
             >
               <Logo size={64} className="h-8 w-8 shrink-0" />
               {/*
@@ -784,8 +788,17 @@ export default function SplitApp({
                 eso dentro de una comanda sólo se veía el símbolo.
 
                 A 320 sí falta sitio: nueve píxeles. Ahí se queda el logo solo.
+
+                El corte sube de 350 a 360 porque la pastilla de compartir ha
+                engordado nueve píxeles al cuadrarle el relleno. Medido: a 350
+                la fila iba justa de milímetro —el hueco elástico del medio
+                marcaba cero—, así que esos nueve saldrían de la palabra y
+                dejarían «DiviFrien…». A 360 vuelve a caber entera —con dos
+                píxeles de sobra, que son los que se le han quitado al hueco
+                entre el símbolo y el nombre—. Entre 350 y 359 no hay ningún
+                móvil: los estrechos de verdad son 320 y 360.
               */}
-              <span className="hidden truncate text-[15px] font-bold leading-tight tracking-[-0.02em] min-[350px]:block">
+              <span className="hidden truncate text-[15px] font-bold leading-tight tracking-[-0.02em] min-[360px]:block">
                 Divi<span className="text-amber">Friends</span>
               </span>
             </Link>
@@ -805,7 +818,27 @@ export default function SplitApp({
                  es alguien de la mesa, y así la puerta sale en el primer
                  gesto, sea el que sea. */
               onClick={siEstoyDentro(() => setSharing(true))}
-              className="flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-line bg-paper-2 pl-1 pr-2.5 transition-transform active:scale-95"
+              /*
+                Leído de corrido, «3Compartir» es lo que oye quien va con
+                lector de pantalla: los dos renglones son hermanos sin un
+                espacio en medio y el nombre del botón salía pegado. Con el
+                punto en medio se lee aparte. Sin «personas» detrás porque el
+                único plural que hay escrito da «1 personas» cuando estás solo
+                en la mesa, que es justo el rato en que más veces sale.
+              */
+              aria-label={`${t.comanda.compartir} · ${state.participants.length}`}
+              /*
+                Relleno igual por los dos lados.
+
+                Llevaba 4 px a la izquierda y 10 a la derecha, que era la
+                medida de cuando aquí dentro iba una cara redonda de 32 px con
+                su propio aire: el círculo tapaba el desnivel. Con un número
+                suelto no lo tapa nada y el dígito se quedaba a 5 px del filo
+                mientras la palabra tenía 11 por el otro; de ahí lo de
+                «apretado», que era sólo esta asimetría. 12 y 12, y la pastilla
+                pasa de 95 a 104 px.
+              */
+              className="flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-line bg-paper-2 px-3 transition-transform active:scale-95"
             >
               {/*
                 Tres caras como mucho y sin el «+N».
@@ -826,7 +859,17 @@ export default function SplitApp({
                 dos ni con nueve, y es lo que se pregunta al mirar ahí:
                 ¿estamos todos?
               */}
-              <span className="tnum text-[13px] font-bold text-amber">
+              {/*
+                Y en 11 px, que es como cuenta el resto de la app.
+
+                En 13 y en negrita pesaba lo mismo que la palabra, así que los
+                dos renglones se leían de una tirada —«3 Compartir»— y el
+                número parecía parte de la etiqueta en vez de una cuenta. Dos
+                dedos más abajo, las pestañas ya hacen esto mismo: «Todo 7»,
+                «Libres 4», con la cifra en ámbar y más pequeña que el rótulo.
+                Aquí igual.
+              */}
+              <span className="tnum text-[11px] text-amber">
                 {state.participants.length}
               </span>
               <span className="text-[13px] font-bold text-amber">{t.comanda.compartir}</span>
